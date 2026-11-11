@@ -81,7 +81,7 @@ LQ.REGIONS.village = {
   music: (w, st) => w.p.y < 12 * T && !st.flags.bossDown ? 'mountain' : w.season === 'winter' ? 'winter' : 'village',
   auditOK: (st, zone) => st.quest >= 2 && zone === 'village',
   fallbackTarget: st => st.quest >= 9 ? 'southroad' : null,
-  exits: [{ x0: 23 * T, x1: 25 * T, y0: 41 * T + 8, y1: 43 * T, to: 'coast', px: 24 * T, py: 2 * T + 8, dir: 'down' }],
+  exits: [{ x0: 23 * T, x1: 25 * T, y0: 41 * T + 8, y1: 43 * T, to: 'coast', px: 24 * T, py: 2 * T + 8, dir: 'down', open: st => st.quest >= 9 }],
   spawn(w, st) {
     const say = t => () => LQ.script(() => LQ.say(null, t));
     w.ents.push({ type: 'prop', tx: 13, base: 24 * T - 1, draw: (g, cx, cy) => g.drawImage(LQ.prop('stall', w.season), 13 * T - 1 - cx, 24 * T - 31 - cy) });
@@ -174,20 +174,21 @@ const world = LQ.world = {
       this.hintT += dt;
       if (dx) p.dir = dx < 0 ? 'left' : 'right'; else p.dir = dy < 0 ? 'up' : 'down';
       const sp = 78 * dt * (dx && dy ? .7071 : 1);
+      const oldX = p.x, oldY = p.y;
       if (dx && this.canStand(p.x + dx * sp, p.y)) p.x += dx * sp;
       if (dy && this.canStand(p.x, p.y + dy * sp)) p.y += dy * sp;
       p.anim += dt * 9; p.frame = Math.floor(p.anim) % 4;
       p.dust -= dt; if (p.dust <= 0) { p.dust = .22; this.parts.push({ x: p.x, y: p.y, vx: 0, vy: -8, t: .3, col: this.season === 'winter' ? '#ffffff' : '#d9cba6' }); }
       st.px = p.x; st.py = p.y; st.dir = p.dir;
-      for (const x of R.exits || []) if (p.x >= x.x0 && p.x < x.x1 && p.y >= x.y0 && p.y < x.y1) { p.moving = false; p.frame = 0; LQ.script(() => this.travel(x)); return; }
+      for (const x of R.exits || []) if (p.x >= x.x0 && p.x < x.x1 && p.y >= x.y0 && p.y < x.y1 && (!x.open || x.open(st))) { p.moving = false; p.frame = 0; LQ.script(() => this.travel(x)); return; }
       if (R.auditOK(st, this.zone)) {
-        st.auditDist = (st.auditDist || 0) + 78 * dt;
+        st.auditDist = (st.auditDist || 0) + Math.hypot(p.x - oldX, p.y - oldY);
         if (st.auditDist > (st.auditNext || 2200)) { st.auditDist = 0; st.auditNext = 2200 + Math.random() * 2000; if (LQ.auditPool().length >= 3) { p.moving = false; p.frame = 0; LQ.script(LQ.audit); return; } }
       }
     } else { p.frame = 0; p.anim = 0; }
     // things you pick up by walking over them
     for (const e of this.ents) if ((e.type === 'coin' || e.pick) && Math.abs(e.tx * T + 8 - p.x) < 9 && Math.abs(e.ty * T + 10 - p.y) < 10) {
-      if (e.type === 'coin') { st.coinsGot[e.key] = true; st.coins++; LQ.audio.sfx('coin'); this.burst(e.tx * T + 8, e.ty * T + 6, '#f3c531', 8, 30); this.remove(e); }
+      if (e.type === 'coin') { st.coinsGot[e.key] = true; st.coins++; LQ.audio.sfx('coin'); this.burst(e.tx * T + 8, e.ty * T + 6, '#f3c531', 8, 30); this.remove(e); LQ.save(); }
       else { this.burst(e.tx * T + 8, e.ty * T + 6, '#fff3b0', 14, 40); this.remove(e); p.moving = false; p.frame = 0; LQ.script(() => e.pick(e)); }
       break;
     }
@@ -260,15 +261,17 @@ const world = LQ.world = {
     const st = LQ.state, q = LQ.curQuest(), R = this.R;
     if (ui.doc) return;
     // quest tracker
-    c.font = F(26); const tw = Math.max(250, c.measureText(q.text).width + 44);
+    const s = `Coins ${st.coins}    Savvy ${st.savvy}`;
+    const extra = [st.streak >= 3 ? 'Streak x' + st.streak : '', R.hud ? R.hud(this, st) : ''].filter(Boolean).join('    ');
+    c.font = F(24); const ew = extra ? Math.min(470, c.measureText(extra).width + 28) : 0;
+    c.font = F(26); const sw = Math.min(470, c.measureText(s).width + 32);
+    const tw = Math.min(LQ.VW - 44 - Math.max(sw, ew), Math.max(250, c.measureText(q.text).width + 44));
     c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(16, 14, tw, 62); c.fillStyle = '#f3c531'; c.fillRect(16, 14, 5, 62);
     c.font = F(10, true); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#f3c531'; c.fillText('QUEST', 32, 23);
-    ui.text(c, q.text, 32, 40, '#fdf8e7', F(26));
+    ui.text(c, q.text, 32, 40, '#fdf8e7', F(26), 'left', tw - 36);
     // coins and savvy
-    const s = `Coins ${st.coins}    Savvy ${st.savvy}`; c.font = F(26); const sw = c.measureText(s).width + 32;
-    c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(LQ.VW - sw - 16, 14, sw, 38); ui.text(c, s, LQ.VW - 32, 18, '#ffe98a', F(26), 'right');
-    const extra = [st.streak >= 3 ? 'Streak x' + st.streak : '', R.hud ? R.hud(this, st) : ''].filter(Boolean).join('    ');
-    if (extra) { c.font = F(24); const ew = c.measureText(extra).width + 28; c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(LQ.VW - ew - 16, 56, ew, 32); ui.text(c, extra, LQ.VW - 30, 58, '#c9cdea', F(24), 'right'); }
+    c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(LQ.VW - sw - 16, 14, sw, 38); ui.text(c, s, LQ.VW - 32, 18, '#ffe98a', F(26), 'right', sw - 32);
+    if (extra) { c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(LQ.VW - ew - 16, 56, ew, 32); ui.text(c, extra, LQ.VW - 30, 58, '#c9cdea', F(24), 'right', ew - 28); }
     // pointer toward an off-screen quest target
     const tgt = this.questTarget(), fb = R.fallbackTarget ? R.fallbackTarget(st) : null;
     const e = this.ents.find(x => (x.type === 'npc' && x.npc.id === tgt) || (tgt && x.qid === tgt)) || (fb && this.ents.find(x => x.qid === fb));

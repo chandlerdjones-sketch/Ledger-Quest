@@ -90,3 +90,31 @@ Object.assign(LQ.TAX, {
   homeSaleSingle: 250000, homeSaleJoint: 500000,
   aotc: 2500, aotcRefundable: 1000,
 });
+
+// ---- Figures added for Chapters 3 and 4: Hustle Canyon and the Summit of Gains (tax year 2026) ----
+// Sources:
+//   Form 1099-NEC and 1099-MISC threshold ($2,000 for payments made in 2026) and the Form 1099-K
+//   threshold (more than $20,000 and more than 200 transactions):
+//     https://www.irs.gov/newsroom/one-big-beautiful-bill-provisions
+//   Self-employment tax and estimated tax rules: IRS Publication 334 and Form 1040-ES
+//     https://www.irs.gov/forms-pubs/about-form-1040-es
+//   Business meals (50%), fines, clothing, commuting: IRS Publication 463 and Publication 535 topics
+//   Home office simplified method: https://www.irs.gov/businesses/small-businesses-self-employed/simplified-option-for-home-office-deduction
+//   Child and Dependent Care Credit phase-down above $150,000 (joint): Internal Revenue Code section 21, as amended
+//   Capital gains thresholds for joint returns, capital loss limit: Rev. Proc. 2025-32 (link at top) and Publication 550
+//   Basis of inherited property, wash sales, qualified dividends: Publication 550 and Publication 551
+//   Net Investment Income Tax: https://www.irs.gov/individuals/net-investment-income-tax
+Object.assign(LQ.TAX, {
+  necThreshold: 2000,                  // a client who pays you this much in 2026 must send Form 1099-NEC
+  kThreshold: 20000, kCount: 200,      // Form 1099-K: more than this much AND more than this many payments
+  seMinimum: 400,                      // self-employment tax applies once net earnings reach this
+  estMinimum: 1000,                    // estimated payments are expected if you will owe at least this
+  safeHarborPrior: 1.00, safeHarborPriorHigh: 1.10, safeHarborCurrent: 0.90,
+  mealRate: 0.50,                      // share of a business meal that can be deducted
+  careFullJoint: 150000, careStepJoint: 4000, careMinRate: 0.20,  // care credit rate drops 1 point per step above this
+  ltcg15MaxJoint: 613700,              // long-term gains taxed at 15% up to this taxable income (joint)
+  niitRate: 0.038, niitJoint: 250000, niitSingle: 200000,
+  washDays: 30,
+  collectibleRate: 0.28,
+  earlyAge: 59.5, earlyPenalty: 0.10,
+});

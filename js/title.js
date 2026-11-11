@@ -15,7 +15,7 @@ function careerSelect() {
       draw(g) { const s = g.createLinearGradient(0, 0, 0, LQ.BH); s.addColorStop(0, '#141a3c'); s.addColorStop(1, '#2a1d4e'); g.fillStyle = s; g.fillRect(0, 0, LQ.BW, LQ.BH); for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(255,255,255,${.2 + .4 * Math.abs(Math.sin(LQ.time + i))})`; g.fillRect(LQ.hash(i, 1, 70) * LQ.BW, LQ.hash(i, 2, 70) * LQ.BH, 1, 1); } },
       drawUI(c) {
         ui.text(c, 'CHOOSE YOUR CAREER', LQ.VW / 2, 34, '#f3c531', F(24, true), 'center');
-        ui.text(c, 'Your job decides your pay, your tax forms, and your path to Tax Tycoon', LQ.VW / 2, 74, '#c9cdea', F(26), 'center');
+        ui.text(c, 'Your job decides your pay, your tax forms, and your path to Tax Tycoon', LQ.VW / 2, 74, '#c9cdea', F(26), 'center', 888);
         ids.forEach((id, i) => {
           const cr = LQ.CAREERS[id], on = i === sel, x = 52 + i * 292, y = on ? 112 + Math.sin(LQ.time * 4) * 4 : 124, w = 272, h = 348;
           c.globalAlpha = on ? 1 : .6; ui.panel(c, x, y, w, h, on ? '#232a5c' : '#161a36');
@@ -23,9 +23,9 @@ function careerSelect() {
           c.fillStyle = '#39417a'; c.fillRect(x + 76, y + 16, 120, 132); c.imageSmoothingEnabled = false;
           c.drawImage(LQ.charSprite(Object.assign({ id: 'card-' + id }, cr.look), 'down', on ? Math.floor(LQ.time * 5) % 4 : 0), x + 91, y + 16, 90, 130);
           c.font = F(13, true); ui.wrap(c, cr.name.toUpperCase(), 250).forEach((ln, k, a) => ui.text(c, ln, x + w / 2, y + 160 + k * 20 - (a.length - 1) * 4, '#ffe98a', F(13, true), 'center'));
-          ui.text(c, pay[id], x + w / 2, y + 200, '#fdf8e7', F(24), 'center');
+          ui.text(c, pay[id], x + w / 2, y + 200, '#fdf8e7', F(24), 'center', w - 24);
           ui.text(c, 'Difficulty: ' + cr.diff, x + w / 2, y + 226, '#7fd6a8', F(22), 'center');
-          cr.lines.forEach((ln, k) => ui.text(c, ln, x + w / 2, y + 262 + k * 25, '#c9cdea', F(20), 'center'));
+          cr.lines.forEach((ln, k) => ui.text(c, ln, x + w / 2, y + 262 + k * 25, '#c9cdea', F(20), 'center', w - 24));
           c.globalAlpha = 1;
         });
         if (Math.floor(LQ.time * 2) % 2) ui.text(c, 'Left / Right to choose, Space to confirm', LQ.VW / 2, 496, '#fdf8e7', F(26), 'center');
@@ -39,7 +39,7 @@ function slotInfo(n) {
   const keep = LQ.state; let rank = '';
   LQ.state = s; try { rank = LQ.rank(); } catch (e) { rank = ''; } LQ.state = keep;
   const c = LQ.CAREERS[s.career];
-  return { career: c ? c.name : 'New hero', chapter: s.q2 != null ? (s.q2 >= 8 ? 'Ch.2 complete' : 'Chapter 2') : s.quest >= 9 ? 'Ch.1 complete' : 'Chapter 1', coins: s.coins, rank };
+  return { career: c ? c.name : 'New hero', chapter: s.q4 != null ? (s.q4 >= 9 ? 'Game complete' : 'Chapter 4') : s.q3 != null ? (s.q3 >= 8 ? 'Ch.3 complete' : 'Chapter 3') : s.q2 != null ? (s.q2 >= 8 ? 'Ch.2 complete' : 'Chapter 2') : s.quest >= 9 ? 'Ch.1 complete' : 'Chapter 1', coins: s.coins, rank };
 }
 const T = LQ.title = {
   sel: 0, locked: false, info: [], file: null, backRes: null, msg: '',
@@ -69,8 +69,8 @@ const T = LQ.title = {
     const a = await LQ.choose(null, `Slot ${n} is empty.`, ['New Game', 'Load a backup file', 'Back'], k => { LQ.gesture = k === 1 ? () => { this.file = LQ.pickFile(); } : null; });
     LQ.gesture = null;
     if (a === 0) {
-      const c = await LQ.choose(null, 'Where do you want to start?', ['Chapter 1: Paystub Village (start here)', 'Chapter 2: Shelter Coast (skip ahead with a starter kit)', 'Back']);
-      if (c < 2) return this.launch(n, null, c === 1);
+      const c = await LQ.choose(null, 'Where do you want to start?', ['Chapter 1: Paystub Village (start here)', 'Chapter 2: Shelter Coast (skip ahead with a starter kit)', 'Chapter 3: Hustle Canyon (skip ahead with a starter kit)', 'Chapter 4: Summit of Gains (skip ahead with a starter kit)', 'Back']);
+      if (c < 4) return this.launch(n, null, c);
     }
     if (a === 1) {
       const f = this.file; this.file = null;
@@ -95,17 +95,21 @@ const T = LQ.title = {
     if (!saved) {
       LQ.setScene({ draw(g) { g.fillStyle = '#07081a'; g.fillRect(0, 0, LQ.BW, LQ.BH); } }); LQ.fadeA = 0; LQ.busy++;
       await LQ.say(null, 'The Ledgerlands. A realm where every coin has a story, and where every spring, without fail, Tax Season arrives.');
-      if (skip) await LQ.say(null, 'You are skipping ahead. Your hero has already finished Chapter 1 in Paystub Village: the Mythmonger is beaten, the first return is filed, and there are 500 coins in the purse.');
+      if (skip) await LQ.say(null, ['', 'You are skipping ahead. Your hero has already finished Chapter 1 in Paystub Village: the Mythmonger is beaten, the first return is filed, and there are 500 coins in the purse.',
+        'You are skipping ahead. Your hero has already finished Chapters 1 and 2: two returns filed, a cottage by the sea, a marriage to Marlowe, a stepdaughter called Coral, and 900 coins in the purse.',
+        'You are skipping ahead. Your hero has already finished Chapters 1 to 3: three returns filed, a family in Shelter Coast, a side gig in Hustle Canyon, and 1,400 coins in the purse.'][skip]);
       else await LQ.say(null, 'You have just come to Paystub Village with an empty coin purse and no idea how taxes work.');
       await LQ.say(null, skip ? 'First, though: what does your hero do for a living?' : 'Good news: that is about to change. First, though: what do you do for a living?');
       LQ.state.career = await careerSelect(); LQ.initMarket();
       if (skip) LQ.CH2.starter();
+      if (skip >= 2) LQ.CH3.starter();
+      if (skip >= 3) await LQ.CH4.starter();
       LQ.busy--; await LQ.fadeTo(1, 0.4);
     }
     LQ.world.start(); LQ.setScene(LQ.world); await LQ.fadeTo(0, 0.7);
     if (!saved) ui.showBanner(LQ.world.R.title, LQ.world.R.sub());
     LQ.save();
-    if (LQ.state.region === 'coast' && LQ.state.q2 == null) LQ.script(() => LQ.CH2.begin());
+    const R = LQ.world.R; if (R.arrive) LQ.script(() => R.arrive());
   },
   draw(g) {
     const t = LQ.time, W = LQ.BW, H = LQ.BH;
@@ -130,13 +134,13 @@ const T = LQ.title = {
     const gr = c.createLinearGradient(0, y, 0, y + 60); gr.addColorStop(0, '#fff3b0'); gr.addColorStop(.5, '#f3c531'); gr.addColorStop(1, '#e08a1c');
     c.fillStyle = gr; c.fillText('LEDGER QUEST', cx, y);
     ui.text(c, 'A TAX ADVENTURE IN THE LEDGERLANDS', cx, 182, '#fdf8e7', F(15, true), 'center');
-    ui.text(c, 'Learn your paycheck, your taxes, and how to keep more of your money', cx, 216, '#f6d9c9', F(26), 'center');
+    ui.text(c, 'Learn your paycheck, your taxes, and how to keep more of your money', cx, 216, '#f6d9c9', F(26), 'center', 888);
     this.info.forEach((o, i) => {
       const on = i === this.sel && !ui.choice && !ui.dlg, oy = 268 + i * 52;
       c.fillStyle = on ? 'rgba(9,11,24,.78)' : 'rgba(9,11,24,.45)'; c.fillRect(cx - 330, oy, 660, 44);
       if (on) { c.fillStyle = '#f3c531'; c.fillRect(cx - 330, oy, 5, 44); c.fillRect(cx + 325, oy, 5, 44); }
       ui.text(c, 'SLOT ' + (i + 1), cx - 308, oy + 15, on ? '#ffe98a' : '#c9cdea', F(12, true));
-      ui.text(c, o ? `${o.career}    ${o.chapter}    ${o.coins} coins    ${o.rank}` : 'Empty. Start a new game here', cx + 308, oy + 8, o ? '#fdf8e7' : '#8f96c0', F(26), 'right');
+      ui.text(c, o ? `${o.career}    ${o.chapter}    ${o.coins} coins    ${o.rank}` : 'Empty. Start a new game here', cx + 308, oy + 8, o ? '#fdf8e7' : '#8f96c0', F(26), 'right', 526);
     });
     if (this.msg) ui.text(c, this.msg, cx, 436, '#ffe98a', F(26), 'center');
     else if (!ui.choice && !ui.dlg && Math.floor(t * 2) % 2) ui.text(c, 'Up / Down: choose a slot    Space: select', cx, 436, '#fdf8e7', F(26), 'center');

@@ -107,7 +107,8 @@ function line(c, x, y, w, label, value, o = {}) {
   const fs = o.size || 26;
   if (o.hl) { c.fillStyle = `rgba(255,205,50,${.4 + .22 * Math.sin(LQ.time * 6)})`; c.fillRect(x - 8, y - 2, w + 16, fs + 3); }
   c.font = F(fs); c.textBaseline = 'top';
-  c.textAlign = 'left'; c.fillStyle = o.color || '#2c2416'; c.fillText(label, x, y);
+  const labelWidth = w - c.measureText(String(value)).width - 12;
+  c.textAlign = 'left'; c.fillStyle = o.color || '#2c2416'; c.fillText(label, x, y, Math.max(1, labelWidth));
   c.textAlign = 'right'; c.fillStyle = o.vcolor || o.color || '#2c2416'; c.fillText(value, x + w, y);
 }
 const rule = (c, x, y, w) => { c.fillStyle = '#8a7a55'; c.fillRect(x, y, w, 2); };
@@ -269,9 +270,9 @@ LQ.drawWorldMap = (c, x, y, w, h) => {
   c.fillStyle = '#ead9ab'; c.fillRect(x, y, w, h); c.strokeStyle = '#8a7a55'; c.lineWidth = 3; c.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
   for (let i = 0; i < 60; i++) { c.fillStyle = 'rgba(138,122,85,.18)'; c.fillRect(x + LQ.hash(i, 1, 4) * (w - 8), y + LQ.hash(i, 2, 4) * (h - 6), 6, 2); }
   c.font = F(13, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = '#3a2f1c'; c.fillText('THE LEDGERLANDS', x + w / 2, y + 14);
-  const done = st().quest >= 9, done2 = st().q2 != null && st().q2 >= 8;
+  const done = st().quest >= 9, done2 = st().q2 != null && st().q2 >= 8, done3 = st().q3 != null && st().q3 >= 8, done4 = st().q4 != null && st().q4 >= 9;
   const R = [['Paystub Village', 'Ch.1  Paychecks & filing', .2, .62, '#3d9a5a', true, done], ['Shelter Coast', 'Ch.2  Family & home', .42, .34, '#3b6fd4', done, done2],
-    ['Hustle Canyon', 'Ch.3  Side gigs', .66, .66, '#c9781c', false], ['Summit of Gains', 'Ch.4  Investing', .84, .32, '#7b4bb8', false]];
+    ['Hustle Canyon', 'Ch.3  Side gigs', .66, .66, '#c9781c', done2, done3], ['Summit of Gains', 'Ch.4  Investing', .84, .32, '#7b4bb8', done3, done4]];
   c.strokeStyle = '#8a7a55'; c.lineWidth = 3; c.setLineDash([8, 8]); c.beginPath();
   R.forEach((r, i) => { const px = x + w * r[2], py = y + h * r[3]; if (i) c.lineTo(px, py); else c.moveTo(px, py); }); c.stroke(); c.setLineDash([]);
   R.forEach(r => {
@@ -666,7 +667,7 @@ const CHESTS = {
   b: { tx: 42, ty: 18, tip: 'tipRecords', line: 'A scroll inside reads: "Keep your tax records for at least three years."' },
   c: { tx: 29, ty: 7, tip: 'tipFreeFile', line: 'A scroll inside reads: "Under a yearly income limit, IRS Free File gives you tax software at no cost."' },
 };
-LQ.curQuest = () => { const s = st(); return s.q2 != null && LQ.QUESTS2 ? LQ.QUESTS2[s.q2] : LQ.QUESTS[s.quest]; };
+LQ.curQuest = () => { const s = st(); return s.q4 != null && LQ.QUESTS4 ? LQ.QUESTS4[s.q4] : s.q3 != null && LQ.QUESTS3 ? LQ.QUESTS3[s.q3] : s.q2 != null && LQ.QUESTS2 ? LQ.QUESTS2[s.q2] : LQ.QUESTS[s.quest]; };
 LQ.CH1 = {
   npcs: NPC_LIST, chests: CHESTS, ending,
   coins: [[20, 33], [27, 34], [12, 27], [6, 27], [41, 27], [35, 30], [18, 23], [29, 22], [10, 30], [40, 31], [21, 19], [27, 19], [5, 20], [43, 22], [19, 9], [30, 6], [21, 4], [26, 4], [8, 36], [38, 37]],

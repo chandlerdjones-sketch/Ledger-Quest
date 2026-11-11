@@ -12,9 +12,9 @@ let S = 1;
 function resize() {
   const dpr = window.devicePixelRatio || 1;
   const sc = Math.min(innerWidth / VW, innerHeight / VH);
-  const cw = Math.max(320, Math.floor(VW * sc)), ch = Math.max(180, Math.floor(VH * sc));
+  const cw = VW * sc, ch = VH * sc;
   canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
-  canvas.width = Math.floor(cw * dpr); canvas.height = Math.floor(ch * dpr);
+  canvas.width = Math.max(1, Math.round(cw * dpr)); canvas.height = Math.max(1, Math.round(ch * dpr));
   S = canvas.width / VW;
 }
 addEventListener('resize', resize); resize();
@@ -61,48 +61,69 @@ LQ.hash = (x, y, s = 0) => {
 };
 
 // ---- game state and saves (three slots, with backup files)
-const OLD_KEY = 'ledgerquest.save.v2', SLOT = n => 'ledgerquest.save.v3.slot' + n;
+const OLD_KEY = 'ledgerquest.save.v2', MIGRATED_KEY = 'ledgerquest.save.v2.migrated', SLOT = n => 'ledgerquest.save.v3.slot' + n;
 LQ.SAVE_VERSION = 3; LQ.slot = 1;
 LQ.newState = () => ({ ver: LQ.SAVE_VERSION, quest: 0, w4: null, savvy: 0, coins: 0, asked: 0, first: 0, journal: [], items: [],
   season: 'summer', px: 24 * 16, py: 37 * 16 + 14, dir: 'up', chests: {}, coinsGot: {}, flags: {},
   career: null, streak: 0, gear: [], tips: {}, audits: 0, auditDist: 0, auditNext: 2200, day: 0, prices: null, prev: null, lots: null, gazette: [], news: null, lossBank: 0, capTax: 0, divs: 0, seed: 1,
-  region: 'village', q2: null, rcpt: {}, w4b: null, wh2: null, child: false });
+  region: 'village', q2: null, rcpt: {}, w4b: null, wh2: null, child: false,
+  q3: null, gig: null, est3: null, q4: null, inv: null, hold4: null, harv4: null, acct4: null });
 LQ.state = LQ.newState();
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }, del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } } };
 // Accept only data shaped like a save, and keep only the fields the game knows about.
 LQ.cleanSave = raw => {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  if (typeof raw.quest !== 'number' || raw.quest < 0 || raw.quest > 9 || raw.quest % 1) return null;
-  if (raw.career != null && !(LQ.CAREERS && LQ.CAREERS[raw.career])) return null;
+  if (!Number.isInteger(raw.quest) || raw.quest < 0 || raw.quest > 9) return null;
+  if (raw.career != null && !(typeof raw.career === 'string' && Object.hasOwn(LQ.CAREERS, raw.career))) return null;
+  const record = v => v !== null && typeof v === 'object' && !Array.isArray(v);
   const base = LQ.newState(), out = {};
   for (const k in base) {
     const v = raw[k], d = base[k];
     if (v === undefined) { out[k] = d; continue; }
-    const same = d === null ? (v === null || ['number', 'string', 'object'].includes(typeof v)) : Array.isArray(d) ? Array.isArray(v) : typeof v === typeof d && v !== null;
+    const same = d === null ? (v === null || ['number', 'string', 'object'].includes(typeof v)) :
+      Array.isArray(d) ? Array.isArray(v) : typeof d === 'object' ? record(v) :
+        typeof v === typeof d && (typeof d !== 'number' || Number.isFinite(v));
     if (!same) return null;
     out[k] = v;
   }
-  if (!['village', 'coast'].includes(out.region)) return null;
-  if (out.q2 != null && (typeof out.q2 !== 'number' || out.q2 < 0 || out.q2 > 8)) return null;
-  for (const k of ['savvy', 'coins', 'px', 'py']) if (!isFinite(out[k])) return null;
+  if (!['village', 'coast', 'canyon', 'summit'].includes(out.region)) return null;
+  for (const [k, max] of [['q2', 8], ['q3', 8], ['q4', 9]]) {
+    if (out[k] != null && (!Number.isInteger(out[k]) || out[k] < 0 || out[k] > max)) return null;
+  }
+  if (!['up', 'down', 'left', 'right'].includes(out.dir)) return null;
+  if (out.gig != null && !(typeof out.gig === 'string' && Object.hasOwn(LQ.GIGS, out.gig))) return null;
+  if (out.inv != null && (!record(out.inv) || ['st', 'lt', 'qd', 'int'].some(k => !Number.isFinite(out.inv[k])))) return null;
+  if (out.prices != null) {
+    if (![out.prices, out.prev, out.lots].every(record)) return null;
+    const price = n => Number.isFinite(n) && n > 0;
+    for (const { id } of LQ.STOCKS) {
+      if (out.prices[id] != null && (!price(out.prices[id]) || !price(out.prev[id]))) return null;
+      const lots = out.lots[id];
+      if (lots != null && (!Array.isArray(lots) || !lots.every(l => record(l) && Number.isInteger(l.n) && l.n > 0 && price(l.cost)))) return null;
+    }
+  }
   const strs = a => a.every(x => typeof x === 'string');
-  if (!strs(out.journal) || !strs(out.items) || !strs(out.gear)) return null;
-  if (LQ.JOURNAL) out.journal = out.journal.filter(id => LQ.JOURNAL[id]);
-  if (LQ.ITEMS) out.items = out.items.filter(id => LQ.ITEMS[id]);
+  if (![out.journal, out.items, out.gear, out.gazette].every(strs)) return null;
+  if (LQ.JOURNAL) out.journal = out.journal.filter(id => Object.hasOwn(LQ.JOURNAL, id));
+  if (LQ.ITEMS) out.items = out.items.filter(id => Object.hasOwn(LQ.ITEMS, id));
   if (LQ.GEAR) out.gear = out.gear.filter(id => LQ.GEAR.some(g => g.id === id));
   out.ver = LQ.SAVE_VERSION;
   return out;
 };
 LQ.parseSave = text => { try { return LQ.cleanSave(JSON.parse(text)); } catch (e) { return null; } };
 LQ.save = () => { if (LQ.started) store.set(SLOT(LQ.slot), JSON.stringify(LQ.state)); };
+addEventListener('pagehide', () => { if (LQ.scene === LQ.world && !LQ.busy) LQ.save(); });
 LQ.loadSlot = n => { const t = store.get(SLOT(n)); return t ? LQ.parseSave(t) : null; };
 LQ.deleteSlot = n => store.del(SLOT(n));
 // Saves from before slots existed move into slot 1 the first time the game loads.
 LQ.migrateSaves = () => {
-  if ([1, 2, 3].some(n => store.get(SLOT(n)))) return false;
+  if (store.get(MIGRATED_KEY)) return false;
   const old = store.get(OLD_KEY), s = old && LQ.parseSave(old);
   if (!s) return false;
-  return store.set(SLOT(1), JSON.stringify(s));
+  const hasSlots = [1, 2, 3].some(n => store.get(SLOT(n)));
+  if (!hasSlots && !store.set(SLOT(1), JSON.stringify(s))) return false;
+  store.set(MIGRATED_KEY, '1');
+  return !hasSlots;
 };
 LQ.exportText = n => { const s = LQ.loadSlot(n); return s ? JSON.stringify({ game: 'Ledger Quest', exported: new Date().toISOString().slice(0, 10), save: s }, null, 1) : null; };
 LQ.exportSlot = n => {

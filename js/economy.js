@@ -175,8 +175,14 @@ LQ.GEAR = [
   { id: 'plan529', coast: 1, save: 1, name: "Coral's 529 Plan", price: 400, desc: 'Open a 529 education savings plan for Coral. There is no federal deduction going in, but the money grows tax-free and comes out tax-free for education.' },
   { id: 'cask', coast: 1, save: 1, needs: 'hsa', name: 'Family HSA Cask', price: 700, desc: 'Move to a family health plan and add $4,000 more to your HSA. The 2026 family limit is $8,750. Every dollar comes off your joint income.' },
   { id: 'anchor', coast: 1, save: 1, name: "Marlowe's 401(k) Anchor", price: 800, desc: 'Marlowe puts $4,000 of pay into the shipyard 401(k). Those wages never reach the joint return, and the savings are still yours.' },
+  { id: 'rod', at: 'canyon', name: 'Dowsing Rod', price: 120, desc: 'Points you toward the nearest lost expense slip in Hustle Canyon, and tells you how far away it is.' },
+  { id: 'toolkit', at: 'canyon', name: 'Gig Tool Kit', price: 350, desc: 'Buy $800 of tools for your side gig. Items that cost $2,500 or less each can be written off in full in the year you buy them, so all $800 comes off your gig profit.' },
+  { id: 'sep', at: 'canyon', save: 1, name: 'SEP IRA Saddlebag', price: 600, desc: 'Put $1,200 of gig profit into a SEP IRA, a retirement account for the self-employed. It comes off your income now and grows untaxed until you retire.' },
+  { id: 'munis', at: 'summit', save: 1, name: 'Muni Bond Lantern', price: 500, desc: 'Move your savings into municipal bonds. Their interest is generally free of federal income tax, so the $300 of bank interest leaves your return.' },
+  { id: 'ring', at: 'summit', save: 1, name: "Marlowe's Roth Ring", price: 500, desc: 'Open a Roth IRA for Marlowe with $3,000. No deduction today. It grows tax-free, and dividends inside it never show up on a return.' },
+  { id: 'stepup', at: 'summit', save: 1, needs: 'anchor', name: '401(k) Step-Up Crampons', price: 900, desc: "Raise Marlowe's 401(k) contribution by another $3,000. Those wages never reach the joint return." },
 ];
-LQ.gearFor = () => LQ.GEAR.filter(g => (!g.only || g.only === LQ.career().kind) && (!g.coast || st().region === 'coast'));
+LQ.gearFor = () => LQ.GEAR.filter(g => (!g.only || g.only === LQ.career().kind) && (!g.coast || st().region === 'coast') && (!g.at || g.at === st().region));
 const shopDoc = { item: null, draw(c) {
   const top = ui.choiceTop(), g = this.item; if (!g) return;
   ui.panel(c, 30, 16, 900, Math.max(80, top - 36), '#1b2044');
@@ -184,11 +190,14 @@ const shopDoc = { item: null, draw(c) {
   ui.text(c, LQ.has(g.id) ? 'OWNED' : g.price + ' coins', 908, 24, LQ.has(g.id) ? '#7fd6a8' : '#fdf8e7', F(28), 'right');
   c.font = F(24); ui.wrap(c, g.desc, 850).slice(0, 3).forEach((ln, i) => ui.text(c, ln, 52, 54 + i * 25, '#c9cdea', F(24)));
 } };
+const SHOP_HELLO = {
+  coast: ['shop2Seen', 'Welcome to the Driftwood Bazaar! I stock everything Saffron sells up north, plus a few things for a growing household. All of it changes your return when you file.'],
+  canyon: ['shop3Seen', 'Welcome to the Trading Post! The usual tax advantages, plus a few things for people who work for themselves. All of it changes your return when you file.'],
+  summit: ['shop4Seen', 'Welcome to the Summit Outfitter! The usual tax advantages, plus a few things for investors. All of it changes your return when you file.'],
+};
 LQ.shop = async who => {
-  const coast = st().region === 'coast', seen = coast ? 'shop2Seen' : 'shopSeen';
-  await LQ.say(who, st().flags[seen] ? 'Back for more? Every piece on my table does something real on your tax return.'
-    : coast ? 'Welcome to the Driftwood Bazaar! I stock everything Saffron sells up north, plus a few things for a growing household. All of it changes your return when you file.'
-    : 'Welcome to the Saffron Bazaar! I do not sell swords. I sell tax advantages. Everything here changes your return when you file.');
+  const hello = SHOP_HELLO[st().region] || ['shopSeen', 'Welcome to the Saffron Bazaar! I do not sell swords. I sell tax advantages. Everything here changes your return when you file.'], seen = hello[0];
+  await LQ.say(who, st().flags[seen] ? 'Back for more? Every piece on my table does something real on your tax return.' : hello[1]);
   st().flags[seen] = true;
   for (;;) {
     const items = LQ.gearFor(); shopDoc.item = items[0]; ui.doc = shopDoc;
@@ -226,6 +235,18 @@ LQ.STOCKS = [
     up: 'Record sardine run! The Salty Pearl Cannery adds a night shift.', down: 'Tin prices jump. The Salty Pearl Cannery raises prices and loses orders.' },
   { id: 'LAMP', coast: 1, name: 'Lantern Works', p: 20, vol: .14, drift: 0, div: 0,
     up: 'Lantern Works unveils a lamp that burns twice as long.', down: 'Something haunts the Old Lighthouse. Lantern Works loses its biggest customer.' },
+  { id: 'IRON', at: 'canyon', name: 'Ironwood Mining Co.', p: 56, vol: .05, drift: .010, div: .02,
+    up: 'Ironwood Mining strikes copper in the east wall.', down: 'A rockslide closes the Ironwood main shaft for repairs.' },
+  { id: 'MESA', at: 'canyon', name: 'Mesa Outfitters', p: 44, vol: .04, drift: .008, div: .04,
+    up: 'Gig season! Mesa Outfitters sells out of saddlebags.', down: 'A dry summer keeps travelers away from Mesa Outfitters.' },
+  { id: 'DUST', at: 'canyon', name: 'Dust Devil Couriers', p: 18, vol: .14, drift: 0, div: 0,
+    up: 'Dust Devil Couriers wins the canyon mail route.', down: 'Bandits in the Gulch keep robbing Dust Devil Couriers.' },
+  { id: 'LIFT', at: 'summit', name: 'Summit Lift Co.', p: 105, vol: .03, drift: .009, div: .03,
+    up: 'Record snowfall. Summit Lift Co. runs every chair.', down: 'High winds shut the Summit Lift for a week.' },
+  { id: 'PEAK', at: 'summit', name: 'Peak Provisions', p: 38, vol: .04, drift: .007, div: .05,
+    up: 'Peak Provisions signs a deal to supply every lodge on the mountain.', down: 'A late thaw spoils the Peak Provisions cold store.' },
+  { id: 'GLCR', at: 'summit', name: 'Glacier Goldworks', p: 26, vol: .15, drift: 0, div: 0,
+    up: 'Glacier Goldworks reports flecks of gold in the meltwater.', down: 'A dragon on the peak scares the Glacier Goldworks crews off the ice.' },
 ];
 const S = id => LQ.STOCKS.find(x => x.id === id);
 LQ.price = id => Math.max(1, Math.round(st().prices[id]));
@@ -240,8 +261,10 @@ LQ.ensureMarket = () => {
   LQ.STOCKS.forEach(x => { if (s.prices[x.id] == null) { s.prices[x.id] = x.p; s.prev[x.id] = x.p; } if (!s.lots[x.id]) s.lots[x.id] = []; });
 };
 // Each exchange trades its own region's companies, plus the index fund.
-LQ.exchange = () => LQ.STOCKS.filter(x => st().region === 'coast' ? x.coast || x.id === 'LDGR' : !x.coast);
-LQ.stocksKnown = () => LQ.STOCKS.filter(x => !x.coast || st().q2 != null);
+const home = x => x.at || (x.coast ? 'coast' : 'village');
+LQ.exchange = () => LQ.STOCKS.filter(x => x.id === 'LDGR' || home(x) === st().region);
+LQ.stocksKnown = () => LQ.STOCKS.filter(x => { const h = home(x), s = st(); return h === 'village' || (h === 'coast' && s.q2 != null) || (h === 'canyon' && s.q3 != null) || (h === 'summit' && s.q4 != null); });
+LQ.EXCHANGE_NAME = { village: 'VILLAGE EXCHANGE', coast: 'HARBOR EXCHANGE', canyon: 'CANYON EXCHANGE', summit: 'SUMMIT EXCHANGE' };
 function makeNews() {
   const s = st(), pool = LQ.stocksKnown().filter(x => x.up), pick = pool[Math.floor(LQ.hash(s.day, 3, s.seed) * pool.length)], up = LQ.hash(s.day, 4, s.seed) > .42;
   s.news = { id: pick.id, pct: (up ? 1 : -1) * (.12 + LQ.hash(s.day, 5, s.seed) * .12), text: up ? pick.up : pick.down };
@@ -282,6 +305,8 @@ LQ.sell = (id, n) => {
   const s = st(), p = LQ.price(id), lots = s.lots[id]; let left = Math.min(n, LQ.shares(id)), sold = 0, stG = 0, ltG = 0;
   while (left > 0 && lots.length) { const l = lots[0], k = Math.min(left, l.n), g = k * (p - l.cost); if (l.lt) ltG += g; else stG += g; l.n -= k; left -= k; sold += k; if (!l.n) lots.shift(); }
   let net = stG + ltG, used = 0, tax = 0;
+  // Chapter 4: sales are recorded and settled on the return, the way it really works.
+  if (LQ.deferGains && LQ.deferGains()) { s.inv.st += stG * LQ.COIN_USD; s.inv.lt += ltG * LQ.COIN_USD; s.coins += sold * p; return { sold, proceeds: sold * p, stG, ltG, net, used: 0, tax: 0, deferred: true }; }
   if (net < 0) s.lossBank = (s.lossBank || 0) - net;
   else {
     used = Math.min(s.lossBank || 0, net); s.lossBank = (s.lossBank || 0) - used;
@@ -295,7 +320,7 @@ LQ.sell = (id, n) => {
 const brokerDoc = { sel: 0, draw(c) {
   const s = st(), top = ui.choiceTop();
   ui.panel(c, 30, 16, 900, Math.max(120, top - 36), '#101a2e');
-  ui.text(c, st().region === 'coast' ? 'HARBOR EXCHANGE' : 'VILLAGE EXCHANGE', 50, 26, '#7fd6a8', F(11, true)); ui.text(c, 'Day ' + s.day + '    Cash ' + s.coins + '    Holdings ' + LQ.portfolio(), 910, 20, '#fdf8e7', F(24), 'right');
+  ui.text(c, LQ.EXCHANGE_NAME[st().region] || 'VILLAGE EXCHANGE', 50, 26, '#7fd6a8', F(11, true)); ui.text(c, 'Day ' + s.day + '    Cash ' + s.coins + '    Holdings ' + LQ.portfolio(), 910, 20, '#fdf8e7', F(24), 'right');
   LQ.exchange().forEach((x, i) => {
     const y = 50 + i * 25, p = LQ.price(x.id), ch = (s.prices[x.id] / s.prev[x.id] - 1) * 100, n = LQ.shares(x.id);
     if (i === this.sel) { c.fillStyle = 'rgba(243,197,49,.16)'; c.fillRect(42, y - 1, 876, 25); }
@@ -309,6 +334,7 @@ const brokerDoc = { sel: 0, draw(c) {
 LQ.broker = async who => {
   const s = st();
   const list = LQ.exchange();
+  if ((s.region === 'canyon' || s.region === 'summit') && !s.flags['brokerSeen_' + s.region]) { s.flags['brokerSeen_' + s.region] = true; await LQ.say(who, 'Welcome. I trade the local companies and the index fund. Shares you bought in other towns are safe in your account, and the brokers there will still buy and sell them.'); }
   if (s.region === 'coast' && !s.flags.broker2Seen) { s.flags.broker2Seen = true; await LQ.say(who, 'Welcome to the Harbor Exchange. I trade the coast companies and the index fund. Your village shares are safe in your account, and Bex up north will still buy and sell them.'); }
   if (!s.flags.brokerSeen) {
     s.flags.brokerSeen = true;
@@ -329,7 +355,8 @@ LQ.broker = async who => {
     else if (have && a < 5) {
       const r = LQ.sell(x.id, a === 3 ? 1 : have); LQ.audio.sfx('coin');
       const f = LQ.cur(); let msg = 'Sold ' + r.sold + ' for ' + r.proceeds + ' coins. ';
-      if (r.net < 0) msg += 'That is a loss of ' + (-r.net) + '. I have banked it. Losses cancel out future gains, so it is not wasted.';
+      if (r.deferred) msg += (r.net === 0 ? 'No gain and no loss.' : (r.net > 0 ? 'A gain of ' + r.net : 'A loss of ' + (-r.net)) + ' coins, ' + (r.ltG !== 0 && r.stG === 0 ? 'long-term' : r.stG !== 0 && r.ltG === 0 ? 'short-term' : 'part short-term and part long-term') + '.') + ' No tax today. I have recorded it for Schedule D, and it is settled when you file. Each coin counts as ' + M(LQ.COIN_USD) + ' on the form.';
+      else if (r.net < 0) msg += 'That is a loss of ' + (-r.net) + '. I have banked it. Losses cancel out future gains, so it is not wasted.';
       else if (r.net === 0) msg += 'No gain, no tax.';
       else msg += 'Gain: ' + r.net + (r.used ? ', minus ' + r.used + ' of banked losses' : '') + '. ' + (r.ltG > 0 && r.stG <= 0 ? (LQ.ltRate() ? 'Held over a year, so the long-term rate applies: 15%.' : 'Held over a year, and your taxable income is under ' + M(LQ.ltZeroMax()) + ', so the long-term rate is 0%.') : 'Held under a year, so it is taxed like wages at your top rate of ' + Math.round(f.top * 100) + '%.') + ' Tax: ' + r.tax + ' coins.';
       await LQ.say(who, msg);

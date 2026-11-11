@@ -238,6 +238,29 @@ LQ.bossSprite = (frame, kind = 'baron') => cached('boss|' + kind + frame, () => 
     R(g, 52, 34 - f, 3, 12, '#c9423a'); R(g, 55, 43 - f, 5, 3, '#c9423a'); R(g, 59, 38 - f, 2, 6, '#c9423a');
     return c;
   }
+  if (kind === 'slick') {
+    // Sidewinder Slick: a dust devil in a wide hat and a red bandana, clutching unreported cash
+    blob(20, 52 - f, 9, '#8a4a1c'); blob(44, 53 + f, 9, '#8a4a1c'); blob(32, 55, 11, '#8a4a1c');
+    blob(32, 37, 19, '#c9781c'); blob(19, 40 + f, 11, '#c9781c'); blob(45, 40 - f, 11, '#c9781c');
+    blob(27, 31, 11, '#e6a04a'); blob(38, 30, 9, '#e6a04a'); blob(24, 27, 4, '#f6d08a');
+    R(g, 8, 16, 48, 4, '#4a2f1c'); R(g, 20, 5, 24, 12, '#4a2f1c'); R(g, 20, 13, 24, 2, '#c9423a');
+    R(g, 19, 25, 10, 5, '#fff3b0'); R(g, 35, 25, 10, 5, '#fff3b0'); R(g, 23 + f, 26, 3, 4, '#1b1626'); R(g, 39 + f, 26, 3, 4, '#1b1626');
+    R(g, 16, 34, 32, 9, '#c9423a'); R(g, 16, 34, 32, 1, '#8a2a26'); R(g, 28, 43, 8, 5, '#c9423a'); R(g, 22, 38, 2, 2, '#f6efd9'); R(g, 38, 38, 2, 2, '#f6efd9');
+    R(g, 52, 36 - f, 9, 11, '#7fd6a8'); R(g, 52, 36 - f, 9, 1, '#1f6f5c'); R(g, 54, 40 - f, 5, 1, '#1f6f5c'); R(g, 54, 43 - f, 5, 1, '#1f6f5c');
+    return c;
+  }
+  if (kind === 'glint') {
+    // Glint, the Hot-Tip Dragon: gold scales, ivory horns, red wings, green eyes
+    blob(18, 50 - f, 10, '#8a6a1c'); blob(46, 51 + f, 10, '#8a6a1c'); blob(32, 54, 12, '#8a6a1c');
+    R(g, 1, 22 - f * 2, 12, 4, '#b0332e'); R(g, 0, 26 - f * 2, 9, 9, '#b0332e'); R(g, 51, 22 - f * 2, 12, 4, '#b0332e'); R(g, 55, 26 - f * 2, 9, 9, '#b0332e');
+    blob(32, 36, 20, '#d9a520'); blob(18, 38 + f, 12, '#d9a520'); blob(46, 38 - f, 12, '#d9a520');
+    blob(26, 30, 12, '#f3c531'); blob(38, 28, 10, '#f3c531'); blob(24, 26, 5, '#fff3b0');
+    R(g, 16, 6, 4, 12, '#f6efd9'); R(g, 44, 6, 4, 12, '#f6efd9'); R(g, 18, 3, 3, 4, '#f6efd9'); R(g, 43, 3, 3, 4, '#f6efd9');
+    R(g, 19, 26, 10, 5, '#7fd6a8'); R(g, 35, 26, 10, 5, '#7fd6a8'); R(g, 23 + f, 26, 2, 5, '#1b1626'); R(g, 39 + f, 26, 2, 5, '#1b1626');
+    R(g, 28, 35, 2, 2, '#1b1626'); R(g, 34, 35, 2, 2, '#1b1626');
+    R(g, 21, 40, 22, 5, '#1b1626'); for (let i = 0; i < 5; i++) R(g, 22 + i * 4, i % 2 ? 42 : 40, 3, 3, '#f6efd9');
+    return c;
+  }
   blob(18, 50 - f, 10, '#4a2374'); blob(46, 51 + f, 10, '#4a2374'); blob(32, 54, 12, '#4a2374');
   blob(32, 36, 20, '#6a35a6'); blob(18, 38 + f, 12, '#6a35a6'); blob(46, 38 - f, 12, '#6a35a6');
   blob(26, 30, 12, '#8650c8'); blob(38, 28, 10, '#8650c8'); blob(24, 26, 5, '#a476e0');
@@ -249,7 +272,7 @@ LQ.bossSprite = (frame, kind = 'baron') => cached('boss|' + kind + frame, () => 
 });
 
 // ---------- ground bake
-const PATHLIKE = { p: 1, q: 1, b: 1, a: 1 };
+const PATHLIKE = { p: 1, q: 1, b: 1, a: 1, c: 1 };
 LQ.bakeGround = (map, season) => {
   const W = map.W, H = map.H, c = mk(W * T, H * T), g = c.getContext('2d'), w = season === 'winter';
   const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 'g' : map.g[y][x];
@@ -311,6 +334,14 @@ LQ.bakeGround = (map, season) => {
       R(g, X, Y, T, T, snow ? '#f1f5fa' : '#928f9f');
       for (let i = 0; i < 3; i++) R(g, X + Math.floor(h(i, 2) * 12), Y + Math.floor(h(i, 3) * 13), 3, 2, snow ? '#dbe5ef' : '#a5a2b2');
       for (let i = 0; i < 2; i++) R(g, X + Math.floor(h(i, 4) * 14), Y + Math.floor(h(i, 5) * 12), 1, 3, snow ? '#c8d5e2' : '#757281');
+    } else if (t === 'c') {
+      // red canyon wall, with bands of lighter and darker rock
+      R(g, X, Y, T, T, '#a8523a');
+      R(g, X, Y + 4, T, 2, '#bd6a48'); R(g, X, Y + 10, T, 1, '#8a3f2c');
+      for (let i = 0; i < 4; i++) R(g, X + Math.floor(h(i, 2) * 13), Y + Math.floor(h(i, 3) * 14), 3, 1, '#c97e58');
+      for (let i = 0; i < 3; i++) R(g, X + Math.floor(h(i, 4) * 15), Y + Math.floor(h(i, 5) * 12), 1, 3, '#7a3626');
+      if (at(x, y - 1) !== 'c') { R(g, X, Y, T, 3, '#d99a6c'); R(g, X, Y + 3, T, 1, '#7a3626'); }
+      if (at(x, y + 1) !== 'c') R(g, X, Y + 11, T, 5, '#6b2e20');
     } else if (t === '#') {
       R(g, X, Y, T, T, '#625e73');
       for (let i = 0; i < 5; i++) R(g, X + Math.floor(h(i, 2) * 15), Y, 1, T, '#555166');

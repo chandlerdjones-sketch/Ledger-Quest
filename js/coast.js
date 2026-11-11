@@ -18,7 +18,7 @@ function build() {
   rect(36, 30, 46, 30, 'a'); rect(36, 31, 46, 31, '#'); rect(40, 31, 41, 31, 'a'); rect(38, 32, 44, 36, 'a');
   // pier, roads, plaza
   rect(23, 30, 24, 36, 'b');
-  rect(23, 0, 24, 26, 'p'); rect(5, 10, 42, 11, 'p'); rect(5, 20, 42, 21, 'p');
+  rect(23, 0, 24, 26, 'p'); rect(5, 10, 47, 11, 'p'); rect(5, 20, 42, 21, 'p');
   for (const b of BUILDINGS) rect(b.x + 2, b.y + 3, b.x + 3, b.y + 3, 'p');
   rect(19, 13, 28, 19, 'q');
   for (let y = 12; y <= 19; y++) for (let x = 17; x <= 30; x++) if (g[y][x] === 'g') g[y][x] = 'f';
@@ -38,6 +38,8 @@ function build() {
       else if (LQ.hash(x, y, 53) < .06) g[y][x] = 'f';
     } else if (t === 'a' && LQ.hash(x, y, 54) < .035) { m.trees.push({ x, y, kind: 'palm' }); m.solid[y][x] = true; }
   }
+  // hedge the East Road so the only way through is along it
+  for (const y of [9, 12]) for (let x = 44; x < W; x++) if (!m.solid[y][x]) { m.trees.push({ x, y, kind: 'pine' }); m.solid[y][x] = true; }
   return m;
 }
 const say = t => () => LQ.script(() => LQ.say(null, t));
@@ -47,7 +49,9 @@ const R = LQ.REGIONS.coast = {
   zone: p => p.x > 37 * T && p.y > 31 * T + 8 ? 'light' : p.y > 25 * T ? 'beach' : 'town',
   music: (w, st) => w.zone === 'light' && !st.flags.boss2 ? 'tide' : 'coast',
   auditOK: (st, zone) => st.q2 != null && st.q2 >= 1 && zone !== 'light',
-  exits: [{ x0: 23 * T, x1: 25 * T, y0: 0, y1: 13, to: 'village', px: 24 * T, py: 40 * T, dir: 'up' }],
+  fallbackTarget: st => st.q2 >= 8 && st.q3 == null ? 'eastroad' : null,
+  exits: [{ x0: 23 * T, x1: 25 * T, y0: 0, y1: 13, to: 'village', px: 24 * T, py: 40 * T, dir: 'up' },
+    { x0: 47 * T, x1: 49 * T, y0: 9 * T, y1: 13 * T, to: 'canyon', px: 2 * T + 8, py: 21 * T, dir: 'right' }],
   arrive: async () => { if (LQ.state.q2 == null) await LQ.CH2.begin(); },
   // lost receipts sparkle on the ground once Banker Brine has explained the hunt
   addReceipts(w, st) {
@@ -71,6 +75,12 @@ const R = LQ.REGIONS.coast = {
     if (!st.flags.boss2) w.ents.push({ type: 'boss', qid: 'boss2', tx: 40, ty: 34, tx2: 41, base: 35 * T - 1, solid: true, use: () => LQ.script(() => LQ.startBattle('loophole')),
       draw: (g, cx, cy, tm) => { w.shadow(g, 41 * T - cx, 35 * T - cy, 30); g.drawImage(LQ.bossSprite(Math.floor(tm * 3) % 2, 'loophole'), 41 * T - 24 - cx, 35 * T - 52 - cy + Math.round(Math.sin(tm * 2) * 2), 48, 48);
         if (w.questTarget() === 'boss2') g.drawImage(LQ.prop('mark'), 41 * T - 3 - cx, 35 * T - 66 - cy + Math.round(Math.sin(tm * 6) * 2)); } });
+    if (!(st.q2 >= 8)) {
+      const closed = say('The East Road to Hustle Canyon is closed. The guards will open it once your joint return is filed.');
+      w.ents.push({ type: 'roadblock', tx: 45, ty: 10, base: 12 * T - 1, solid: true, use: closed, draw: (g, cx, cy) => g.drawImage(LQ.prop('barricade'), 45 * T - 10 - cx, 10 * T + 6 - cy) });
+      w.ents.push({ type: 'roadblock2', tx: 45, ty: 11, base: -999, solid: true, use: closed });
+    }
+    w.ents.push({ type: 'marker', qid: 'eastroad', tx: 47, ty: 10, base: -999 });
     R.addReceipts(w, st);
   },
   // receipt counter, and the Spyglass reading

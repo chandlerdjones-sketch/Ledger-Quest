@@ -41,7 +41,7 @@ LQ.QUESTS2 = [
   { short: 'Itemize or standard?', text: 'Take your receipts to Assessor Tallow', target: 'tallow' },
   { short: 'Defeat Captain Loophole', text: 'Cross the sandbar to the Old Lighthouse', target: 'boss2' },
   { short: 'File your joint return', text: 'File with Clerk Fathom at the Tax Office', target: 'fathom' },
-  { short: 'Chapter complete', text: 'Chapter 2 complete! Chapter 3 is coming', target: null },
+  { short: 'Chapter complete', text: 'Chapter 2 complete! Take the East Road to Hustle Canyon', target: null },
 ];
 
 Object.assign(LQ.JOURNAL, {
@@ -200,8 +200,8 @@ async function qBrine() {
   ui.doc = null; s.rcpt.r1098 = true; s.rcpt.rProp = true; LQ.learn('mortgage'); LQ.learn('salt'); LQ.give('deed');
   await say(N.brine, `Here are your Form 1098 and your property tax bill. Two receipts down. Marlowe tells me ${HUNT.length} more are scattered around Shelter Coast. Watch for a sparkle on the ground, and try the sea chest beside your cottage door.`);
   await say(N.brine, 'But hear this before you get excited. None of it matters unless you itemize, and whether you should is a question for later. For now: you have a wedding to get to! Officiant Pearl is waiting at the chapel.');
-  LQ.REGIONS.coast.addReceipts(LQ.world, s);
   advance2();
+  LQ.REGIONS.coast.addReceipts(LQ.world, s);
 }
 async function qPearl() {
   const s = st();
@@ -382,7 +382,9 @@ async function ending2() {
   await LQ.pressOk();
   await LQ.fadeTo(1, 0.3); ui.doc = null; LQ.world.music(); await LQ.fadeTo(0, 0.9);
   await say(N.marlowe, 'We did it. Coral is asleep, the return is filed, and I did not lose a single paper this week. Mostly because you carried them.');
-  await say(null, 'Next: Chapter 3, Hustle Canyon, where a side gig turns into a second income. Until then, both towns are yours. Press J to reread your Tax Journal.');
+  const w = LQ.world, e2 = w.ents.find(x => x.type === 'roadblock2'); if (e2) w.remove(e2);
+  await w.clear('roadblock', '#c98f55', 'East of town, the guards roll the barricade off the East Road.');
+  await say(null, 'Next: Chapter 3, Hustle Canyon, where a side gig turns into a second income. The East Road is open. Press J to reread your Tax Journal.');
 }
 
 // ---------- the Old Lighthouse
@@ -508,6 +510,7 @@ LQ.CH2 = {
     { tx: 22, ty: 3, text: 'SHELTER COAST. North-west: the chapel and your cottage. North-east: the Records Hall and the shipyard. South-west: the bank and the nursery. South-east: the Coast Tax Office. In the plaza: the Driftwood Bazaar and the Harbor Exchange.' },
     { tx: 20, ty: 9, text: 'Your cottage. Thirty years of payments. The sea view is free.' },
     { tx: 25, ty: 26, text: 'THE PIER. Mind the gulls.' },
+    { tx: 43, ty: 9, fn: () => st().q2 >= 8 ? 'EAST ROAD to Hustle Canyon. The road is open. Chapter 3 begins there.' : 'EAST ROAD to Hustle Canyon. Closed until your joint return is filed.' },
     { tx: 39, ty: 29, fn: () => st().flags.boss2 ? 'THE OLD LIGHTHOUSE. Lit again, and quiet.' : 'THE OLD LIGHTHOUSE. Cut off at high tide. Do not buy maps from strangers.' },
     { tx: 26, ty: 13, fn: () => 'THE HARBOR GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Prices react tomorrow.)' + (st().flags.boss2 ? '' : ' Standing notice: Lantern Works will relight the great lamp if the lighthouse is ever made safe.') },
   ],
