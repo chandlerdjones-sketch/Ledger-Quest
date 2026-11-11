@@ -18,11 +18,19 @@ ui.wrap = (c, text, maxW) => {
   return out;
 };
 ui.panel = (c, x, y, w, h, fill) => {
-  c.fillStyle = '#090b18'; c.fillRect(x - 6, y - 6, w + 12, h + 12);
-  c.fillStyle = '#f3e7c3'; c.fillRect(x - 3, y - 3, w + 6, h + 6);
-  c.fillStyle = fill || '#161a36'; c.fillRect(x, y, w, h);
-  c.fillStyle = 'rgba(255,255,255,.06)'; c.fillRect(x, y, w, 3);
-  c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(x, y + h - 3, w, 3);
+  // soft outer glow, dark rim, violet frame, cyan corner brackets
+  c.fillStyle = 'rgba(155,107,255,.10)'; c.fillRect(x - 12, y - 12, w + 24, h + 24);
+  c.fillStyle = 'rgba(53,240,230,.10)'; c.fillRect(x - 9, y - 9, w + 18, h + 18);
+  c.fillStyle = '#05050f'; c.fillRect(x - 6, y - 6, w + 12, h + 12);
+  c.fillStyle = '#6a4fe0'; c.fillRect(x - 3, y - 3, w + 6, h + 6);
+  c.fillStyle = fill || '#0d0f2a'; c.fillRect(x, y, w, h);
+  c.fillStyle = 'rgba(140,160,255,.07)'; c.fillRect(x, y, w, 3);
+  c.fillStyle = 'rgba(0,0,0,.3)'; c.fillRect(x, y + h - 3, w, 3);
+  c.fillStyle = '#35f0e6';
+  const k = Math.min(18, w / 4, h / 4);
+  for (const [px, py, sx, sy] of [[x - 3, y - 3, 1, 1], [x + w + 3, y - 3, -1, 1], [x - 3, y + h + 3, 1, -1], [x + w + 3, y + h + 3, -1, -1]]) {
+    c.fillRect(sx > 0 ? px : px - k, sy > 0 ? py : py - 3, k, 3); c.fillRect(sx > 0 ? px : px - 3, sy > 0 ? py : py - k, 3, k);
+  }
 };
 ui.text = (c, s, x, y, color, font, align, maxWidth = VW) => {
   c.font = font || F(28); c.textAlign = align || 'left'; c.textBaseline = 'top';
@@ -150,19 +158,20 @@ ui.update = dt => {
 
 // ---- draw
 function portrait(c, who, x, y) {
-  c.fillStyle = '#090b18'; c.fillRect(x - 4, y - 4, 112, 112);
-  c.fillStyle = '#2a3160'; c.fillRect(x, y, 104, 104);
-  c.fillStyle = '#39417a'; c.fillRect(x, y + 70, 104, 34);
+  c.fillStyle = '#05050f'; c.fillRect(x - 4, y - 4, 112, 112);
+  c.fillStyle = '#141a44'; c.fillRect(x, y, 104, 104);
+  c.fillStyle = '#231f5c'; c.fillRect(x, y + 70, 104, 34);
+  c.fillStyle = 'rgba(53,240,230,.10)'; c.fillRect(x + 12, y + 14, 80, 56); c.fillRect(x + 24, y + 6, 56, 72);
   c.imageSmoothingEnabled = false;
   c.drawImage(LQ.charSprite(who.look, 'down', 0), 0, 0, 18, 20, x + 16, y + 8, 72, 80);
-  c.strokeStyle = '#f3e7c3'; c.lineWidth = 3; c.strokeRect(x - 1.5, y - 1.5, 107, 107);
+  c.strokeStyle = '#35f0e6'; c.lineWidth = 3; c.strokeRect(x - 1.5, y - 1.5, 107, 107);
 }
 function nameTab(c, who, x, y) {
   if (!who || !who.name) return;
   c.font = F(12, true); const w = c.measureText(who.name).width + 28;
-  c.fillStyle = '#090b18'; c.fillRect(x - 3, y - 3, w + 6, 30);
-  c.fillStyle = '#f3c531'; c.fillRect(x, y, w, 24);
-  c.fillStyle = '#231a36'; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillText(who.name, x + 14, y + 7);
+  c.fillStyle = '#05050f'; c.fillRect(x - 3, y - 3, w + 6, 30);
+  c.fillStyle = '#35f0e6'; c.fillRect(x, y, w, 24); c.fillStyle = '#a8fff6'; c.fillRect(x, y, w, 3);
+  c.fillStyle = '#07081a'; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillText(who.name, x + 14, y + 7);
 }
 function drawDialogue(c) {
   const d = ui.dlg, x = 30, y = 378, w = 900, h = 142;
@@ -172,10 +181,10 @@ function drawDialogue(c) {
   let left = Math.floor(d.chars);
   d.pages[d.page].forEach((ln, i) => {
     const s = ln.slice(0, Math.max(0, left)); left -= ln.length + 1;
-    ui.text(c, s, tx, y + 16 + i * 29, '#fdf8e7');
+    ui.text(c, s, tx, y + 16 + i * 29, '#eef4ff');
   });
   if (d.chars >= d.pages[d.page].join('\n').length && Math.floor(LQ.time * 3) % 2) {
-    c.fillStyle = '#f3c531'; c.beginPath(); c.moveTo(x + w - 34, y + h - 24); c.lineTo(x + w - 18, y + h - 24); c.lineTo(x + w - 26, y + h - 12); c.fill();
+    c.fillStyle = '#35f0e6'; c.beginPath(); c.moveTo(x + w - 34, y + h - 24); c.lineTo(x + w - 18, y + h - 24); c.lineTo(x + w - 26, y + h - 12); c.fill();
   }
 }
 ui.choiceTop = () => {
@@ -191,13 +200,13 @@ function drawChoice(c) {
   const ch = ui.choice, y = ui.choiceTop(), x = 30, w = 900;
   ui.panel(c, x, y, w, ch.h); nameTab(c, ch.who, x + 14, y - 30);
   let ty = y + 14;
-  if (ch.prompt) { ch.lines.forEach((ln, i) => ui.text(c, ln, x + 26, ty + i * 29, '#fdf8e7')); ty += ch.lines.length * 29 + 10; }
+  if (ch.prompt) { ch.lines.forEach((ln, i) => ui.text(c, ln, x + 26, ty + i * 29, '#eef4ff')); ty += ch.lines.length * 29 + 10; }
   const off = scrollStart(ch.sel, ch.options.length, ch.rows);
   ch.options.slice(off, off + ch.rows).forEach((o, i) => {
     const on = off + i === ch.sel;
-    if (on) { c.fillStyle = 'rgba(243,197,49,.16)'; c.fillRect(x + 14, ty + i * ch.rh - 1, w - 28, ch.rh - 1); }
-    if (on) ui.text(c, '>', x + 26 + Math.sin(LQ.time * 8) * 3, ty + i * ch.rh, '#f3c531', F(ch.rh > 30 ? 28 : 24));
-    ui.text(c, o, x + 52, ty + i * ch.rh, on ? '#ffe98a' : '#c9cdea', F(ch.rh > 30 ? 28 : 24), 'left', 810);
+    if (on) { c.fillStyle = 'rgba(53,240,230,.15)'; c.fillRect(x + 14, ty + i * ch.rh - 1, w - 28, ch.rh - 1); }
+    if (on) ui.text(c, '>', x + 26 + Math.sin(LQ.time * 8) * 3, ty + i * ch.rh, '#35f0e6', F(ch.rh > 30 ? 28 : 24));
+    ui.text(c, o, x + 52, ty + i * ch.rh, on ? '#a8fff6' : '#c9cdea', F(ch.rh > 30 ? 28 : 24), 'left', 810);
   });
   if (ch.rows < ch.options.length) {
     ui.text(c, (ch.sel + 1) + ' / ' + ch.options.length + '   Up / Down', x + w - 22, y - 26, '#c9cdea', F(20), 'right');
@@ -208,8 +217,8 @@ function drawToasts(c) {
     const a = Math.min(1, t.t * 6, (2.6 - t.t) * 3), slide = (1 - Math.min(1, t.t * 6)) * 40;
     c.globalAlpha = Math.max(0, a); c.font = F(26);
     const w = c.measureText(t.text).width + 36, x = VW - w - 24 + slide, y = (ui.doc ? 300 : 70) + i * 44;
-    c.fillStyle = '#090b18'; c.fillRect(x - 3, y - 3, w + 6, 40);
-    c.fillStyle = '#1f6f5c'; c.fillRect(x, y, w, 34); c.fillStyle = '#39b08f'; c.fillRect(x, y, 6, 34);
+    c.fillStyle = '#05050f'; c.fillRect(x - 3, y - 3, w + 6, 40);
+    c.fillStyle = '#0f2a3c'; c.fillRect(x, y, w, 34); c.fillStyle = '#35f0e6'; c.fillRect(x, y, 6, 34); c.fillStyle = 'rgba(53,240,230,.35)'; c.fillRect(x + 6, y + 32, w - 6, 2);
     ui.text(c, t.text, x + 20, y + 3, '#eafff6', F(26));
     c.globalAlpha = 1;
   });
@@ -217,21 +226,22 @@ function drawToasts(c) {
 function drawBanner(c) {
   const b = ui.banner, a = Math.min(1, b.t * 2, (3.2 - b.t) * 2);
   c.globalAlpha = Math.max(0, a);
-  c.fillStyle = 'rgba(9,11,24,.78)'; c.fillRect(0, 150, VW, 92);
-  c.fillStyle = '#f3c531'; c.fillRect(0, 150, VW, 3); c.fillRect(0, 239, VW, 3);
-  ui.text(c, b.title, VW / 2, 168, '#fdf8e7', F(26, true), 'center');
+  c.fillStyle = 'rgba(6,5,22,.84)'; c.fillRect(0, 150, VW, 92);
+  c.fillStyle = '#35f0e6'; c.fillRect(0, 150, VW, 3); c.fillStyle = '#ff4fb0'; c.fillRect(0, 239, VW, 3);
+  c.fillStyle = 'rgba(53,240,230,.12)'; c.fillRect(0, 144, VW, 6); c.fillStyle = 'rgba(255,79,176,.12)'; c.fillRect(0, 242, VW, 6);
+  ui.text(c, b.title, VW / 2, 168, '#eef4ff', F(26, true), 'center');
   if (b.sub) ui.text(c, b.sub, VW / 2, 205, '#c9cdea', F(26), 'center');
   c.globalAlpha = 1;
 }
 function drawEntry(c, entry, x, y, w, h, reading) {
-  c.fillStyle = '#f6efd9';
+  c.fillStyle = '#e6eaff';
   c.fillRect(x, y, w, h);
-  c.textAlign = 'left'; c.textBaseline = 'top'; c.font = F(13, true); c.fillStyle = '#3a2f1c';
+  c.textAlign = 'left'; c.textBaseline = 'top'; c.font = F(13, true); c.fillStyle = '#1a1640';
   const title = entry.title || entry.name;
   const heading = ui.wrap(c, title, w - 36);
   heading.forEach((line, i) => c.fillText(line, x + 18, y + 16 + i * 19, w - 36));
 
-  c.font = F(26); c.fillStyle = '#2c2416';
+  c.font = F(26); c.fillStyle = '#15122e';
   const body = [entry.text || entry.desc, entry.status?.()].filter(Boolean).join('\n\n');
   const lines = ui.wrap(c, body, w - 36), top = 26 + heading.length * 19;
   const rows = Math.floor((h - top - 36) / 27);
@@ -239,7 +249,7 @@ function drawEntry(c, entry, x, y, w, h, reading) {
   const off = reading ? Math.min(reading.offset, reading.maxOffset) : 0;
   lines.slice(off, off + rows).forEach((line, i) => c.fillText(line, x + 18, y + top + i * 27, w - 36));
   if (!reading || reading.maxOffset) {
-    c.font = F(21); c.fillStyle = '#63553d';
+    c.font = F(21); c.fillStyle = '#5a5490';
     c.fillText(reading ? 'Up / Down: scroll' : 'Enter: open', x + 18, y + h - 29);
   }
 }
@@ -253,8 +263,8 @@ function drawEntries(c, m, x, y, h) {
   const off = scrollStart(m.sel, entries.length, rows);
   entries.slice(off, off + rows).forEach((entry, i) => {
     const yy = y + i * rh, selected = off + i === m.sel;
-    if (selected) { c.fillStyle = 'rgba(243,197,49,.16)'; c.fillRect(x - 6, yy - 1, 292, rh); }
-    ui.text(c, entry.title || entry.name, x, yy, selected ? '#ffe98a' : '#c9cdea', F(24), 'left', 280);
+    if (selected) { c.fillStyle = 'rgba(53,240,230,.15)'; c.fillRect(x - 6, yy - 1, 292, rh); }
+    ui.text(c, entry.title || entry.name, x, yy, selected ? '#a8fff6' : '#c9cdea', F(24), 'left', 280);
   });
   ui.text(c, (m.sel + 1) + ' / ' + entries.length, x, y + h - 24, '#c9cdea', F(20));
   drawEntry(c, entries[m.sel], x + 302, y, 462, h);
@@ -266,8 +276,8 @@ function drawMenu(c) {
   ui.panel(c, x, y, w, h);
   TABS.forEach((t, i) => {
     const on = i === m.tab, tx = x + 24 + i * 156;
-    c.fillStyle = on ? '#f3c531' : '#2a3160'; c.fillRect(tx, y + 18, 146, 34);
-    c.font = F(12, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = on ? '#231a36' : '#c9cdea'; c.fillText(t.toUpperCase(), tx + 73, y + 30);
+    c.fillStyle = on ? '#35f0e6' : '#1a1d4a'; c.fillRect(tx, y + 18, 146, 34); if (on) { c.fillStyle = '#a8fff6'; c.fillRect(tx, y + 18, 146, 3); }
+    c.font = F(12, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = on ? '#07081a' : '#c9cdea'; c.fillText(t.toUpperCase(), tx + 73, y + 30);
   });
   const bx = x + 28, by = y + 76;
   const bodyH = 326;
@@ -275,23 +285,23 @@ function drawMenu(c) {
   else if (m.tab === 0) {
     const chap = st.q4 != null ? [LQ.QUESTS4, st.q4, 'Chapter 4: Summit of Gains'] : st.q3 != null ? [LQ.QUESTS3, st.q3, 'Chapter 3: Hustle Canyon'] : st.q2 != null ? [LQ.QUESTS2, st.q2, 'Chapter 2: Shelter Coast'] : [LQ.QUESTS, st.quest, 'Chapter 1: The Paystub Village'];
     const qs = chap[0].slice(0, chap[0].length - 1), at = chap[1];
-    ui.text(c, chap[2], bx, by, '#f3c531', F(26), 'left', 412);
+    ui.text(c, chap[2], bx, by, '#35f0e6', F(26), 'left', 412);
     qs.forEach((q, i) => {
       const done = at > i, cur = at === i;
-      ui.text(c, (done ? '[x] ' : cur ? '[>] ' : '[ ] ') + q.short, bx, by + 40 + i * 30, done ? '#7fd6a8' : cur ? '#fdf8e7' : '#9298bc', F(28), 'left', 412);
+      ui.text(c, (done ? '[x] ' : cur ? '[>] ' : '[ ] ') + q.short, bx, by + 40 + i * 30, done ? '#7fd6a8' : cur ? '#eef4ff' : '#9298bc', F(28), 'left', 412);
     });
     ui.text(c, `${LQ.career().name}   Savvy ${st.savvy}   Net worth ${LQ.netWorth()}   Rank: ${LQ.rank()}`, bx, by + 312, '#c9cdea', F(24), 'left', 760);
-    ui.text(c, 'GEAR', bx + 430, by + 6, '#f3c531', F(10, true));
+    ui.text(c, 'GEAR', bx + 430, by + 6, '#35f0e6', F(10, true));
     const gear = menuGear(), off = scrollStart(m.sel, gear.length, 9);
     if (!gear.length) ui.text(c, 'None yet. Visit the Bazaar.', bx + 430, by + 40, '#6d7299', F(24));
     if (gear.length > 9) ui.text(c, (m.sel + 1) + ' / ' + gear.length, bx + 760, by + 2, '#c9cdea', F(20), 'right');
     gear.slice(off, off + 9).forEach((g, i) => {
-      ui.text(c, g.name, bx + 430, by + 40 + i * 29, off + i === m.sel ? '#ffe98a' : '#7fd6a8', F(24), 'left', 330);
+      ui.text(c, g.name, bx + 430, by + 40 + i * 29, off + i === m.sel ? '#a8fff6' : '#7fd6a8', F(24), 'left', 330);
     });
   } else if (m.tab === 1 || m.tab === 2) drawEntries(c, m, bx, by, bodyH);
   else if (m.tab === 3) LQ.drawWorldMap(c, bx, by, 764, bodyH, st.region);
   else {
-    ui.text(c, `Cash ${st.coins}    Stocks ${LQ.portfolio()}    Net worth ${LQ.netWorth()}`, bx, by, '#f3c531', F(26), 'left', 664);
+    ui.text(c, `Cash ${st.coins}    Stocks ${LQ.portfolio()}    Net worth ${LQ.netWorth()}`, bx, by, '#ffcf4a', F(26), 'left', 664);
     const known = menuStocks(), off = scrollStart(m.sel, known.length, 9), list = known.slice(off, off + 9);
     const columns = [
       ['Price', 384, 68], ['Change', 475, 87], ['Shares', 561, 82],
@@ -305,11 +315,11 @@ function drawMenu(c) {
       const yy = headingY + 23 + i * rh, n = LQ.shares(s.id), ch = (st.prices[s.id] / st.prev[s.id] - 1) * 100;
       const lots = st.lots[s.id], cost = lots.reduce((a, l) => a + l.n * l.cost, 0), gain = n * LQ.price(s.id) - cost;
       const term = lots.every(l => l.lt) ? 'Long' : lots.some(l => l.lt) ? 'Mixed' : 'Short';
-      if (off + i === m.sel) { c.fillStyle = 'rgba(243,197,49,.16)'; c.fillRect(bx - 8, yy - 1, 776, rh); }
-      ui.text(c, s.id, bx, yy, '#ffe98a', F(22), 'left', 61);
-      ui.text(c, s.name, bx + 68, yy, '#fdf8e7', F(22), 'left', 242);
+      if (off + i === m.sel) { c.fillStyle = 'rgba(53,240,230,.15)'; c.fillRect(bx - 8, yy - 1, 776, rh); }
+      ui.text(c, s.id, bx, yy, '#a8fff6', F(22), 'left', 61);
+      ui.text(c, s.name, bx + 68, yy, '#eef4ff', F(22), 'left', 242);
       const cells = [
-        [LQ.price(s.id), '#fdf8e7'],
+        [LQ.price(s.id), '#eef4ff'],
         [(ch >= 0 ? '+' : '') + ch.toFixed(1) + '%', ch >= 0 ? '#7fd6a8' : '#ff8a80'],
         [n || '-', '#c9cdea'],
         [n ? (gain >= 0 ? '+' : '') + gain : '-', gain >= 0 ? '#7fd6a8' : '#ff8a80'],
@@ -321,9 +331,9 @@ function drawMenu(c) {
       });
     });
     const selected = known[m.sel], end = headingY + 23 + list.length * rh;
-    ui.text(c, selected.id + ': Buy or sell at ' + LQ.stockVenue(selected), bx, end + 6, '#ffe98a', F(22), 'left', 764);
+    ui.text(c, selected.id + ': Buy or sell at ' + LQ.stockVenue(selected), bx, end + 6, '#a8fff6', F(22), 'left', 764);
     ui.text(c, `Tax paid on gains and dividends: ${st.capTax || 0}    Banked losses: ${st.lossBank || 0}`, bx, end + 29, '#c9cdea', F(22), 'left', 764);
-    if (st.gazette.length) ui.text(c, 'Gazette: ' + st.gazette[0], bx, end + 51, '#fdf8e7', F(20), 'left', 764);
+    if (st.gazette.length) ui.text(c, 'Gazette: ' + st.gazette[0], bx, end + 51, '#eef4ff', F(20), 'left', 764);
   }
   const hint = m.reading ? 'Esc: back to list    J: close' :
     ['Up / Down: gear    Enter: read', 'Up / Down: notes    Enter: read', 'Up / Down: items    Enter: read', '', 'Up / Down: stocks'][m.tab];
@@ -336,7 +346,7 @@ ui.draw = c => {
     ui.doc.draw(c);
   }
   if (ui.choice) drawChoice(c); else if (ui.dlg) drawDialogue(c);
-  else if (ui.okWait && Math.floor(LQ.time * 2) % 2) ui.text(c, 'Press Space', VW / 2, 500, '#f3c531', F(26), 'center');
+  else if (ui.okWait && Math.floor(LQ.time * 2) % 2) ui.text(c, 'Press Space', VW / 2, 500, '#35f0e6', F(26), 'center');
   if (ui.banner) drawBanner(c);
   drawToasts(c);
   if (ui.menu) drawMenu(c);

@@ -31,27 +31,31 @@ const B = LQ.battle = {
   draw(g) {
     const t = LQ.time, W = LQ.BW, H = LQ.BH;
     const K = this.cfg, sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, K.sky[0]); sky.addColorStop(1, K.sky[1]); g.fillStyle = sky; g.fillRect(0, 0, W, H);
-    for (let i = 0; i < 30; i++) { g.fillStyle = `rgba(255,255,255,${.2 + .5 * LQ.hash(i, 1, 50) * (1 - this.fog())})`; g.fillRect(LQ.hash(i, 2, 50) * W, LQ.hash(i, 3, 50) * 80, 1, 1); }
+    LQ.fx.stars(g, t, 50, 80);
     for (let i = 0; i < 9; i++) { g.fillStyle = `rgba(${K.fog},${.10 * this.fog()})`; const x = (LQ.hash(i, 4, 50) * 460 + t * (5 + i * 3)) % 460 - 80, y = 10 + LQ.hash(i, 5, 50) * 110; g.fillRect(x, y, 90, 8); g.fillRect(x + 14, y - 5, 56, 18); }
     for (let x = 0; x < W; x++) { const h = 28 + Math.sin(x / 23) * 10 + Math.sin(x / 7) * 3; g.fillStyle = K.hill; g.fillRect(x, 108 - h, 1, h); }
-    g.fillStyle = K.ground[0]; g.fillRect(0, 108, W, 72); g.fillStyle = K.ground[1]; g.fillRect(0, 108, W, 3);
+    g.fillStyle = K.ground[0]; g.fillRect(0, 108, W, 72); g.fillStyle = K.ground[1]; g.fillRect(0, 108, W, 3); g.fillStyle = K.bar[1]; g.fillRect(0, 108, W, 1);
     for (let i = 0; i < 40; i++) { g.fillStyle = K.ground[1]; g.fillRect(LQ.hash(i, 6, 50) * W, 113 + LQ.hash(i, 7, 50) * 60, 3, 1); }
     // boss
+    LQ.fx.begin(g);
     if (this.dead < 1) {
       const bx = 212 + (this.flash > 0 ? Math.sin(t * 80) * 4 : 0), by = 28 + Math.sin(t * 2) * 4;
-      g.fillStyle = 'rgba(20,16,40,.3)'; g.fillRect(bx + 10, 111, 52, 5);
+      g.fillStyle = 'rgba(4,3,16,.5)'; g.fillRect(bx + 10, 111, 52, 5);
       g.globalAlpha = (1 - this.dead) * (this.flash > 0 && Math.floor(t * 30) % 2 ? .4 : 1);
       g.drawImage(LQ.bossSprite(Math.floor(t * 3) % 2, K.kind), bx, by, 72, 72);
       g.globalAlpha = 1 - this.dead;
-      for (let i = 0; i < 6; i++) { const a = t * 1.6 + i * 1.05, px = bx + 36 + Math.cos(a) * 48, py = by + 38 + Math.sin(a) * 18; g.fillStyle = '#f6efd9'; g.fillRect(px, py, 6, 7); g.fillStyle = '#8a7a55'; g.fillRect(px + 1, py + 2, 4, 1); g.fillRect(px + 1, py + 4, 3, 1); }
+      for (let i = 0; i < 6; i++) { const a = t * 1.6 + i * 1.05, px = bx + 36 + Math.cos(a) * 48, py = by + 38 + Math.sin(a) * 18; g.fillStyle = '#e6eaff'; g.fillRect(px, py, 6, 7); g.fillStyle = '#7a74b8'; g.fillRect(px + 1, py + 2, 4, 1); g.fillRect(px + 1, py + 4, 3, 1); }
       g.globalAlpha = 1;
     }
     // myth scraps flying at the hero
     if (this.scraps > 0) for (let i = 0; i < 5; i++) { const k = LQ.clamp(1 - this.scraps + i * .08, 0, 1); g.fillStyle = K.bar[1]; g.fillRect(226 - k * 185 + Math.sin(k * 9 + i) * 8, 62 + k * 28 + i * 3, 6, 6); }
     // hero
     const hx = 22 + (this.hurt > 0 ? Math.sin(t * 70) * 3 : 0);
-    g.fillStyle = 'rgba(20,16,40,.3)'; g.fillRect(hx + 2, 113, 32, 5);
-    g.drawImage(LQ.charSprite(LQ.HERO.look, 'right', 0), hx, 63, 36, 52);
+    g.fillStyle = 'rgba(4,3,16,.5)'; g.fillRect(hx + 2, 113, 32, 5);
+    g.drawImage(LQ.charSprite(LQ.HERO.look, 'right', Math.floor(t * 1.5) % 2 ? 4 : 0), hx, 63, 36, 52);
+    LQ.fx.end(g); LQ.fx.light(hx + 18, 92, 36, '#35f0e6', .4);
+    if (this.scraps > 0) LQ.fx.light(226 - LQ.clamp(1 - this.scraps, 0, 1) * 185, 76, 14, K.bar[1], .6);
+    LQ.fx.flush(g, t); LQ.fx.vignette(g);
     if (this.slash > 0) { g.strokeStyle = '#fff3b0'; g.lineWidth = 3; g.globalAlpha = this.slash; g.beginPath(); g.moveTo(206, 100); g.lineTo(290, 30); g.moveTo(216, 108); g.lineTo(296, 44); g.stroke(); g.globalAlpha = 1; }
   },
   fog() { return this.bossHP / this.maxHP * (1 - this.dead); },
@@ -59,11 +63,11 @@ const B = LQ.battle = {
     const K = this.cfg; ui.panel(c, 560, 24, 370, 62); ui.text(c, K.label, 576, 34, K.bar[1], F(11, true));
     c.fillStyle = '#231a36'; c.fillRect(576, 56, 338, 18); c.fillStyle = K.bar[0]; c.fillRect(578, 58, 334 * this.bossHP / this.maxHP, 14); c.fillStyle = K.bar[1]; c.fillRect(578, 58, 334 * this.bossHP / this.maxHP, 4);
     ui.panel(c, 30, 24, 250, 62); ui.text(c, 'CONFIDENCE', 46, 34, '#ffe98a', F(11, true));
-    for (let i = 0; i < 4; i++) { c.fillStyle = i < this.hearts ? '#e0564e' : '#3a3550'; const x = 48 + i * 40, y = 54; c.fillRect(x, y + 4, 28, 12); c.fillRect(x + 4, y, 8, 4); c.fillRect(x + 16, y, 8, 4); c.fillRect(x + 4, y + 16, 20, 4); c.fillRect(x + 8, y + 20, 12, 4); }
+    for (let i = 0; i < 4; i++) { c.fillStyle = i < this.hearts ? '#ff4fb0' : '#2a2550'; const x = 48 + i * 40, y = 54; c.fillRect(x, y + 4, 28, 12); c.fillRect(x + 4, y, 8, 4); c.fillRect(x + 16, y, 8, 4); c.fillRect(x + 4, y + 16, 20, 4); c.fillRect(x + 8, y + 20, 12, 4); }
     if (this.bubble && !ui.dlg) {
       c.font = F(28); const lines = ui.wrap(c, this.bubble, 312), h = lines.length * 29 + 26, y = 104;
-      c.fillStyle = '#090b18'; c.fillRect(192, y - 4, 356, h + 8); c.fillStyle = '#f6efd9'; c.fillRect(196, y, 348, h);
-      c.fillStyle = '#f6efd9'; c.beginPath(); c.moveTo(544, y + 20); c.lineTo(590, y + 8); c.lineTo(544, y + 46); c.fill();
+      c.fillStyle = '#090b18'; c.fillRect(192, y - 4, 356, h + 8); c.fillStyle = '#e6eaff'; c.fillRect(196, y, 348, h);
+      c.fillStyle = '#e6eaff'; c.beginPath(); c.moveTo(544, y + 20); c.lineTo(590, y + 8); c.lineTo(544, y + 46); c.fill();
       c.textAlign = 'left'; c.textBaseline = 'top'; lines.forEach((l, i) => { c.fillStyle = K.ink; c.fillText(l, 214, y + 12 + i * 29); });
     }
   },
@@ -76,7 +80,7 @@ async function strike(text) {
 // Every boss is data: its look, its lines, its myths, a final question, and what winning does.
 LQ.BOSSES = {
   baron: {
-    who: BARON, label: 'BARON BEFUDDLE', kind: 'baron', sky: ['#120a26', '#3a1d5c'], hill: '#241640', ground: ['#e9eef6', '#cfd9e8'], fog: '170,120,220', bar: ['#b06be0', '#d8b4ff'], ink: '#5a2a86',
+    who: BARON, label: 'BARON BEFUDDLE', kind: 'baron', sky: ['#06051a', '#2a1458'], hill: '#150f30', ground: ['#1d1b40', '#3d3c80'], fog: '170,120,220', bar: ['#b06be0', '#d8b4ff'], ink: '#5a2a86',
     approach: 'The fog thickens. Something vast and smug turns to face you.',
     intro: ['Ahh, a fresh little taxpayer! I am Baron Befuddle, the Mythmonger. Everything this village believes about taxes, I whispered first.', 'Let us see how long YOUR head stays clear. Every myth you swallow will cost you.'],
     taunt: 'Ha ha ha! Delicious. Believe it harder!', fogLine: 'The fog clouds your thoughts.',

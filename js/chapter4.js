@@ -126,7 +126,7 @@ const stackDoc = { draw(c) {
   c.fillStyle = '#3b6fd4'; c.fillRect(x0, y, X(f.ord) - x0, h);
   c.fillStyle = '#1f8a5c'; c.fillRect(X(f.ord), y, X(f.ord + f.at0) - X(f.ord), h);
   c.fillStyle = '#c9781c'; c.fillRect(X(f.ord + f.at0), y, X(f.ord + f.pref) - X(f.ord + f.at0), h);
-  c.strokeStyle = '#3a2f1c'; c.lineWidth = 2; c.strokeRect(x0, y, X(f.ord + f.pref) - x0, h);
+  c.strokeStyle = '#1a1640'; c.lineWidth = 2; c.strokeRect(x0, y, X(f.ord + f.pref) - x0, h);
   const zx = X(ZERO); c.fillStyle = '#b0332e'; c.fillRect(zx - 1, y - 26, 3, h + 40);
   c.font = F(22); c.textBaseline = 'top'; c.textAlign = 'center'; c.fillText('0% zone ends at ' + M(ZERO) + ' of taxable income', LQ.clamp(zx, 330, 630), y - 52);
   c.textAlign = 'left'; c.fillStyle = '#3b6fd4'; c.fillText('Wages and business income, after deductions: ' + M(f.ord), x0, y + h + 24);
@@ -137,12 +137,12 @@ const ACCTS = [['Taxable brokerage', 'after tax', 'taxed every year', 'gains are
 const acctDoc = { hl: -1, draw(c) {
   D.paper(c, 60, 20, 840, 272, 'FOUR KINDS OF ACCOUNT', 'Simplified');
   const X = [84, 372, 532, 700];
-  c.textBaseline = 'top'; c.textAlign = 'left'; c.font = F(10, true); c.fillStyle = '#7a6a48';
+  c.textBaseline = 'top'; c.textAlign = 'left'; c.font = F(10, true); c.fillStyle = '#5a5490';
   ['ACCOUNT', 'GOING IN', 'GROWING', 'COMING OUT'].forEach((t, i) => c.fillText(t, X[i], 68));
   ACCTS.forEach((r, j) => {
     const y = 96 + j * 44;
     if (j === this.hl) { c.fillStyle = `rgba(255,205,50,${.4 + .22 * Math.sin(LQ.time * 6)})`; c.fillRect(76, y - 3, 808, 32); }
-    c.font = F(24); r.forEach((t, i) => { c.fillStyle = i === 0 ? '#2c2416' : /untaxed|tax-free|before/.test(t) ? '#1f6f5c' : '#b0332e'; c.fillText(t, X[i], y, (X[i + 1] ?? 884) - X[i] - 12); });
+    c.font = F(24); r.forEach((t, i) => { c.fillStyle = i === 0 ? '#15122e' : /untaxed|tax-free|before/.test(t) ? '#1f6f5c' : '#b0332e'; c.fillText(t, X[i], y, (X[i + 1] ?? 884) - X[i] - 12); });
   });
 } };
 
@@ -391,7 +391,7 @@ async function ending4(f) {
     L(4, 'Total federal tax', M(f.total)); L(5, owed ? 'Paid at filing' : 'Refund received', M(Math.abs(f.diff)), owed ? D.RED : D.GREEN);
     L(6, 'Right on the first try', s.first + ' of ' + s.asked); L(7, 'Savvy', String(s.savvy)); L(8, 'Audits faced', String(s.audits || 0));
     L(9, 'Net worth', String(LQ.netWorth()), D.GREEN); L(10, 'Journal entries', s.journal.length + ' of ' + Object.keys(LQ.JOURNAL).length);
-    c.font = F(22); c.textAlign = 'center'; c.fillStyle = '#7a6a48';
+    c.font = F(22); c.textAlign = 'center'; c.fillStyle = '#5a5490';
     ui.wrap(c, 'Four chapters, four returns. The whole of the Ledgerlands is open to you.', 620).forEach((ln, i) => c.fillText(ln, 480, 430 + i * 22));
   } };
   await LQ.fadeTo(0.5); await LQ.pressOk();
@@ -399,7 +399,7 @@ async function ending4(f) {
   await LQ.pressOk();
   ui.doc = { draw(c) {
     D.paper(c, 130, 40, 700, 420, 'LEDGER QUEST', 'The end, and the beginning');
-    c.textAlign = 'center'; c.textBaseline = 'top'; c.font = F(26); c.fillStyle = '#2c2416';
+    c.textAlign = 'center'; c.textBaseline = 'top'; c.font = F(26); c.fillStyle = '#15122e';
     ['You came to Paystub Village with an empty coin purse', 'and no idea how taxes worked.', '', 'You leave the Summit able to read a paystub, file a return,',
       'claim a child, run a business, and invest with your eyes open.', '', 'Everything in this game follows real US federal rules', 'for tax year ' + TX.year + '. It is for learning, not tax advice.',
       'When your own return gets complicated, a professional', 'is worth the fee, and now you can check their work.'].forEach((ln, i) => c.fillText(ln, 480, 96 + i * 30, 650));
@@ -438,7 +438,7 @@ const MYTHS4 = [
     truth: 'Traditional: a deduction now, tax later. Roth: tax now, nothing later.' },
 ];
 LQ.BOSSES.glint = {
-  who: GLINT, label: 'GLINT, THE HOT-TIP DRAGON', kind: 'glint', sky: ['#14244a', '#6f9fd8'], hill: '#c8d5e2', ground: ['#e9eef6', '#cfd9e8'], fog: '240,200,90', bar: ['#d9a520', '#fff3b0'], ink: '#7a5a12',
+  who: GLINT, label: 'GLINT, THE HOT-TIP DRAGON', kind: 'glint', sky: ['#070a26', '#2c3f8a'], hill: '#3a4a7e', ground: ['#5a6ea8', '#7186c0'], fog: '240,200,90', bar: ['#d9a520', '#fff3b0'], ink: '#7a5a12',
   approach: 'Gold light pours over the ridge. Something enormous uncoils from a hoard of crumpled stock tips.',
   intro: ['PSSST. Hero. I am Glint. I have a tip for ye. A SURE thing. Everyone on this mountain is buying it. Ye would be a fool to miss out.', 'I know everything there is to know about gains. Ask anyone I have ruined.'],
   taunt: 'HAR! Now ye are thinking like an investor. Buy high! Sell in a panic!', fogLine: 'The gold glare dazzles you.',
