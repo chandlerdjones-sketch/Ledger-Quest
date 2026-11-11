@@ -78,28 +78,57 @@ const menuStocks = () => {
     known.filter(s => !LQ.shares(s.id) && !here.includes(s)));
 };
 const menuGear = () => LQ.GEAR.filter(g => LQ.has(g.id));
+const menuEntries = [
+  menuGear,
+  () => LQ.state.journal.map(id => LQ.JOURNAL[id]),
+  () => LQ.state.items.map(id => LQ.ITEMS[id]).concat(menuGear()),
+  () => [],
+  menuStocks,
+];
 const scrollStart = (sel, length, rows) => Math.max(0, Math.min(sel - Math.floor(rows / 2), length - rows));
-ui.openMenu = () => { ui.menu = { tab: 0, sel: 0 }; sfx('ok'); };
+ui.openMenu = () => { ui.menu = { tab: 0, sel: 0, selections: [0, 0, 0, 0, 0], reading: null }; sfx('ok'); };
 ui.update = dt => {
   for (const t of ui.toasts) t.t += dt;
   ui.toasts = ui.toasts.filter(t => t.t < 2.6);
   if (ui.banner) { ui.banner.t += dt; if (ui.banner.t > 3.2) ui.banner = null; }
   if (ui.menu) {
     const m = ui.menu;
-    if (LQ.hit('left')) { m.tab = (m.tab + TABS.length - 1) % TABS.length; m.sel = 0; sfx('move'); }
-    if (LQ.hit('right')) { m.tab = (m.tab + 1) % TABS.length; m.sel = 0; sfx('move'); }
+    if (LQ.hit('menu')) { ui.menu = null; sfx('move'); return; }
+    if (LQ.hit('back')) {
+      if (m.reading) m.reading = null;
+      else ui.menu = null;
+      sfx('move'); return;
+    }
     const dir = Number(LQ.hit('down')) - Number(LQ.hit('up'));
+    if (m.reading) {
+      m.reading.offset = LQ.clamp(m.reading.offset + dir, 0, m.reading.maxOffset);
+      return;
+    }
+    const tabDir = Number(LQ.hit('right')) - Number(LQ.hit('left'));
+    if (tabDir) {
+      m.selections[m.tab] = m.sel;
+      m.tab = (m.tab + TABS.length + tabDir) % TABS.length;
+      m.sel = m.selections[m.tab];
+      sfx('move');
+    }
     if (dir) {
-      const n = [menuGear, () => LQ.state.journal, () => LQ.state.items, () => [], menuStocks][m.tab]().length;
+      const n = menuEntries[m.tab]().length;
       if (n) { m.sel = (m.sel + n + dir) % n; sfx('move'); }
     }
-    if (LQ.hit('menu') || LQ.hit('back') || LQ.hit('ok')) { ui.menu = null; sfx('move'); }
+    if (LQ.hit('ok') && m.tab < 3) {
+      const entry = menuEntries[m.tab]()[m.sel];
+      if (entry) { m.reading = { entry, offset: 0, maxOffset: 0 }; sfx('ok'); }
+    }
     return;
   }
   if (ui.choice) {
     const ch = ui.choice, n = ch.options.length;
     if (LQ.hit('up')) { ch.sel = (ch.sel + n - 1) % n; sfx('move'); if (ch.onMove) ch.onMove(ch.sel); }
     if (LQ.hit('down')) { ch.sel = (ch.sel + 1) % n; sfx('move'); if (ch.onMove) ch.onMove(ch.sel); }
+    if (LQ.hit('back')) {
+      const back = ch.options.findIndex(option => option === 'Back' || option === 'Leave');
+      if (back >= 0) { ui.choice = null; sfx('move'); ch.res(back); return; }
+    }
     if (LQ.hit('ok')) { ui.choice = null; sfx('ok'); ch.res(ch.sel); }
     return;
   }
@@ -194,6 +223,43 @@ function drawBanner(c) {
   if (b.sub) ui.text(c, b.sub, VW / 2, 205, '#c9cdea', F(26), 'center');
   c.globalAlpha = 1;
 }
+function drawEntry(c, entry, x, y, w, h, reading) {
+  c.fillStyle = '#f6efd9';
+  c.fillRect(x, y, w, h);
+  c.textAlign = 'left'; c.textBaseline = 'top'; c.font = F(13, true); c.fillStyle = '#3a2f1c';
+  const title = entry.title || entry.name;
+  const heading = ui.wrap(c, title, w - 36);
+  heading.forEach((line, i) => c.fillText(line, x + 18, y + 16 + i * 19, w - 36));
+
+  c.font = F(26); c.fillStyle = '#2c2416';
+  const body = [entry.text || entry.desc, entry.status?.()].filter(Boolean).join('\n\n');
+  const lines = ui.wrap(c, body, w - 36), top = 26 + heading.length * 19;
+  const rows = Math.floor((h - top - 36) / 27);
+  if (reading) reading.maxOffset = Math.max(0, lines.length - rows);
+  const off = reading ? Math.min(reading.offset, reading.maxOffset) : 0;
+  lines.slice(off, off + rows).forEach((line, i) => c.fillText(line, x + 18, y + top + i * 27, w - 36));
+  if (!reading || reading.maxOffset) {
+    c.font = F(21); c.fillStyle = '#63553d';
+    c.fillText(reading ? 'Up / Down: scroll' : 'Enter: open', x + 18, y + h - 29);
+  }
+}
+
+function drawEntries(c, m, x, y, h) {
+  const entries = menuEntries[m.tab](), rows = 11, rh = 27;
+  if (!entries.length) {
+    ui.text(c, m.tab === 1 ? 'Everything you learn is written down here.' : 'Your pack is empty.', x, y, '#c9cdea');
+    return;
+  }
+  const off = scrollStart(m.sel, entries.length, rows);
+  entries.slice(off, off + rows).forEach((entry, i) => {
+    const yy = y + i * rh, selected = off + i === m.sel;
+    if (selected) { c.fillStyle = 'rgba(243,197,49,.16)'; c.fillRect(x - 6, yy - 1, 292, rh); }
+    ui.text(c, entry.title || entry.name, x, yy, selected ? '#ffe98a' : '#c9cdea', F(24), 'left', 280);
+  });
+  ui.text(c, (m.sel + 1) + ' / ' + entries.length, x, y + h - 24, '#c9cdea', F(20));
+  drawEntry(c, entries[m.sel], x + 302, y, 462, h);
+}
+
 function drawMenu(c) {
   const m = ui.menu, st = LQ.state, x = 70, y = 44, w = 820, h = 452;
   c.fillStyle = 'rgba(7,8,26,.72)'; c.fillRect(0, 0, VW, VH);
@@ -204,15 +270,17 @@ function drawMenu(c) {
     c.font = F(12, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = on ? '#231a36' : '#c9cdea'; c.fillText(t.toUpperCase(), tx + 73, y + 30);
   });
   const bx = x + 28, by = y + 76;
-  if (m.tab === 0) {
+  const bodyH = 326;
+  if (m.reading) drawEntry(c, m.reading.entry, bx, by, 764, bodyH, m.reading);
+  else if (m.tab === 0) {
     const chap = st.q4 != null ? [LQ.QUESTS4, st.q4, 'Chapter 4: Summit of Gains'] : st.q3 != null ? [LQ.QUESTS3, st.q3, 'Chapter 3: Hustle Canyon'] : st.q2 != null ? [LQ.QUESTS2, st.q2, 'Chapter 2: Shelter Coast'] : [LQ.QUESTS, st.quest, 'Chapter 1: The Paystub Village'];
     const qs = chap[0].slice(0, chap[0].length - 1), at = chap[1];
-    ui.text(c, chap[2], bx, by, '#f3c531');
+    ui.text(c, chap[2], bx, by, '#f3c531', F(26), 'left', 412);
     qs.forEach((q, i) => {
       const done = at > i, cur = at === i;
-      ui.text(c, (done ? '[x] ' : cur ? '[>] ' : '[ ] ') + q.short, bx, by + 40 + i * 30, done ? '#7fd6a8' : cur ? '#fdf8e7' : '#6d7299');
+      ui.text(c, (done ? '[x] ' : cur ? '[>] ' : '[ ] ') + q.short, bx, by + 40 + i * 30, done ? '#7fd6a8' : cur ? '#fdf8e7' : '#9298bc', F(28), 'left', 412);
     });
-    ui.text(c, `${LQ.career().name}   Savvy ${st.savvy}   Net worth ${LQ.netWorth()}   Rank: ${LQ.rank()}`, bx, by + 316, '#c9cdea', F(26), 'left', 760);
+    ui.text(c, `${LQ.career().name}   Savvy ${st.savvy}   Net worth ${LQ.netWorth()}   Rank: ${LQ.rank()}`, bx, by + 312, '#c9cdea', F(24), 'left', 760);
     ui.text(c, 'GEAR', bx + 430, by + 6, '#f3c531', F(10, true));
     const gear = menuGear(), off = scrollStart(m.sel, gear.length, 9);
     if (!gear.length) ui.text(c, 'None yet. Visit the Bazaar.', bx + 430, by + 40, '#6d7299', F(24));
@@ -220,52 +288,47 @@ function drawMenu(c) {
     gear.slice(off, off + 9).forEach((g, i) => {
       ui.text(c, g.name, bx + 430, by + 40 + i * 29, off + i === m.sel ? '#ffe98a' : '#7fd6a8', F(24), 'left', 330);
     });
-  } else if (m.tab === 1) {
-    if (!st.journal.length) ui.text(c, 'Nothing yet. Everything you learn is written down here.', bx, by, '#c9cdea', F(26), 'left', 760);
-    const off = Math.max(0, Math.min(m.sel - 5, st.journal.length - 13));
-    st.journal.slice(off, off + 13).forEach((id, k) => {
-      const on = k + off === m.sel;
-      if (on) { c.fillStyle = 'rgba(243,197,49,.16)'; c.fillRect(bx - 8, by + k * 27 - 1, 296, 27); }
-      ui.text(c, LQ.JOURNAL[id].title, bx, by + k * 27, on ? '#ffe98a' : '#c9cdea', F(24), 'left', 280);
-    });
-    const e = LQ.JOURNAL[st.journal[m.sel]];
-    if (e) {
-      c.fillStyle = '#f6efd9'; c.fillRect(bx + 304, by - 6, 462, 360);
-      c.font = F(13, true); c.fillStyle = '#3a2f1c'; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillText(e.title, bx + 320, by + 12, 428);
-      c.font = F(25); ui.wrap(c, e.text, 428).forEach((ln, i) => { c.fillStyle = '#2c2416'; c.fillText(ln, bx + 320, by + 44 + i * 26); });
-    }
-  } else if (m.tab === 2) {
-    if (!st.items.length) ui.text(c, 'Your pack is empty.', bx, by, '#c9cdea');
-    const rh = st.items.length > 8 ? 26 : 44, two = rh > 30, ioff = two ? 0 : Math.max(0, Math.min(m.sel - 6, st.items.length - 13));
-    if (!two && st.items.length > 13) ui.text(c, (ioff + 1) + ' to ' + (ioff + 13) + ' of ' + st.items.length + '   Up / Down', bx + 764, by - 26, '#6d7299', F(20), 'right');
-    st.items.slice(ioff, two ? undefined : ioff + 13).forEach((id, i) => {
-      ui.text(c, LQ.ITEMS[id].name, bx, by + i * rh, two || i + ioff === m.sel ? '#ffe98a' : '#c9cdea', F(two ? 28 : 24), 'left', two ? 740 : 274);
-      if (two) ui.text(c, LQ.ITEMS[id].desc, bx + 24, by + i * rh + 22, '#c9cdea', F(22), 'left', 736);
-      else ui.text(c, LQ.ITEMS[id].desc, bx + 290, by + i * rh + 2, '#c9cdea', F(20), 'left', 470);
-    });
-  } else if (m.tab === 3) LQ.drawWorldMap(c, x + 40, by - 4, w - 80, 360);
+  } else if (m.tab === 1 || m.tab === 2) drawEntries(c, m, bx, by, bodyH);
+  else if (m.tab === 3) LQ.drawWorldMap(c, bx, by, 764, bodyH, st.region);
   else {
-    ui.text(c, `Cash ${st.coins}    Stocks ${LQ.portfolio()}    Net worth ${LQ.netWorth()}`, bx, by, '#f3c531');
+    ui.text(c, `Cash ${st.coins}    Stocks ${LQ.portfolio()}    Net worth ${LQ.netWorth()}`, bx, by, '#f3c531', F(26), 'left', 664);
     const known = menuStocks(), off = scrollStart(m.sel, known.length, 9), list = known.slice(off, off + 9);
-    const rh = list.length > 6 ? 23 : 28, fs = list.length > 6 ? 22 : 24, end = by + 40 + list.length * rh;
-    if (known.length > 9) ui.text(c, (m.sel + 1) + ' / ' + known.length, bx + 760, by + 25, '#c9cdea', F(20), 'right');
+    const columns = [
+      ['Price', 384, 68], ['Change', 475, 87], ['Shares', 561, 82],
+      ['Gain/loss', 665, 100], ['Holding', 764, 95],
+    ];
+    const headingY = by + 31, rh = 23;
+    ui.text(c, (m.sel + 1) + ' / ' + known.length, bx + 764, by + 3, '#c9cdea', F(20), 'right');
+    ui.text(c, 'Company', bx, headingY, '#c9cdea', F(20));
+    columns.forEach(([label, right, width]) => ui.text(c, label, bx + right, headingY, '#c9cdea', F(20), 'right', width));
     list.forEach((s, i) => {
-      const yy = by + 40 + i * rh, n = LQ.shares(s.id), ch = (st.prices[s.id] / st.prev[s.id] - 1) * 100;
-      const cost = st.lots[s.id].reduce((a, l) => a + l.n * l.cost, 0), gain = n * LQ.price(s.id) - cost;
+      const yy = headingY + 23 + i * rh, n = LQ.shares(s.id), ch = (st.prices[s.id] / st.prev[s.id] - 1) * 100;
+      const lots = st.lots[s.id], cost = lots.reduce((a, l) => a + l.n * l.cost, 0), gain = n * LQ.price(s.id) - cost;
+      const term = lots.every(l => l.lt) ? 'Long' : lots.some(l => l.lt) ? 'Mixed' : 'Short';
       if (off + i === m.sel) { c.fillStyle = 'rgba(243,197,49,.16)'; c.fillRect(bx - 8, yy - 1, 776, rh); }
-      ui.text(c, s.id, bx, yy, '#ffe98a', F(fs)); ui.text(c, s.name, bx + 70, yy, '#fdf8e7', F(fs), 'left', 260);
-      ui.text(c, String(LQ.price(s.id)), bx + 400, yy, '#fdf8e7', F(fs), 'right');
-      ui.text(c, (ch >= 0 ? '+' : '') + ch.toFixed(1) + '%', bx + 490, yy, ch >= 0 ? '#7fd6a8' : '#ff8a80', F(fs), 'right');
-      ui.text(c, n ? n + ' sh' : '-', bx + 580, yy, '#c9cdea', F(fs), 'right');
-      ui.text(c, n ? (gain >= 0 ? '+' : '') + gain : '', bx + 680, yy, gain >= 0 ? '#7fd6a8' : '#ff8a80', F(fs), 'right');
-      ui.text(c, n ? (st.lots[s.id].every(l => l.lt) ? 'long' : 'short') : '', bx + 760, yy, '#8fa3c8', F(20), 'right');
+      ui.text(c, s.id, bx, yy, '#ffe98a', F(22), 'left', 61);
+      ui.text(c, s.name, bx + 68, yy, '#fdf8e7', F(22), 'left', 242);
+      const cells = [
+        [LQ.price(s.id), '#fdf8e7'],
+        [(ch >= 0 ? '+' : '') + ch.toFixed(1) + '%', ch >= 0 ? '#7fd6a8' : '#ff8a80'],
+        [n || '-', '#c9cdea'],
+        [n ? (gain >= 0 ? '+' : '') + gain : '-', gain >= 0 ? '#7fd6a8' : '#ff8a80'],
+        [n ? term : '-', '#c9cdea'],
+      ];
+      cells.forEach(([value, color], k) => {
+        const [, right, width] = columns[k];
+        ui.text(c, String(value), bx + right, yy, color, F(22), 'right', width);
+      });
     });
-    ui.text(c, `Tax paid on gains and dividends: ${st.capTax || 0}    Banked losses: ${st.lossBank || 0}`, bx, end + 12, '#c9cdea', F(24));
-    ui.text(c, 'GAZETTE', bx, end + 50, '#f3c531', F(10, true));
-    (st.gazette || []).slice(0, list.length > 6 ? 1 : 2).forEach((g, i) => ui.text(c, (i ? '  ' : '> ') + g, bx, end + 68 + i * 25, i ? '#6d7299' : '#fdf8e7', F(22)));
-    ui.text(c, 'Trade at an exchange.', bx + 764, by + 2, '#6d7299', F(22), 'right');
+    const selected = known[m.sel], end = headingY + 23 + list.length * rh;
+    ui.text(c, selected.id + ': Buy or sell at ' + LQ.stockVenue(selected), bx, end + 6, '#ffe98a', F(22), 'left', 764);
+    ui.text(c, `Tax paid on gains and dividends: ${st.capTax || 0}    Banked losses: ${st.lossBank || 0}`, bx, end + 29, '#c9cdea', F(22), 'left', 764);
+    if (st.gazette.length) ui.text(c, 'Gazette: ' + st.gazette[0], bx, end + 51, '#fdf8e7', F(20), 'left', 764);
   }
-  ui.text(c, 'Left / Right: tabs    Up / Down: scroll    J or Esc: close', x + w / 2, y + h - 34, '#6d7299', F(22), 'center');
+  const hint = m.reading ? 'Esc: back to list    J: close' :
+    ['Up / Down: gear    Enter: read', 'Up / Down: notes    Enter: read', 'Up / Down: items    Enter: read', '', 'Up / Down: stocks'][m.tab];
+  const footer = m.reading ? hint : ['Left / Right: tabs', hint, 'J or Esc: close'].filter(Boolean).join('    ');
+  ui.text(c, footer, x + w / 2, y + h - 32, '#c9cdea', F(21), 'center', 764);
 }
 ui.draw = c => {
   if (ui.doc) {

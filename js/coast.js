@@ -83,18 +83,10 @@ const R = LQ.REGIONS.coast = {
     w.ents.push({ type: 'marker', qid: 'eastroad', tx: 47, ty: 10, base: -999 });
     R.addReceipts(w, st);
   },
-  // receipt counter, and the Spyglass reading
-  hud(w, st) {
-    if (st.q2 == null || st.q2 < 2) return '';
-    const C = LQ.CH2, left = C.hunt.filter(id => !st.rcpt[id]);
-    let s = 'Receipts ' + (C.hunt.length - left.length) + '/' + C.hunt.length;
-    if (left.length && LQ.has('spyglass')) {
-      let best = null;
-      for (const id of left) { const p = C.spots[id] || [C.chests.drawer.tx, C.chests.drawer.ty], dx = p[0] - w.p.x / T, dy = p[1] - w.p.y / T, d = Math.hypot(dx, dy); if (!best || d < best.d) best = { d, dx, dy }; }
-      const dir = (Math.abs(best.dy) > 2 ? (best.dy < 0 ? 'N' : 'S') : '') + (Math.abs(best.dx) > 2 ? (best.dx < 0 ? 'W' : 'E') : '');
-      s += '    Spyglass: ' + (best.d < 3 ? 'right here!' : Math.round(best.d) + ' steps ' + dir);
-    }
-    return s;
+  finder: {
+    gear: 'spyglass', label: 'Receipts', place: 'Shelter Coast', records: LQ.RECEIPTS,
+    ready: st => st.q2 >= 2, unlock: 'Talk to Banker Brine to start the receipt hunt.',
+    complete: 'All lost receipts found', chests: { drawer: 'rPoints' },
   },
 };
 })();

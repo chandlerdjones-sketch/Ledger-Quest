@@ -16,6 +16,8 @@ Open the game link in a browser on a computer with a keyboard. There is nothing 
 
 Progress saves in your browser. The title screen has three save slots, and each slot can be saved to a backup file and loaded on another computer.
 
+In the J menu, use Left and Right to change tabs. Use Up and Down to select notes, items, gear, or stocks. Press Enter to read a selected note or item in full, then Esc to return to the list. The Broker tab shows where to buy or sell each stock. Speak to the broker at that exchange to trade.
+
 ## What is in the game
 
 - **Chapter 1, Paystub Village.** The W-4 and withholding, reading a paystub, the W-2, filing status, the standard deduction, marginal tax brackets, and filing a return.

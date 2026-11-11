@@ -4,6 +4,32 @@ const LQ = window.LQ, T = 16, ui = LQ.ui, F = LQ.F;
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 LQ.REGIONS = {};
 
+LQ.finderStatus = (region, w) => {
+  const { finder } = region, st = LQ.state;
+  if (!finder.ready(st)) return { hint: finder.unlock };
+  const hunt = region.content().hunt;
+  const left = hunt.filter(id => !st.rcpt[id]);
+  const count = finder.label + ' ' + (hunt.length - left.length) + '/' + hunt.length;
+  if (!left.length) return { count, hint: finder.complete };
+  if (w.R !== region) return { count, hint: 'Return to ' + finder.place + ' for directions.' };
+
+  let nearest;
+  for (const e of w.ents) {
+    const id = e.rid || (e.type === 'chest' && finder.chests?.[e.id]);
+    if (!left.includes(id)) continue;
+    const dx = (e.tx * T + 8 - w.p.x) / T, dy = (e.ty * T + 10 - w.p.y) / T;
+    const distance = Math.hypot(dx, dy);
+    if (!nearest || distance < nearest.distance) nearest = { id, dx, dy, distance };
+  }
+  if (!nearest) return { count, hint: 'No target nearby.' };
+  const { id, dx, dy, distance } = nearest, axis = Math.max(Math.abs(dx), Math.abs(dy));
+  const dir = (Math.abs(dy) >= axis * .4 ? (dy < 0 ? 'N' : 'S') : '') +
+    (Math.abs(dx) >= axis * .4 ? (dx < 0 ? 'W' : 'E') : '');
+  const tiles = Math.max(1, Math.round(distance));
+  const where = axis < .5 ? 'underfoot' : tiles + (tiles === 1 ? ' tile ' : ' tiles ') + dir;
+  return { count, hint: finder.records[id].name + ' · ' + where };
+};
+
 // A blank map plus the helpers every region uses to lay itself out.
 LQ.newMap = (W, H) => {
   const m = { W, H, g: [], solid: [], keep: [], trees: [] };
@@ -189,7 +215,13 @@ const world = LQ.world = {
     // things you pick up by walking over them
     for (const e of this.ents) if ((e.type === 'coin' || e.pick) && Math.abs(e.tx * T + 8 - p.x) < 9 && Math.abs(e.ty * T + 10 - p.y) < 10) {
       if (e.type === 'coin') { st.coinsGot[e.key] = true; st.coins++; LQ.audio.sfx('coin'); this.burst(e.tx * T + 8, e.ty * T + 6, '#f3c531', 8, 30); this.remove(e); LQ.save(); }
-      else { this.burst(e.tx * T + 8, e.ty * T + 6, '#fff3b0', 14, 40); this.remove(e); p.moving = false; p.frame = 0; LQ.script(() => e.pick(e)); }
+      else {
+        this.burst(e.tx * T + 8, e.ty * T + 6, '#fff3b0', 14, 40);
+        this.remove(e); p.moving = false; p.frame = 0;
+        LQ.hit('ok'); // This frame belongs to the pickup, even if Talk was also pressed.
+        LQ.script(() => e.pick(e));
+        return this.follow(dt);
+      }
       break;
     }
     // zones
@@ -262,8 +294,11 @@ const world = LQ.world = {
     if (ui.doc) return;
     // quest tracker
     const s = `Coins ${st.coins}    Savvy ${st.savvy}`;
-    const extra = [st.streak >= 3 ? 'Streak x' + st.streak : '', R.hud ? R.hud(this, st) : ''].filter(Boolean).join('    ');
-    c.font = F(24); const ew = extra ? Math.min(470, c.measureText(extra).width + 28) : 0;
+    const finder = R.finder && LQ.finderStatus(R, this);
+    const extra = [st.streak >= 3 ? 'Streak x' + st.streak : '', finder ? finder.count : R.hud?.(this, st)].filter(Boolean).join('    ');
+    const lines = [extra, finder?.count && LQ.has(R.finder.gear) ? finder.hint : ''].filter(Boolean);
+    c.font = F(24);
+    const ew = lines.length ? Math.min(470, Math.max(...lines.map(line => c.measureText(line).width)) + 28) : 0;
     c.font = F(26); const sw = Math.min(470, c.measureText(s).width + 32);
     const tw = Math.min(LQ.VW - 44 - Math.max(sw, ew), Math.max(250, c.measureText(q.text).width + 44));
     c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(16, 14, tw, 62); c.fillStyle = '#f3c531'; c.fillRect(16, 14, 5, 62);
@@ -271,14 +306,17 @@ const world = LQ.world = {
     ui.text(c, q.text, 32, 40, '#fdf8e7', F(26), 'left', tw - 36);
     // coins and savvy
     c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(LQ.VW - sw - 16, 14, sw, 38); ui.text(c, s, LQ.VW - 32, 18, '#ffe98a', F(26), 'right', sw - 32);
-    if (extra) { c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(LQ.VW - ew - 16, 56, ew, 32); ui.text(c, extra, LQ.VW - 30, 58, '#c9cdea', F(24), 'right', ew - 28); }
+    if (lines.length) {
+      c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(LQ.VW - ew - 16, 56, ew, 8 + lines.length * 24);
+      lines.forEach((line, i) => ui.text(c, line, LQ.VW - 30, 58 + i * 24, i ? '#ffe98a' : '#c9cdea', F(24), 'right', ew - 28));
+    }
     // pointer toward an off-screen quest target
     const tgt = this.questTarget(), fb = R.fallbackTarget ? R.fallbackTarget(st) : null;
     const e = this.ents.find(x => (x.type === 'npc' && x.npc.id === tgt) || (tgt && x.qid === tgt)) || (fb && this.ents.find(x => x.qid === fb));
     if (e && !LQ.busy && !ui.menu) {
       const sx = (e.tx * T + 8 - this.cam.x) * 3, sy = (e.ty * T - this.cam.y) * 3;
       if (sx < 0 || sx > LQ.VW || sy < 0 || sy > LQ.VH) {
-        const ang = Math.atan2(sy - LQ.VH / 2, sx - LQ.VW / 2), px = LQ.clamp(LQ.VW / 2 + Math.cos(ang) * 600, 40, LQ.VW - 40), py = LQ.clamp(LQ.VH / 2 + Math.sin(ang) * 600, 100, LQ.VH - 40), b = Math.sin(LQ.time * 6) * 4;
+        const ang = Math.atan2(sy - LQ.VH / 2, sx - LQ.VW / 2), px = LQ.clamp(LQ.VW / 2 + Math.cos(ang) * 600, 40, LQ.VW - 40), py = LQ.clamp(LQ.VH / 2 + Math.sin(ang) * 600, lines.length > 1 ? 138 : 100, LQ.VH - 40), b = Math.sin(LQ.time * 6) * 4;
         c.save(); c.translate(px + Math.cos(ang) * b, py + Math.sin(ang) * b); c.rotate(ang);
         c.fillStyle = '#090b18'; c.beginPath(); c.moveTo(20, 0); c.lineTo(-14, -17); c.lineTo(-14, 17); c.fill();
         c.fillStyle = '#f3c531'; c.beginPath(); c.moveTo(14, 0); c.lineTo(-10, -11); c.lineTo(-10, 11); c.fill(); c.restore();

@@ -75,7 +75,8 @@ Object.assign(LQ.JOURNAL, {
 Object.assign(LQ.ITEMS, {
   gigsign: { name: 'Gig Shingle', desc: 'Open for business. The tax office noticed.' },
   forms1099: { name: '1099 Bundle', desc: 'Some income arrives with a form. All of it counts.' },
-  books3: { name: 'Expense Ledger', desc: 'Ordinary, necessary, and written down.' },
+  books3: { name: 'Expense Ledger', desc: 'Ordinary, necessary, and written down.',
+    status: () => HUNT.filter(got).map(id => SL[id].name + ' · ' + M(SL[id].counts) + ' deductible').join('\n') || 'No expense slips found yet.' },
   seslip: { name: 'Schedule SE Slip', desc: 'Both halves of Social Security and Medicare: 15.3%.' },
   vouchers: { name: '1040-ES Vouchers', desc: 'April, June, September, January.' },
   schedc: { name: 'Schedule C', desc: 'What came in, minus what it cost.' },

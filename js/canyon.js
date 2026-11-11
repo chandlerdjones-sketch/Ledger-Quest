@@ -75,18 +75,10 @@ const R = LQ.REGIONS.canyon = {
     w.ents.push({ type: 'marker', qid: 'northtrail', tx: 23, ty: 0, base: -999 });
     R.addSlips(w, st);
   },
-  // slip counter, and the Dowsing Rod reading
-  hud(w, st) {
-    if (st.q3 == null || st.q3 < 3) return '';
-    const C = LQ.CH3, left = C.hunt.filter(id => !st.rcpt[id]);
-    let s = 'Slips ' + (C.hunt.length - left.length) + '/' + C.hunt.length;
-    if (left.length && LQ.has('rod')) {
-      let best = null;
-      for (const id of left) { const p = C.spots[id], dx = p[0] - w.p.x / T, dy = p[1] - w.p.y / T, d = Math.hypot(dx, dy); if (!best || d < best.d) best = { d, dx, dy }; }
-      const dir = (Math.abs(best.dy) > 2 ? (best.dy < 0 ? 'N' : 'S') : '') + (Math.abs(best.dx) > 2 ? (best.dx < 0 ? 'W' : 'E') : '');
-      s += '    Rod: ' + (best.d < 3 ? 'right here!' : Math.round(best.d) + ' steps ' + dir);
-    }
-    return s;
+  finder: {
+    gear: 'rod', label: 'Slips', place: 'Hustle Canyon', records: LQ.SLIPS,
+    ready: st => st.q3 >= 3, unlock: 'Talk to Bookkeeper Lupe to start the expense slip hunt.',
+    complete: 'All expense slips found',
   },
 };
 })();

@@ -160,8 +160,12 @@ LQ.quiz = async (who, prompt, options, why) => {
 };
 
 // ---------- market gear
+const finderNote = region => {
+  const { count, hint } = LQ.finderStatus(LQ.REGIONS[region], LQ.world);
+  return [count, hint].filter(Boolean).join('\n');
+};
 LQ.GEAR = [
-  { id: 'ledger', name: 'Receipt Ledger', price: 40, desc: 'Good records win audits. Auditors forgive one wrong answer.' },
+  { id: 'ledger', name: 'Receipt Ledger', price: 40, desc: 'Good records win audits. With this ledger, one correct answer out of three is enough to pass.' },
   { id: 'guide', name: "Saver's Credit Guidebook", price: 120, desc: "Shows you how to claim the Saver's Credit. If your income is under $40,250, money you put toward retirement earns a tax credit." },
   { id: 'charity', name: 'Charity Lantern', price: 200, desc: 'Give $500 to charity. Starting in 2026, people who take the standard deduction can still deduct up to $1,000 of cash gifts.' },
   { id: 'miles', only: 'se', name: 'Mileage Logbook', price: 250, desc: 'Log 4,000 business miles. At the 2026 rates (72.5 cents, then 76 cents from July) that is a $2,970 write-off.' },
@@ -171,11 +175,11 @@ LQ.GEAR = [
   { id: 'roth', save: 1, name: 'Roth Amulet', price: 500, desc: 'Put $3,000 in a Roth IRA. No deduction today, but it grows and comes out tax-free in retirement.' },
   { id: 'mantle', save: 1, needs: 'chest', name: 'Max-Out Mantle', price: 1200, desc: 'Raises your Retirement Chestplate contribution from $3,000 to $7,500.' },
   { id: 'abacus', name: 'Golden Abacus', price: 3000, desc: 'The mark of a true Tax Tycoon. Doubles your audit rewards and crowns your hero.' },
-  { id: 'spyglass', coast: 1, name: 'Receipt Spyglass', price: 120, desc: 'Points you toward the nearest lost receipt in Shelter Coast, and tells you how far away it is.' },
+  { id: 'spyglass', coast: 1, name: 'Receipt Spyglass', price: 120, desc: 'Automatically names the nearest missing receipt and shows its direction in Shelter Coast.', status: () => finderNote('coast') },
   { id: 'plan529', coast: 1, save: 1, name: "Coral's 529 Plan", price: 400, desc: 'Open a 529 education savings plan for Coral. There is no federal deduction going in, but the money grows tax-free and comes out tax-free for education.' },
   { id: 'cask', coast: 1, save: 1, needs: 'hsa', name: 'Family HSA Cask', price: 700, desc: 'Move to a family health plan and add $4,000 more to your HSA. The 2026 family limit is $8,750. Every dollar comes off your joint income.' },
   { id: 'anchor', coast: 1, save: 1, name: "Marlowe's 401(k) Anchor", price: 800, desc: 'Marlowe puts $4,000 of pay into the shipyard 401(k). Those wages never reach the joint return, and the savings are still yours.' },
-  { id: 'rod', at: 'canyon', name: 'Dowsing Rod', price: 120, desc: 'Points you toward the nearest lost expense slip in Hustle Canyon, and tells you how far away it is.' },
+  { id: 'rod', at: 'canyon', name: 'Dowsing Rod', price: 120, desc: 'Automatically names the nearest missing expense slip and shows its direction in Hustle Canyon.', status: () => finderNote('canyon') },
   { id: 'toolkit', at: 'canyon', name: 'Gig Tool Kit', price: 350, desc: 'Buy $800 of tools for your side gig. Items that cost $2,500 or less each can be written off in full in the year you buy them, so all $800 comes off your gig profit.' },
   { id: 'sep', at: 'canyon', save: 1, name: 'SEP IRA Saddlebag', price: 600, desc: 'Put $1,200 of gig profit into a SEP IRA, a retirement account for the self-employed. It comes off your income now and grows untaxed until you retire.' },
   { id: 'munis', at: 'summit', save: 1, name: 'Muni Bond Lantern', price: 500, desc: 'Move your savings into municipal bonds. Their interest is generally free of federal income tax, so the $300 of bank interest leaves your return.' },
@@ -186,7 +190,7 @@ LQ.gearFor = () => LQ.GEAR.filter(g => (!g.only || g.only === LQ.career().kind) 
 const shopDoc = { item: null, draw(c) {
   const top = ui.choiceTop(), g = this.item; if (!g) return;
   ui.panel(c, 30, 16, 900, Math.max(80, top - 36), '#1b2044');
-  ui.text(c, g.name, 52, 26, '#ffe98a', F(14, true));
+  ui.text(c, g.name, 52, 26, '#ffe98a', F(14, true), 'left', 682);
   ui.text(c, LQ.has(g.id) ? 'OWNED' : g.price + ' coins', 908, 24, LQ.has(g.id) ? '#7fd6a8' : '#fdf8e7', F(28), 'right');
   c.font = F(24); ui.wrap(c, g.desc, 850).slice(0, 3).forEach((ln, i) => ui.text(c, ln, 52, 54 + i * 25, '#c9cdea', F(24)));
 } };
@@ -197,7 +201,7 @@ const SHOP_HELLO = {
 };
 LQ.shop = async who => {
   const hello = SHOP_HELLO[st().region] || ['shopSeen', 'Welcome to the Saffron Bazaar! I do not sell swords. I sell tax advantages. Everything here changes your return when you file.'], seen = hello[0];
-  await LQ.say(who, st().flags[seen] ? 'Back for more? Every piece on my table does something real on your tax return.' : hello[1]);
+  await LQ.say(who, st().flags[seen] ? 'Back for more? Pick an item to see what it does.' : hello[1]);
   st().flags[seen] = true;
   for (;;) {
     const items = LQ.gearFor(); shopDoc.item = items[0]; ui.doc = shopDoc;
@@ -210,8 +214,9 @@ LQ.shop = async who => {
     const before = LQ.cur().total;
     st().coins -= g.price; st().gear.push(g.id); LQ.audio.sfx('fanfare');
     const saved = before - LQ.cur().total;
-    await LQ.say(who, 'Sold! ' + g.name + ' is yours.' + (saved > 0 ? ' That just cut your tax bill for the year by ' + M(saved) + '.' : '') + (g.save ? ' And the money is still yours. It sits in your savings and counts toward your net worth.' : ''));
     if (!st().journal.includes('gearTiming')) LQ.learn('gearTiming');
+    LQ.save();
+    await LQ.say(who, 'Sold! ' + g.name + ' is yours.' + (saved > 0 ? ' That just cut your tax bill for the year by ' + M(saved) + '.' : '') + (g.save ? ' And the money is still yours. It sits in your savings and counts toward your net worth.' : ''));
   }
   await LQ.say(who, 'Come back any time before you file.');
 };
@@ -265,6 +270,7 @@ const home = x => x.at || (x.coast ? 'coast' : 'village');
 LQ.exchange = () => LQ.STOCKS.filter(x => x.id === 'LDGR' || home(x) === st().region);
 LQ.stocksKnown = () => LQ.STOCKS.filter(x => { const h = home(x), s = st(); return h === 'village' || (h === 'coast' && s.q2 != null) || (h === 'canyon' && s.q3 != null) || (h === 'summit' && s.q4 != null); });
 LQ.EXCHANGE_NAME = { village: 'VILLAGE EXCHANGE', coast: 'HARBOR EXCHANGE', canyon: 'CANYON EXCHANGE', summit: 'SUMMIT EXCHANGE' };
+LQ.stockVenue = stock => stock.id === 'LDGR' ? 'any exchange' : LQ.EXCHANGE_NAME[home(stock)];
 function makeNews() {
   const s = st(), pool = LQ.stocksKnown().filter(x => x.up), pick = pool[Math.floor(LQ.hash(s.day, 3, s.seed) * pool.length)], up = LQ.hash(s.day, 4, s.seed) > .42;
   s.news = { id: pick.id, pct: (up ? 1 : -1) * (.12 + LQ.hash(s.day, 5, s.seed) * .12), text: up ? pick.up : pick.down };
@@ -320,14 +326,14 @@ LQ.sell = (id, n) => {
 const brokerDoc = { sel: 0, draw(c) {
   const s = st(), top = ui.choiceTop();
   ui.panel(c, 30, 16, 900, Math.max(120, top - 36), '#101a2e');
-  ui.text(c, LQ.EXCHANGE_NAME[st().region] || 'VILLAGE EXCHANGE', 50, 26, '#7fd6a8', F(11, true)); ui.text(c, 'Day ' + s.day + '    Cash ' + s.coins + '    Holdings ' + LQ.portfolio(), 910, 20, '#fdf8e7', F(24), 'right');
+  ui.text(c, LQ.EXCHANGE_NAME[s.region], 50, 26, '#7fd6a8', F(11, true)); ui.text(c, 'Day ' + s.day + '    Cash ' + s.coins + '    Holdings ' + LQ.portfolio(), 910, 20, '#fdf8e7', F(24), 'right', 590);
   LQ.exchange().forEach((x, i) => {
     const y = 50 + i * 25, p = LQ.price(x.id), ch = (s.prices[x.id] / s.prev[x.id] - 1) * 100, n = LQ.shares(x.id);
     if (i === this.sel) { c.fillStyle = 'rgba(243,197,49,.16)'; c.fillRect(42, y - 1, 876, 25); }
-    ui.text(c, x.id, 52, y, '#ffe98a', F(24)); ui.text(c, x.name, 122, y, '#fdf8e7', F(24));
-    ui.text(c, String(p), 560, y, '#fdf8e7', F(24), 'right');
-    ui.text(c, (ch >= 0 ? '+' : '') + ch.toFixed(1) + '%', 660, y, ch >= 0 ? '#7fd6a8' : '#ff8a80', F(24), 'right');
-    ui.text(c, n ? n + ' sh' : '-', 760, y, '#c9cdea', F(24), 'right');
+    ui.text(c, x.id, 52, y, '#ffe98a', F(24), 'left', 62); ui.text(c, x.name, 122, y, '#fdf8e7', F(24), 'left', 330);
+    ui.text(c, String(p), 560, y, '#fdf8e7', F(24), 'right', 98);
+    ui.text(c, (ch >= 0 ? '+' : '') + ch.toFixed(1) + '%', 660, y, ch >= 0 ? '#7fd6a8' : '#ff8a80', F(24), 'right', 92);
+    ui.text(c, n ? n + ' sh' : '-', 760, y, '#c9cdea', F(24), 'right', 92);
     ui.text(c, x.div ? Math.round(x.div * 100) + '% div' : '', 908, y, '#8fa3c8', F(22), 'right');
   });
 } };
@@ -349,7 +355,7 @@ LQ.broker = async who => {
     const x = list[i]; if (!x) break;
     brokerDoc.sel = i;
     const p = LQ.price(x.id), have = LQ.shares(x.id), can = Math.floor(s.coins / p);
-    const acts = [['Buy 1', () => LQ.buy(x.id, 1)], ['Buy 5', () => LQ.buy(x.id, 5)], ['Buy as many as I can (' + can + ')', () => LQ.buy(x.id, can)]];
+    const acts = [['Buy 1', () => LQ.buy(x.id, 1)], ['Buy 5', () => can >= 5 ? LQ.buy(x.id, 5) : 0], ['Buy as many as I can (' + can + ')', () => LQ.buy(x.id, can)]];
     const a = await LQ.choose(who, x.name + ' at ' + p + ' coins. You hold ' + have + '.', acts.map(q => q[0]).concat(have ? ['Sell 1', 'Sell all (' + have + ')'] : [], 'Back'));
     if (a < 3) { const n = acts[a][1](); LQ.audio.sfx(n ? 'coin' : 'wrong'); await LQ.say(who, n ? 'Bought ' + n + ' share' + (n > 1 ? 's' : '') + ' of ' + x.id + ' for ' + n * p + ' coins.' : 'Not enough coins for that.'); }
     else if (have && a < 5) {

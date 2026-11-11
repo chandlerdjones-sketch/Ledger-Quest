@@ -109,7 +109,7 @@ const divDoc = { hl: -1, qd: DIV, draw(c) {
   const L = (i, a, b, o) => D.line(c, 84, 66 + i * 38, 470, a, b, o);
   D.paper(c, 60, 20, 840, 272, 'FORMS 1099-DIV AND 1099-INT', 'Simplified  ' + TX.year);
   L(0, '1099-DIV  1a  Total dividends', M(this.qd)); L(1, '1099-DIV  1b  Qualified dividends', M(this.qd), { hl: this.hl === 0 });
-  L(2, '1099-INT  1   Interest income', M(INT), { hl: this.hl === 1 });
+  L(2, LQ.has('munis') ? '1099-INT   Tax-exempt interest' : '1099-INT  1   Interest income', M(INT), { hl: this.hl === 1 });
   D.sideBox(c, 'HOW EACH IS TAXED', [['Qualified div.', '0% or 15%', Object.assign({ size: 22 }, D.GREEN)], ['Long-term gain', '0% or 15%', Object.assign({ size: 22 }, D.GREEN)], 0, ['Interest', 'like wages', Object.assign({ size: 22 }, D.RED)], ['Short-term gain', 'like wages', Object.assign({ size: 22 }, D.RED)]]);
 } };
 const harvDoc = { saved: 0, pick: -1, draw(c) {
@@ -229,7 +229,9 @@ async function qBirch() {
   divDoc.hl = 0;
   await say(N.birch, 'Taxed this year. The good news is twofold. Each reinvested dividend adds to your basis, so you are not taxed on it again when you sell. And yours are qualified dividends, which are taxed at the long-term gain rates. Shares held more than about two months around the payment date generally qualify.');
   divDoc.hl = 1;
-  await say(N.birch, `Then the savings account. It paid ${M(INT)} of interest, reported on Form 1099-INT. Interest gets no special rate. It is taxed like wages.`);
+  await say(N.birch, LQ.has('munis')
+    ? `Your Muni Bond Lantern moved your savings into municipal bonds. The ${M(INT)} is tax-exempt interest on Form 1099-INT. Ordinary bank interest would be taxed like wages.`
+    : `Then the savings account. It paid ${M(INT)} of interest, reported on Form 1099-INT. Interest gets no special rate. It is taxed like wages.`);
   await LQ.quiz(N.birch, 'Which of these is taxed at the lower long-term rates?', ['Qualified dividends', 'Bank interest', 'A gain on shares held for three months'], 'Interest and short-term gains are taxed like wages.');
   s.inv.qd += DIV; s.inv.int += INT; ui.doc = null; LQ.learn('dividends4'); LQ.learn('interest4'); LQ.give('forms4');
   await say(N.birch, 'Both forms are in your record. Now, I understand one of your positions is underwater. Do not just stare at it. Ranger Larch at the Avalanche Station, east of here, knows what a loss is good for.');

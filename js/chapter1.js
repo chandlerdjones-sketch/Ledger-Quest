@@ -266,7 +266,7 @@ const formDoc = { rows: [], vals: [], cur: -1, stamp: 0, draw(c) {
   }
 } };
 
-LQ.drawWorldMap = (c, x, y, w, h) => {
+LQ.drawWorldMap = (c, x, y, w, h, currentRegion) => {
   c.fillStyle = '#ead9ab'; c.fillRect(x, y, w, h); c.strokeStyle = '#8a7a55'; c.lineWidth = 3; c.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
   for (let i = 0; i < 60; i++) { c.fillStyle = 'rgba(138,122,85,.18)'; c.fillRect(x + LQ.hash(i, 1, 4) * (w - 8), y + LQ.hash(i, 2, 4) * (h - 6), 6, 2); }
   c.font = F(13, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = '#3a2f1c'; c.fillText('THE LEDGERLANDS', x + w / 2, y + 14);
@@ -275,14 +275,18 @@ LQ.drawWorldMap = (c, x, y, w, h) => {
     ['Hustle Canyon', 'Ch.3  Side gigs', .66, .66, '#c9781c', done2, done3], ['Summit of Gains', 'Ch.4  Investing', .84, .32, '#7b4bb8', done3, done4]];
   c.strokeStyle = '#8a7a55'; c.lineWidth = 3; c.setLineDash([8, 8]); c.beginPath();
   R.forEach((r, i) => { const px = x + w * r[2], py = y + h * r[3]; if (i) c.lineTo(px, py); else c.moveTo(px, py); }); c.stroke(); c.setLineDash([]);
-  R.forEach(r => {
+  R.forEach((r, i) => {
     const px = x + w * r[2], py = y + h * r[3], open = r[5];
+    const here = ['village', 'coast', 'canyon', 'summit'][i] === currentRegion;
+    const labelWidth = 2 * Math.min(r[2], 1 - r[2]) * w - 20;
     c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.arc(px + 3, py + 4, 30, 0, 7); c.fill();
     c.fillStyle = open ? r[4] : '#9a927c'; c.beginPath(); c.arc(px, py, 30, 0, 7); c.fill();
     c.strokeStyle = '#3a2f1c'; c.lineWidth = 3; c.beginPath(); c.arc(px, py, 30, 0, 7); c.stroke();
+    if (here) { c.strokeStyle = '#976713'; c.beginPath(); c.arc(px, py, 35, 0, 7); c.stroke(); }
     c.font = F(18, true); c.textBaseline = 'middle'; c.fillStyle = '#fff'; c.fillText(open ? (r[6] ? 'OK' : '!') : '?', px, py + 2);
-    c.textBaseline = 'top'; c.font = F(26); c.fillStyle = '#2c2416'; c.fillText(r[0], px, py + 36);
-    c.font = F(20); c.fillStyle = open ? '#1f6f5c' : '#7a6a48'; c.fillText(open ? r[1] : r[1] + '  (locked)', px, py + 60);
+    c.textBaseline = 'top'; c.font = F(24); c.fillStyle = '#2c2416'; c.fillText(r[0], px, py + 40, labelWidth);
+    c.font = F(20); c.fillStyle = open ? '#1f6f5c' : '#7a6a48'; c.fillText(open ? r[1] : r[1] + '  (locked)', px, py + 66, labelWidth);
+    if (here) { c.fillStyle = '#5f4214'; c.fillText('You are here: ' + r[0], x + w / 2, y + h - 22, w - 32); }
   });
 };
 

@@ -75,7 +75,8 @@ Object.assign(LQ.ITEMS, {
   rings: { name: 'Banner of Two', desc: 'Married Filing Jointly. Standard deduction: $32,200.' },
   toyboat: { name: "Coral's Toy Boat", desc: 'A $2,200 Child Tax Credit sails with it.' },
   w4pair: { name: 'Household Tax Plan', desc: 'Two incomes, one plan for paying tax through the year.' },
-  folder: { name: 'Receipt Folder', desc: 'Every deduction you can prove, in one place.' },
+  folder: { name: 'Receipt Folder', desc: 'Every deduction you can prove, in one place.',
+    status: () => Object.keys(RC).filter(got).map(id => RC[id].name + ' · ' + M(RC[id].amt)).join('\n') },
   medal2: { name: 'Low Tide Medal', desc: 'Proof that you sank Captain Loophole.' },
   return2: { name: 'Stamped Joint Return', desc: 'Two names, one return, every line understood.' },
 });

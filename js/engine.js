@@ -28,7 +28,7 @@ const input = LQ.input = { down: {}, pressed: {} };
 addEventListener('keydown', e => {
   const k = KEYMAP[e.key]; if (!k) return;
   e.preventDefault();
-  if (!e.repeat) input.pressed[k] = true;
+  if (!e.repeat || (LQ.ui?.menu && (k === 'up' || k === 'down'))) input.pressed[k] = true;
   if (k === 'ok' && !e.repeat && LQ.gesture) { const g = LQ.gesture; LQ.gesture = null; g(); }
   input.down[k] = true;
   if (LQ.audio) LQ.audio.unlock();
