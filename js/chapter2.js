@@ -91,8 +91,8 @@ const mortDoc = { hl: null, draw(c) {
 } };
 function card(c, x, title, col, rows, lit) {
   c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(x + 7, 31, 400, 262);
-  c.fillStyle = '#f6efd9'; c.fillRect(x, 24, 400, 262); c.fillStyle = col; c.fillRect(x, 24, 400, 40);
-  c.strokeStyle = lit ? '#f3c531' : '#8a7a55'; c.lineWidth = lit ? 5 : 2; c.strokeRect(x + 1, 25, 398, 260);
+  c.fillStyle = '#e6eaff'; c.fillRect(x, 24, 400, 262); c.fillStyle = col; c.fillRect(x, 24, 400, 40);
+  c.strokeStyle = lit ? '#f3c531' : '#7a74b8'; c.lineWidth = lit ? 5 : 2; c.strokeRect(x + 1, 25, 398, 260);
   c.font = F(12, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = '#fff'; c.fillText(title, x + 200, 38);
   rows.forEach((r, i) => { const last = i === rows.length - 1; if (last) D.rule(c, x + 20, 76 + i * 30 - 3, 360); D.line(c, x + 20, 76 + i * 30 + (last ? 4 : 0), 360, r[0], r[1], Object.assign({ size: 24 }, r[2])); });
 }
@@ -133,8 +133,8 @@ const rcDoc = { lit: null, draw(c) {
   if (LQ.has('charity')) rows.push(['Gift: Charity Lantern', 500, 'gift']);
   rows.forEach((r, i) => {
     const y = 52 + i * 23, dead = r[2] === 'none' || r[2] === 'medical' || r[2] === 'care';
-    c.font = F(22); c.textBaseline = 'top'; c.textAlign = 'left'; c.fillStyle = dead ? '#9a8f76' : '#2c2416'; c.fillText(r[0], 70, y);
-    c.textAlign = 'right'; c.fillText(M(r[1]), 470, y); c.fillStyle = dead ? '#b0332e' : r[2] === 'gift' ? '#1f6f5c' : '#7a6a48'; c.font = F(19); c.fillText(NOTE[r[2]], 646, y + 2);
+    c.font = F(22); c.textBaseline = 'top'; c.textAlign = 'left'; c.fillStyle = dead ? '#9a8f76' : '#15122e'; c.fillText(r[0], 70, y);
+    c.textAlign = 'right'; c.fillText(M(r[1]), 470, y); c.fillStyle = dead ? '#b0332e' : r[2] === 'gift' ? '#1f6f5c' : '#5a5490'; c.font = F(19); c.fillText(NOTE[r[2]], 646, y + 2);
   });
   D.shieldShape(c, 700, 10 + Math.sin(LQ.time * 2) * 3, '#3b6fd4', 'STANDARD', f.stdTotal, this.lit === 'std');
   D.shieldShape(c, 700, 182 + Math.sin(LQ.time * 2 + 2) * 3, '#b0332e', 'ITEMIZED', f.itemized, this.lit === 'item');
@@ -375,7 +375,7 @@ async function ending2() {
     L(5, 'Lost receipts found', HUNT.filter(got).length + ' of ' + HUNT.length); L(6, 'Right on the first try', s.first + ' of ' + s.asked);
     L(7, 'Savvy', String(s.savvy)); L(8, 'Audits faced', String(s.audits || 0)); L(9, 'Net worth', String(LQ.netWorth()), D.GREEN);
     L(10, 'Journal entries', s.journal.length + ' of ' + Object.keys(LQ.JOURNAL).length);
-    c.font = F(22); c.textAlign = 'center'; c.fillStyle = '#7a6a48';
+    c.font = F(22); c.textAlign = 'center'; c.fillStyle = '#5a5490';
     ui.wrap(c, 'Two chapters down. Shelter Coast and Paystub Village both stay open for trading, shopping, and audits.', 620).forEach((ln, i) => c.fillText(ln, 480, 430 + i * 22));
   } };
   await LQ.fadeTo(0.5); await LQ.pressOk();
@@ -414,7 +414,7 @@ const MYTHS2 = [
     truth: 'A gift is what you give without getting something back. A ticket or a cookie is a purchase.' },
 ];
 LQ.BOSSES.loophole = {
-  who: LOOPHOLE, label: 'CAPTAIN LOOPHOLE', kind: 'loophole', sky: ['#0b1e33', '#1f5a6e'], hill: '#0e2f3f', ground: ['#e8d498', '#d2bb7c'], fog: '120,220,210', bar: ['#1f8a86', '#8fe6da'], ink: '#14575a',
+  who: LOOPHOLE, label: 'CAPTAIN LOOPHOLE', kind: 'loophole', sky: ['#040d22', '#0f3a5a'], hill: '#081f30', ground: ['#2e2a58', '#4a4480'], fog: '120,220,210', bar: ['#1f8a86', '#8fe6da'], ink: '#14575a',
   approach: 'A bell clangs. From the lamp room drifts a shape in a tricorn hat, trailing treasure maps.',
   intro: ['ARRR! A customer! Captain Loophole, purveyor of secret write-offs. Every map I sell leads to buried deductions the taxman does not want ye to find!', 'Half this coast has bought one already. Let us see if YE can resist a bargain.'],
   taunt: 'Har har har! Sold! That will be one map, no refunds.', fogLine: 'The sea mist muddles your thinking.',

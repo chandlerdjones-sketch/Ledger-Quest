@@ -97,25 +97,25 @@ LQ.ITEMS = {
 // ---------- document drawing
 function paper(c, x, y, w, h, title, sub) {
   c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(x + 7, y + 7, w, h);
-  c.fillStyle = '#f6efd9'; c.fillRect(x, y, w, h);
-  c.fillStyle = '#e4d9ba'; c.fillRect(x, y, w, 34);
-  c.strokeStyle = '#8a7a55'; c.lineWidth = 2; c.strokeRect(x + 1, y + 1, w - 2, h - 2);
-  c.font = F(13, true); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#3a2f1c'; c.fillText(title, x + 16, y + 11);
-  if (sub) { c.font = F(22); c.textAlign = 'right'; c.fillStyle = '#7a6a48'; c.fillText(sub, x + w - 16, y + 6); }
+  c.fillStyle = '#e6eaff'; c.fillRect(x, y, w, h);
+  c.fillStyle = '#cdd4f8'; c.fillRect(x, y, w, 34);
+  c.strokeStyle = '#7a74b8'; c.lineWidth = 2; c.strokeRect(x + 1, y + 1, w - 2, h - 2);
+  c.font = F(13, true); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#1a1640'; c.fillText(title, x + 16, y + 11);
+  if (sub) { c.font = F(22); c.textAlign = 'right'; c.fillStyle = '#5a5490'; c.fillText(sub, x + w - 16, y + 6); }
 }
 function line(c, x, y, w, label, value, o = {}) {
   const fs = o.size || 26;
   if (o.hl) { c.fillStyle = `rgba(255,205,50,${.4 + .22 * Math.sin(LQ.time * 6)})`; c.fillRect(x - 8, y - 2, w + 16, fs + 3); }
   c.font = F(fs); c.textBaseline = 'top';
   const labelWidth = w - c.measureText(String(value)).width - 12;
-  c.textAlign = 'left'; c.fillStyle = o.color || '#2c2416'; c.fillText(label, x, y, Math.max(1, labelWidth));
-  c.textAlign = 'right'; c.fillStyle = o.vcolor || o.color || '#2c2416'; c.fillText(value, x + w, y);
+  c.textAlign = 'left'; c.fillStyle = o.color || '#15122e'; c.fillText(label, x, y, Math.max(1, labelWidth));
+  c.textAlign = 'right'; c.fillStyle = o.vcolor || o.color || '#15122e'; c.fillText(value, x + w, y);
 }
-const rule = (c, x, y, w) => { c.fillStyle = '#8a7a55'; c.fillRect(x, y, w, 2); };
+const rule = (c, x, y, w) => { c.fillStyle = '#7a74b8'; c.fillRect(x, y, w, 2); };
 const RED = { vcolor: '#b0332e' }, GREEN = { vcolor: '#1f6f5c' };
 function sideBox(c, title, rows) {
-  c.fillStyle = '#fffaf0'; c.fillRect(592, 62, 286, 216); c.strokeStyle = '#8a7a55'; c.strokeRect(593, 63, 284, 214);
-  c.font = F(11, true); c.textAlign = 'left'; c.fillStyle = '#7a6a48'; c.fillText(title, 608, 76);
+  c.fillStyle = '#f4f6ff'; c.fillRect(592, 62, 286, 216); c.strokeStyle = '#7a74b8'; c.strokeRect(593, 63, 284, 214);
+  c.font = F(11, true); c.textAlign = 'left'; c.fillStyle = '#5a5490'; c.fillText(title, 608, 76);
   rows.forEach((r, i) => { if (r === 0) return rule(c, 608, 100 + i * 32 - 4, 254); line(c, 608, 100 + i * 32, 254, r[0], r[1], r[2]); });
 }
 
@@ -181,10 +181,10 @@ const boxDoc = { hl: 0, draw(c) {
       [5, 'Estimated tax payments made', f.withheld], [6, 'Self-employment tax for the year', f.se]];
   boxes.forEach(([n, label, v], i) => {
     const x = 122 + (i % 2) * 366, y = 66 + Math.floor(i / 2) * 74;
-    c.fillStyle = this.hl === n ? `rgba(255,205,50,${.55 + .25 * Math.sin(LQ.time * 6)})` : '#fffaf0'; c.fillRect(x, y, 350, 64);
-    c.strokeStyle = '#8a7a55'; c.lineWidth = 2; c.strokeRect(x + 1, y + 1, 348, 62);
-    c.font = F(21); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#7a6a48'; c.fillText(n + '  ' + label, x + 10, y + 5);
-    c.font = F(32); c.fillStyle = '#2c2416'; c.fillText(M(v), x + 34, y + 28);
+    c.fillStyle = this.hl === n ? `rgba(255,205,50,${.55 + .25 * Math.sin(LQ.time * 6)})` : '#f4f6ff'; c.fillRect(x, y, 350, 64);
+    c.strokeStyle = '#7a74b8'; c.lineWidth = 2; c.strokeRect(x + 1, y + 1, 348, 62);
+    c.font = F(21); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#5a5490'; c.fillText(n + '  ' + label, x + 10, y + 5);
+    c.font = F(32); c.fillStyle = '#15122e'; c.fillText(M(v), x + 34, y + 28);
   });
 } };
 
@@ -201,8 +201,8 @@ const statusDoc = { caseText: '', draw(c) {
     c.font = F(18); c.fillStyle = 'rgba(255,255,255,.8)'; c.fillText('standard deduction', x + 78, y + 104);
   });
   if (this.caseText) {
-    c.fillStyle = '#f6efd9'; c.fillRect(62, 196, 836, 70); c.strokeStyle = '#8a7a55'; c.lineWidth = 2; c.strokeRect(63, 197, 834, 68);
-    c.font = F(26); c.textAlign = 'left'; c.fillStyle = '#2c2416';
+    c.fillStyle = '#e6eaff'; c.fillRect(62, 196, 836, 70); c.strokeStyle = '#7a74b8'; c.lineWidth = 2; c.strokeRect(63, 197, 834, 68);
+    c.font = F(26); c.textAlign = 'left'; c.fillStyle = '#15122e';
     ui.wrap(c, this.caseText, 800).forEach((ln, i) => c.fillText(ln, 80, 204 + i * 27));
   }
 } };
@@ -256,7 +256,7 @@ const formDoc = { rows: [], vals: [], cur: -1, stamp: 0, draw(c) {
   this.rows.forEach((r, i) => {
     const last = i === n - 1; if (last) rule(c, 158, 52 + i * rh - 2, 644);
     line(c, 158, 52 + i * rh + (last ? 3 : 0), 644, r.label, this.vals[i] == null ? '________' : (r.sign || '') + M(this.vals[i]),
-      { hl: i === this.cur, size: fs, vcolor: last && this.vals[i] != null ? (r.owed ? '#b0332e' : '#1f6f5c') : r.sign === '-' ? '#1f6f5c' : '#2c2416' });
+      { hl: i === this.cur, size: fs, vcolor: last && this.vals[i] != null ? (r.owed ? '#b0332e' : '#1f6f5c') : r.sign === '-' ? '#1f6f5c' : '#15122e' });
   });
   if (this.stamp > 0) {
     c.save(); c.translate(660, 170); c.rotate(-0.22); const s = 1 + (1 - this.stamp) * 2; c.scale(s, s); c.globalAlpha = this.stamp;
@@ -267,26 +267,26 @@ const formDoc = { rows: [], vals: [], cur: -1, stamp: 0, draw(c) {
 } };
 
 LQ.drawWorldMap = (c, x, y, w, h, currentRegion) => {
-  c.fillStyle = '#ead9ab'; c.fillRect(x, y, w, h); c.strokeStyle = '#8a7a55'; c.lineWidth = 3; c.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
-  for (let i = 0; i < 60; i++) { c.fillStyle = 'rgba(138,122,85,.18)'; c.fillRect(x + LQ.hash(i, 1, 4) * (w - 8), y + LQ.hash(i, 2, 4) * (h - 6), 6, 2); }
-  c.font = F(13, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = '#3a2f1c'; c.fillText('THE LEDGERLANDS', x + w / 2, y + 14);
+  c.fillStyle = '#090a22'; c.fillRect(x, y, w, h); c.strokeStyle = '#6a4fe0'; c.lineWidth = 3; c.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
+  for (let i = 0; i < 60; i++) { c.fillStyle = LQ.NEON[i % 3]; c.globalAlpha = .12 + .25 * Math.abs(Math.sin(LQ.time + i)); c.fillRect(x + 4 + LQ.hash(i, 1, 4) * (w - 12), y + 4 + LQ.hash(i, 2, 4) * (h - 10), 3, 3); c.globalAlpha = 1; }
+  c.font = F(13, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = '#35f0e6'; c.fillText('THE LEDGERLANDS', x + w / 2, y + 14);
   const done = st().quest >= 9, done2 = st().q2 != null && st().q2 >= 8, done3 = st().q3 != null && st().q3 >= 8, done4 = st().q4 != null && st().q4 >= 9;
-  const R = [['Paystub Village', 'Ch.1  Paychecks & filing', .2, .62, '#3d9a5a', true, done], ['Shelter Coast', 'Ch.2  Family & home', .42, .34, '#3b6fd4', done, done2],
-    ['Hustle Canyon', 'Ch.3  Side gigs', .66, .66, '#c9781c', done2, done3], ['Summit of Gains', 'Ch.4  Investing', .84, .32, '#7b4bb8', done3, done4]];
-  c.strokeStyle = '#8a7a55'; c.lineWidth = 3; c.setLineDash([8, 8]); c.beginPath();
+  const R = [['Paystub Village', 'Ch.1  Paychecks & filing', .2, .62, '#35f0e6', true, done], ['Shelter Coast', 'Ch.2  Family & home', .42, .34, '#ff4fb0', done, done2],
+    ['Hustle Canyon', 'Ch.3  Side gigs', .66, .66, '#ffcf4a', done2, done3], ['Summit of Gains', 'Ch.4  Investing', .84, .32, '#9b6bff', done3, done4]];
+  c.strokeStyle = '#4a44a0'; c.lineWidth = 3; c.setLineDash([8, 8]); c.beginPath();
   R.forEach((r, i) => { const px = x + w * r[2], py = y + h * r[3]; if (i) c.lineTo(px, py); else c.moveTo(px, py); }); c.stroke(); c.setLineDash([]);
   R.forEach((r, i) => {
     const px = x + w * r[2], py = y + h * r[3], open = r[5];
     const here = ['village', 'coast', 'canyon', 'summit'][i] === currentRegion;
     const labelWidth = 2 * Math.min(r[2], 1 - r[2]) * w - 20;
-    c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.arc(px + 3, py + 4, 30, 0, 7); c.fill();
-    c.fillStyle = open ? r[4] : '#9a927c'; c.beginPath(); c.arc(px, py, 30, 0, 7); c.fill();
-    c.strokeStyle = '#3a2f1c'; c.lineWidth = 3; c.beginPath(); c.arc(px, py, 30, 0, 7); c.stroke();
-    if (here) { c.strokeStyle = '#976713'; c.beginPath(); c.arc(px, py, 35, 0, 7); c.stroke(); }
-    c.font = F(18, true); c.textBaseline = 'middle'; c.fillStyle = '#fff'; c.fillText(open ? (r[6] ? 'OK' : '!') : '?', px, py + 2);
-    c.textBaseline = 'top'; c.font = F(24); c.fillStyle = '#2c2416'; c.fillText(r[0], px, py + 40, labelWidth);
-    c.font = F(20); c.fillStyle = open ? '#1f6f5c' : '#7a6a48'; c.fillText(open ? r[1] : r[1] + '  (locked)', px, py + 66, labelWidth);
-    if (here) { c.fillStyle = '#5f4214'; c.fillText('You are here: ' + r[0], x + w / 2, y + h - 22, w - 32); }
+    if (open) { c.fillStyle = r[4]; c.globalAlpha = .16; c.beginPath(); c.arc(px, py, 42, 0, 7); c.fill(); c.globalAlpha = 1; }
+    c.fillStyle = open ? '#141a44' : '#15163a'; c.beginPath(); c.arc(px, py, 30, 0, 7); c.fill();
+    c.strokeStyle = open ? r[4] : '#3a3a70'; c.lineWidth = 4; c.beginPath(); c.arc(px, py, 30, 0, 7); c.stroke();
+    if (here) { c.strokeStyle = '#eef4ff'; c.beginPath(); c.arc(px, py, 35, 0, 7); c.stroke(); }
+    c.font = F(18, true); c.textBaseline = 'middle'; c.fillStyle = open ? r[4] : '#6d7299'; c.fillText(open ? (r[6] ? 'OK' : '!') : '?', px, py + 2);
+    c.textBaseline = 'top'; c.font = F(24); c.fillStyle = '#eef4ff'; c.fillText(r[0], px, py + 40, labelWidth);
+    c.font = F(20); c.fillStyle = open ? '#7fd6a8' : '#6d7299'; c.fillText(open ? r[1] : r[1] + '  (locked)', px, py + 66, labelWidth);
+    if (here) { c.fillStyle = '#ffcf4a'; c.fillText('You are here: ' + r[0], x + w / 2, y + h - 22, w - 32); }
   });
 };
 
@@ -604,7 +604,7 @@ async function ending() {
     L(3, 'Right on the first try', s.first + ' of ' + s.asked); L(4, 'Savvy', String(s.savvy)); L(5, 'Audits faced', String(s.audits || 0));
     L(6, 'Coins', String(s.coins)); L(7, 'Stocks', String(LQ.portfolio())); L(8, 'Net worth', String(LQ.netWorth()), GREEN);
     L(9, 'Journal entries', s.journal.length + ' of ' + Object.keys(LQ.JOURNAL).length);
-    c.font = F(23); c.textAlign = 'center'; c.fillStyle = '#7a6a48';
+    c.font = F(23); c.textAlign = 'center'; c.fillStyle = '#5a5490';
     ui.wrap(c, 'Your return is filed and the South Road is open. Chapter 2 begins in Shelter Coast. The village stays open too.', 620).forEach((ln, i) => c.fillText(ln, 480, 424 + i * 24));
   } };
   await LQ.fadeTo(0.5); await LQ.pressOk();

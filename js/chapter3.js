@@ -91,7 +91,7 @@ const gigDoc = { sel: 0, draw(c) {
   let i = 0;
   G.income.forEach(r => L(i++, r[0], M(r[1]), D.GREEN));
   G.costs.forEach(r => L(i++, r[0], '-' + M(r[1])));
-  D.sideBox(c, 'A YEAR OF THIS GIG', [['Coming in', M(G.gross)], ['Costs', '-' + M(G.cost)], 0, ['Profit', M(G.gross - G.cost), D.GREEN], [G.lines[2], '', { size: 19, color: '#7a6a48' }]]);
+  D.sideBox(c, 'A YEAR OF THIS GIG', [['Coming in', M(G.gross)], ['Costs', '-' + M(G.cost)], 0, ['Profit', M(G.gross - G.cost), D.GREEN], [G.lines[2], '', { size: 19, color: '#5a5490' }]]);
 } };
 const incDoc = { hl: null, draw(c) {
   const G = gig(), L = (i, a, b, o) => D.line(c, 84, 66 + i * 38, 470, a, b, o);
@@ -132,12 +132,12 @@ const slipDoc = { draw(c) {
   D.paper(c, 50, 12, 610, 334, 'YOUR EXPENSE SLIPS', ids.length + ' of ' + HUNT.length + ' found');
   ids.forEach((id, i) => {
     const r = SL[id], y = 56 + i * 38, dead = !r.counts;
-    c.font = F(23); c.textBaseline = 'top'; c.textAlign = 'left'; c.fillStyle = dead ? '#9a8f76' : '#2c2416'; c.fillText(r.name, 70, y);
+    c.font = F(23); c.textBaseline = 'top'; c.textAlign = 'left'; c.fillStyle = dead ? '#9a8f76' : '#15122e'; c.fillText(r.name, 70, y);
     c.textAlign = 'right'; c.fillText(M(r.amt), 500, y); c.fillStyle = dead ? '#b0332e' : '#1f6f5c'; c.fillText(dead ? 'no' : M(r.counts), 580, y);
-    c.font = F(18); c.fillStyle = '#7a6a48'; c.textAlign = 'left'; c.fillText(r.note, 86, y + 20);
+    c.font = F(18); c.fillStyle = '#5a5490'; c.textAlign = 'left'; c.fillText(r.note, 86, y + 20);
   });
-  if (!ids.length) { c.font = F(24); c.fillStyle = '#7a6a48'; c.textAlign = 'left'; c.fillText('No slips found yet.', 70, 60); }
-  c.font = F(18); c.textAlign = 'right'; c.fillStyle = '#7a6a48'; c.fillText('spent', 500, 38); c.fillText('counts', 580, 38);
+  if (!ids.length) { c.font = F(24); c.fillStyle = '#5a5490'; c.textAlign = 'left'; c.fillText('No slips found yet.', 70, 60); }
+  c.font = F(18); c.textAlign = 'right'; c.fillStyle = '#5a5490'; c.fillText('spent', 500, 38); c.fillText('counts', 580, 38);
   D.paper(c, 676, 12, 240, 334, 'SCHEDULE C');
   const L = (i, a, b, o) => D.line(c, 692, 62 + i * 36, 208, a, b, Object.assign({ size: 23 }, o));
   L(0, 'Gross', M(f.gigGross)); L(1, 'Costs', '-' + M(f.gigBase + f.tools)); L(2, 'Slips', '-' + M(f.slips), D.GREEN);
@@ -382,7 +382,7 @@ async function ending3(f) {
     L(6, 'Expense slips found', HUNT.filter(got).length + ' of ' + HUNT.length); L(7, 'Right on the first try', s.first + ' of ' + s.asked);
     L(8, 'Savvy', String(s.savvy)); L(9, 'Net worth', String(LQ.netWorth()), D.GREEN);
     L(10, 'Journal entries', s.journal.length + ' of ' + Object.keys(LQ.JOURNAL).length);
-    c.font = F(22); c.textAlign = 'center'; c.fillStyle = '#7a6a48';
+    c.font = F(22); c.textAlign = 'center'; c.fillStyle = '#5a5490';
     ui.wrap(c, 'Three chapters down. Every town stays open for trading, shopping, and audits.', 620).forEach((ln, i) => c.fillText(ln, 480, 430 + i * 22));
   } };
   await LQ.fadeTo(0.5); await LQ.pressOk();
@@ -419,7 +419,7 @@ const MYTHS3 = [
     truth: 'By default a one-person LLC files the same Schedule C and pays the same self-employment tax.' },
 ];
 LQ.BOSSES.slick = {
-  who: SLICK, label: 'SIDEWINDER SLICK', kind: 'slick', sky: ['#3a1408', '#c9642c'], hill: '#7a3a22', ground: ['#e0b070', '#c99450'], fog: '230,170,90', bar: ['#c9781c', '#f6d08a'], ink: '#7a3a12',
+  who: SLICK, label: 'SIDEWINDER SLICK', kind: 'slick', sky: ['#12061a', '#7a1f5a'], hill: '#3a1230', ground: ['#452443', '#6a3a62'], fog: '230,170,90', bar: ['#c9781c', '#f6d08a'], ink: '#7a3a12',
   approach: 'A hot wind spins the dust into a shape with a hat, a bandana, and a fistful of unreported cash.',
   intro: ['Well, well. A working stiff with a tax form. Name is Slick. I teach folks in this canyon how to keep what they earn. All of it. Off the books.', 'Every word I say, somebody down here believes. Let us see if ye are any smarter.'],
   taunt: 'Heh heh heh. That is the spirit. Cash only, friend.', fogLine: 'The dust gets in your eyes.',

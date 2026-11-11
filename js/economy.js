@@ -329,7 +329,7 @@ const brokerDoc = { sel: 0, draw(c) {
   ui.text(c, LQ.EXCHANGE_NAME[s.region], 50, 26, '#7fd6a8', F(11, true)); ui.text(c, 'Day ' + s.day + '    Cash ' + s.coins + '    Holdings ' + LQ.portfolio(), 910, 20, '#fdf8e7', F(24), 'right', 590);
   LQ.exchange().forEach((x, i) => {
     const y = 50 + i * 25, p = LQ.price(x.id), ch = (s.prices[x.id] / s.prev[x.id] - 1) * 100, n = LQ.shares(x.id);
-    if (i === this.sel) { c.fillStyle = 'rgba(243,197,49,.16)'; c.fillRect(42, y - 1, 876, 25); }
+    if (i === this.sel) { c.fillStyle = 'rgba(53,240,230,.15)'; c.fillRect(42, y - 1, 876, 25); }
     ui.text(c, x.id, 52, y, '#ffe98a', F(24), 'left', 62); ui.text(c, x.name, 122, y, '#fdf8e7', F(24), 'left', 330);
     ui.text(c, String(p), 560, y, '#fdf8e7', F(24), 'right', 98);
     ui.text(c, (ch >= 0 ? '+' : '') + ch.toFixed(1) + '%', 660, y, ch >= 0 ? '#7fd6a8' : '#ff8a80', F(24), 'right', 92);

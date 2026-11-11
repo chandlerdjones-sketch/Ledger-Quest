@@ -136,7 +136,7 @@ const world = LQ.world = {
   setSeason(s) {
     const R = this.R || LQ.REGIONS[LQ.state.region] || LQ.REGIONS.village, se = R.season || s, k = R.id + '|' + se;
     if (!this.map) return;
-    if (!this.grounds[k]) this.grounds[k] = LQ.bakeGround(this.map, se);
+    if (!this.grounds[k]) this.grounds[k] = LQ.bakeGround(this.map, se, R.id);
     this.ground = this.grounds[k]; this.season = se;
   },
   start() {
@@ -168,7 +168,7 @@ const world = LQ.world = {
     return true;
   },
   burst(x, y, col, n = 10, sp = 40) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = sp * (.4 + Math.random()); this.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, t: .5 + Math.random() * .4, col }); } },
-  shadow(g, x, y, w) { g.fillStyle = 'rgba(20,16,40,.28)'; g.fillRect(x - w / 2, y - 2, w, 3); g.fillRect(x - w / 2 + 1, y - 3, w - 2, 5); },
+  shadow(g, x, y, w) { g.fillStyle = 'rgba(4,3,16,.45)'; g.fillRect(x - w / 2, y - 2, w, 3); g.fillRect(x - w / 2 + 1, y - 3, w - 2, 5); },
   // Clear away a barrier entity (boulders, roadblock, tide) with a rumble.
   async clear(type, col, line) {
     const e = this.ents.find(x => x.type === type); if (!e) return;
@@ -204,7 +204,7 @@ const world = LQ.world = {
       if (dx && this.canStand(p.x + dx * sp, p.y)) p.x += dx * sp;
       if (dy && this.canStand(p.x, p.y + dy * sp)) p.y += dy * sp;
       p.anim += dt * 9; p.frame = Math.floor(p.anim) % 4;
-      p.dust -= dt; if (p.dust <= 0) { p.dust = .22; this.parts.push({ x: p.x, y: p.y, vx: 0, vy: -8, t: .3, col: this.season === 'winter' ? '#ffffff' : '#d9cba6' }); }
+      p.dust -= dt; if (p.dust <= 0) { p.dust = .22; this.parts.push({ x: p.x, y: p.y, vx: 0, vy: -8, t: .3, col: this.season === 'winter' ? '#eaf4ff' : '#8ff4ff' }); }
       st.px = p.x; st.py = p.y; st.dir = p.dir;
       for (const x of R.exits || []) if (p.x >= x.x0 && p.x < x.x1 && p.y >= x.y0 && p.y < x.y1 && (!x.open || x.open(st))) { p.moving = false; p.frame = 0; LQ.script(() => this.travel(x)); return; }
       if (R.auditOK(st, this.zone)) {
@@ -250,11 +250,16 @@ const world = LQ.world = {
 
   draw(g) {
     const cx = Math.round(this.cam.x), cy = Math.round(this.cam.y), p = this.p, st = LQ.state, win = this.season === 'winter', tm = LQ.time, m = this.map;
+    const fx = LQ.fx;
     g.drawImage(this.ground, -cx, -cy);
+    // glowing plants, runes, and shorelines breathe slowly
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = .62 + .2 * Math.sin(tm * 1.3);
+    g.drawImage(this.ground.glow, -cx, -cy);
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
     if (!win) for (let ty = Math.floor(cy / T); ty <= Math.floor((cy + LQ.BH) / T); ty++) for (let tx = Math.floor(cx / T); tx <= Math.floor((cx + LQ.BW) / T); tx++) {
       if (ty < 0 || tx < 0 || ty >= m.H || tx >= m.W || m.g[ty][tx] !== 'w') continue;
       const ox = Math.floor((tm * 7 + LQ.hash(tx, ty, 21) * 16) % 16);
-      g.fillStyle = 'rgba(210,238,255,.55)'; g.fillRect(tx * T - cx + ox, ty * T - cy + 5, Math.min(4, 16 - ox), 1); g.fillRect(tx * T - cx + ((ox + 8) % 13), ty * T - cy + 11, 3, 1);
+      g.fillStyle = 'rgba(95,232,255,.5)'; g.fillRect(tx * T - cx + ox, ty * T - cy + 5, Math.min(4, 16 - ox), 1); g.fillRect(tx * T - cx + ((ox + 8) % 13), ty * T - cy + 11, 3, 1);
     }
     const target = this.questTarget(), list = [];
     for (const e of this.ents) { const ex = (e.b ? e.b.x : e.tx != null ? e.tx : 20) * T; if (e.base > cy - 8 && e.base < cy + LQ.BH + 96 && ex > cx - 96 && ex < cx + LQ.BW + 48) list.push(e); }
@@ -262,36 +267,45 @@ const world = LQ.world = {
     if (this.agent) list.push({ type: 'agent', base: this.agent.y });
     list.sort((a, b) => a.base - b.base);
     const shadow = (x, y, w) => this.shadow(g, x, y, w);
+    // idle frames: 4 is a breath, 5 is a blink
+    const idle = seed => { const ph = tm * 1.5 + seed; return ph % 4.3 > 4.15 ? 5 : Math.floor(ph) % 2 ? 4 : 0; };
+    fx.begin(g);
     for (const e of list) {
       if (e.draw) e.draw(g, cx, cy, tm);
-      else if (e.type === 'tree') g.drawImage(LQ.treeSprite(e.kind, this.season), e.tx * T - 3 - cx, (e.ty + 1) * T - 31 - cy);
+      else if (e.type === 'tree') g.drawImage(LQ.treeSprite(e.kind, this.season, (e.tx * 7 + e.ty * 3) % 3), e.tx * T - 3 - cx, (e.ty + 1) * T - 31 - cy);
       else if (e.type === 'building') g.drawImage(LQ.buildingSprite(e.b, this.season), e.b.x * T - 1 - cx, (e.b.y + 3) * T - 71 - cy);
       else if (e.type === 'sign') g.drawImage(LQ.prop('sign', this.season), e.tx * T - 1 - cx, e.ty * T - 3 - cy);
       else if (e.type === 'chest') g.drawImage(LQ.prop('chest', 'summer', st.chests[e.id] ? 1 : 0), e.tx * T - 1 - cx, e.ty * T - cy);
       else if (e.type === 'coin') { shadow(e.tx * T + 8 - cx, e.ty * T + 14 - cy, 6); g.drawImage(LQ.prop('coin', 'summer', Math.floor(tm * 7 + e.i) % 4), e.tx * T + 3 - cx, e.ty * T + 1 - cy + Math.round(Math.sin(tm * 4 + e.i) * 1.5)); }
       else if (e.type === 'npc') {
-        const x = e.tx * T + 8 - cx, y = e.ty * T + 14 - cy, sp = LQ.charSprite(e.npc.look, e.dir, 0);
+        const x = e.tx * T + 8 - cx, y = e.ty * T + 14 - cy, sp = LQ.charSprite(e.npc.look, e.dir, idle(e.tx * 1.7 + e.ty * .9));
         if (e.npc.small) { shadow(x, y, 8); g.drawImage(sp, x - 7, y - 19, 14, 20); }
         else { shadow(x, y, 10); g.drawImage(sp, x - 9, y - 25); }
         if (target === e.npc.id) g.drawImage(LQ.prop('mark'), x - 3, y - 39 + Math.round(Math.sin(tm * 6) * 2));
       } else if (e.type === 'agent') {
         const a = this.agent, x = Math.round(a.x) - cx, y = Math.round(a.y) - cy; shadow(x, y, 10);
-        g.drawImage(LQ.charSprite(a.look, p.x < a.x ? 'left' : 'down', 0), x - 9, y - 25);
+        g.drawImage(LQ.charSprite(a.look, p.x < a.x ? 'left' : 'down', 0), x - 9, y - 25); fx.light(x, y - 12, 20, '#ff4fb0', .45);
         g.drawImage(LQ.prop('mark'), x - 3, y - 39 + Math.round(Math.sin(tm * 10) * 2));
       } else if (e.type === 'player') {
         const x = Math.round(p.x) - cx, y = Math.round(p.y) - cy; shadow(x, y, 10);
-        g.drawImage(LQ.charSprite(LQ.HERO.look, p.dir, p.frame), x - 9, y - 25);
+        g.drawImage(LQ.charSprite(LQ.HERO.look, p.dir, p.moving ? p.frame : idle(0)), x - 9, y - 25);
+        fx.light(x, y - 10, 30, '#35f0e6', .26); fx.light(x, y - 12, 12, '#c8fbff', .3);
       }
     }
-    for (const pt of this.parts) { g.fillStyle = pt.col; g.globalAlpha = Math.min(1, pt.t * 3); g.fillRect(Math.round(pt.x) - cx, Math.round(pt.y) - cy, 2, 2); }
+    fx.end(g);
+    for (const pt of this.parts) { const a = Math.min(1, pt.t * 3), x = Math.round(pt.x) - cx, y = Math.round(pt.y) - cy; g.fillStyle = pt.col; g.globalAlpha = a; g.fillRect(x, y, 2, 2); fx.light(x + 1, y + 1, 5, pt.col, a * .5); }
     g.globalAlpha = 1;
-    if (win) { g.fillStyle = '#ffffff'; for (let i = 0; i < 46; i++) { const sx = (LQ.hash(i, 1, 30) * LQ.BW + tm * (8 + i % 5 * 4) + Math.sin(tm + i) * 6) % LQ.BW, sy = (LQ.hash(i, 2, 30) * LQ.BH + tm * (18 + i % 4 * 7)) % LQ.BH; g.fillRect(sx, sy, i % 3 ? 1 : 2, i % 3 ? 1 : 2); } g.fillStyle = 'rgba(120,150,210,.10)'; g.fillRect(0, 0, LQ.BW, LQ.BH); }
+    fx.flush(g, tm);
+    fx.ambient(g, this.R.id, cx, cy, tm);
+    if (win) { g.fillStyle = '#eaf4ff'; for (let i = 0; i < 46; i++) { const sx = (LQ.hash(i, 1, 30) * LQ.BW + tm * (8 + i % 5 * 4) + Math.sin(tm + i) * 6) % LQ.BW, sy = (LQ.hash(i, 2, 30) * LQ.BH + tm * (18 + i % 4 * 7)) % LQ.BH; g.fillRect(sx, sy, i % 3 ? 1 : 2, i % 3 ? 1 : 2); } g.fillStyle = 'rgba(120,130,255,.07)'; g.fillRect(0, 0, LQ.BW, LQ.BH); }
     if (this.R.overlay) this.R.overlay(g, this, st);
   },
 
   drawUI(c) {
     const st = LQ.state, q = LQ.curQuest(), R = this.R;
     if (ui.doc) return;
+    // HUD plates: dark glass with a thin neon edge
+    const hud = (x, y, w, h) => { c.fillStyle = 'rgba(6,5,22,.84)'; c.fillRect(x, y, w, h); c.fillStyle = 'rgba(155,107,255,.55)'; c.fillRect(x, y + h - 2, w, 2); c.fillStyle = 'rgba(53,240,230,.5)'; c.fillRect(x, y, w, 1); };
     // quest tracker
     const s = `Coins ${st.coins}    Savvy ${st.savvy}`;
     const finder = R.finder && LQ.finderStatus(R, this);
@@ -301,13 +315,13 @@ const world = LQ.world = {
     const ew = lines.length ? Math.min(470, Math.max(...lines.map(line => c.measureText(line).width)) + 28) : 0;
     c.font = F(26); const sw = Math.min(470, c.measureText(s).width + 32);
     const tw = Math.min(LQ.VW - 44 - Math.max(sw, ew), Math.max(250, c.measureText(q.text).width + 44));
-    c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(16, 14, tw, 62); c.fillStyle = '#f3c531'; c.fillRect(16, 14, 5, 62);
-    c.font = F(10, true); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#f3c531'; c.fillText('QUEST', 32, 23);
-    ui.text(c, q.text, 32, 40, '#fdf8e7', F(26), 'left', tw - 36);
+    hud(16, 14, tw, 62); c.fillStyle = '#ffcf4a'; c.fillRect(16, 14, 5, 62);
+    c.font = F(10, true); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#ffcf4a'; c.fillText('QUEST', 32, 23);
+    ui.text(c, q.text, 32, 40, '#eef4ff', F(26), 'left', tw - 36);
     // coins and savvy
-    c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(LQ.VW - sw - 16, 14, sw, 38); ui.text(c, s, LQ.VW - 32, 18, '#ffe98a', F(26), 'right', sw - 32);
+    hud(LQ.VW - sw - 16, 14, sw, 38); ui.text(c, s, LQ.VW - 32, 18, '#ffe98a', F(26), 'right', sw - 32);
     if (lines.length) {
-      c.fillStyle = 'rgba(9,11,24,.82)'; c.fillRect(LQ.VW - ew - 16, 56, ew, 8 + lines.length * 24);
+      hud(LQ.VW - ew - 16, 56, ew, 8 + lines.length * 24);
       lines.forEach((line, i) => ui.text(c, line, LQ.VW - 30, 58 + i * 24, i ? '#ffe98a' : '#c9cdea', F(24), 'right', ew - 28));
     }
     // pointer toward an off-screen quest target
@@ -318,16 +332,16 @@ const world = LQ.world = {
       if (sx < 0 || sx > LQ.VW || sy < 0 || sy > LQ.VH) {
         const ang = Math.atan2(sy - LQ.VH / 2, sx - LQ.VW / 2), px = LQ.clamp(LQ.VW / 2 + Math.cos(ang) * 600, 40, LQ.VW - 40), py = LQ.clamp(LQ.VH / 2 + Math.sin(ang) * 600, lines.length > 1 ? 138 : 100, LQ.VH - 40), b = Math.sin(LQ.time * 6) * 4;
         c.save(); c.translate(px + Math.cos(ang) * b, py + Math.sin(ang) * b); c.rotate(ang);
-        c.fillStyle = '#090b18'; c.beginPath(); c.moveTo(20, 0); c.lineTo(-14, -17); c.lineTo(-14, 17); c.fill();
-        c.fillStyle = '#f3c531'; c.beginPath(); c.moveTo(14, 0); c.lineTo(-10, -11); c.lineTo(-10, 11); c.fill(); c.restore();
+        c.fillStyle = '#05050f'; c.beginPath(); c.moveTo(20, 0); c.lineTo(-14, -17); c.lineTo(-14, 17); c.fill();
+        c.fillStyle = '#ffcf4a'; c.beginPath(); c.moveTo(14, 0); c.lineTo(-10, -11); c.lineTo(-10, 11); c.fill(); c.restore();
       }
     }
     if (this.hintT < 6 && !LQ.busy && !ui.menu) {
-      c.fillStyle = 'rgba(9,11,24,.78)'; c.fillRect(170, 486, 620, 38);
+      hud(170, 486, 620, 38);
       ui.text(c, 'Arrows or WASD: move    Space: talk    J: journal    M: sound', LQ.VW / 2, 491, '#c9cdea', F(24), 'center');
     }
     // soft vignette
-    const v = c.createRadialGradient(LQ.VW / 2, LQ.VH / 2, 260, LQ.VW / 2, LQ.VH / 2, 620); v.addColorStop(0, 'rgba(7,8,26,0)'); v.addColorStop(1, 'rgba(7,8,26,.38)');
+    const v = c.createRadialGradient(LQ.VW / 2, LQ.VH / 2, 260, LQ.VW / 2, LQ.VH / 2, 620); v.addColorStop(0, 'rgba(7,8,26,0)'); v.addColorStop(1, 'rgba(10,4,34,.3)');
     c.fillStyle = v; c.fillRect(0, 0, LQ.VW, LQ.VH);
   },
 };
