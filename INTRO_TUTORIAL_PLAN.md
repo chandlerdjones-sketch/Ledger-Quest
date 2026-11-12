@@ -89,3 +89,25 @@ No stretch without control is longer than about 20 seconds.
 ## Risks
 - The tutorial teaches combat, which Chandler has not playtested. The imp beat is one function, so if combat is cut it becomes a chase that ends when the imp is cornered.
 - Opening pace depends on feel that only a hand playtest can judge. Expect one tuning pass.
+
+## Status (Nov 11)
+Built and committed on `gameplay-depth`. Waiting on Chandler's playtest.
+
+Where the build differs from the plan
+- The Mayor's knock comes after the player has read the great door and turned back, so nobody can leave without seeing it.
+- The quest tracker follows the opening ("Read the letter on the table", "Find whatever took your coin purse") until the knock.
+- Scrap Imps now walk the shortest route to the player, so walls and doorways no longer trap them. This also applies in the Lantern Cave.
+- The cellar imp pays its coins once, even if the player reloads and fights it again.
+- The tonic tip is one line in the Mayor's speech, not a separate prompt.
+
+Tested
+- One keyboard run from the title screen through every beat to the Mayor and quest 1, including the J menu
+- Reloading part way through resumes in the cottage at the right stage
+- Skipping reaches the village with a career, and the Mayor hands over the Stamp
+- Fainting in the cellar costs no coins and wakes the player at the stairs
+- A save with no opening stage loads straight into the village
+- The wisp toll, and `node tools/check.js .`
+
+Not tested: a person playing it by hand for pace and difficulty. Note for testing: the Browser pane pauses the game while hidden.
+
+Note on coins: finishing the Mayor's quest pays the usual payday on top of her 50 coins, so a Nurse leaves the opening with about 160.

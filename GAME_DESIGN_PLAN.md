@@ -103,6 +103,7 @@ Ledger Quest (`~/Desktop/Ledger Quest/`, plain HTML and JS, about 5,300 lines, n
 |---|---|---|
 | 0 | Done | Branch `gameplay-depth`, this document |
 | 1 | Built, waiting on Chandler's playtest | Village slice. See the Phase 1 notes below. |
+| Opening | Built, waiting on Chandler's playtest | The cottage and cellar prologue. See `INTRO_TUTORIAL_PLAN.md`. The cellar's great door is the Back Office entrance for Phase 4. |
 | 2 to 5 | Not started | |
 
 ## Phase 1 notes (Nov 11)

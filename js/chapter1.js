@@ -298,14 +298,15 @@ const advance = () => {
 };
 
 async function qMayor() {
-  const c = LQ.career();
-  await say(N.mayor, c.kind === 'se' ? "Welcome to Paystub Village, traveler! I'm Mayor Marigold. You must be the one opening the new candle shop. We love a small business here."
-    : `Welcome to Paystub Village, traveler! I'm Mayor Marigold. You must be the new ${c.name.toLowerCase()} at ${c.work}.`);
-  await say(N.mayor, "A word of warning. A strange fog has been rolling down from Bracket Mountain, and it fills people's heads with nonsense about taxes. Worse, auditors have started leaping out at folks to test what they know.");
-  await say(N.mayor, 'Learn how taxes really work and neither can touch you. Start with Foreman Brannock at the Work Hall, west of the plaza. And talk to everyone. This village is full of people who know a trick or two.');
-  await say(N.mayor, 'Oh, and take these 50 coins to get started. Merchant Saffron and Broker Bex in the plaza will happily help you spend them.');
-  await say(N.mayor, 'One more thing. Take this Truth Stamp. The creatures that crawl out of the fog cannot stand an honest mark. Press E to swing it.');
-  LQ.give('stamp'); LQ.gain(0, 50, 'Welcome gift'); advance();
+  const c = LQ.career(), had = st().items.includes('stamp');
+  await say(N.mayor, (had ? 'There you are! That crash had me worried. ' : '') + (c.kind === 'se' ? "Welcome to Paystub Village! I'm Mayor Marigold. You must be the one opening the new candle shop."
+    : `Welcome to Paystub Village! I'm Mayor Marigold. You must be the new ${c.name.toLowerCase()} at ${c.work}.`));
+  if (had) await say(N.mayor, 'Is that a Truth Stamp? Clerk Vell carried one just like it, right up to the night he vanished from your cottage. Keep it close. The things that crawl out of the fog cannot stand an honest mark.');
+  await say(N.mayor, "That fog rolls down from Bracket Mountain and fills people's heads with nonsense about taxes. And lately, auditors leap out at folks to test what they know.");
+  await say(N.mayor, 'Learn how taxes really work and neither can touch you. Start with Foreman Brannock at the Work Hall, west of the plaza. And talk to everyone.');
+  await say(N.mayor, 'Take these 50 coins. Merchant Saffron and Broker Bex in the plaza will help you spend them. Saffron sells tonics, which mend hearts.');
+  if (!had) { await say(N.mayor, 'One more thing. Take this Truth Stamp. The creatures that crawl out of the fog cannot stand an honest mark. Press E to swing it.'); LQ.give('stamp'); }
+  LQ.gain(0, 50, 'Welcome gift'); advance();
 }
 
 async function qBrannock() {

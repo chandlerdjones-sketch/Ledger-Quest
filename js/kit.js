@@ -70,9 +70,10 @@ const K = LQ.kit = {
     return true;
   },
   async faint(w) {
-    const s = st(), lost = Math.min(20, s.coins);
+    const s = st(), home = w.room && w.room.def.home, lost = home ? 0 : Math.min(20, s.coins);   // `home` rooms cost nothing and wake you inside
     await LQ.fadeTo(1, .5); s.coins -= lost; s.hp = K.maxHp(); K.inv = 0;
-    if (w.room) { w.start(); w.p.dir = s.dir = 'down'; w.music(); }
+    if (home) w.loadRoom(w.room.room, 'faint');
+    else if (w.room) { w.start(); w.p.dir = s.dir = 'down'; w.music(); }
     await LQ.fadeTo(0, .5);
     await LQ.say(null, 'You wake beside the Notary Lamp, patched up and steady.' + (lost ? ' The fog made off with ' + lost + ' coins.' : ''));
   },

@@ -191,19 +191,31 @@ const world = LQ.world = {
     if (this.R.arrive) await this.R.arrive();
   },
   // The save keeps the spot outside the door, so quitting inside a room is always safe.
-  async enterRoom(id) {
-    const room = LQ.roomRegion(id);
+  // Build a room fresh and step into it. `from` names where you came from, for rooms with more than one way in.
+  loadRoom(id, from) {
+    const room = LQ.roomRegion(id), at = from && room.def.from && room.def.from[from];
     delete this.maps[room.id]; delete this.grounds[room.id + '|summer'];
+    this.start(room);
+    if (at) {
+      Object.assign(this.p, { x: at[0] * T + 8, y: at[1] * T + 12, dir: at[2] });
+      this.cam.x = LQ.clamp(this.p.x - LQ.BW / 2, 0, this.map.W * T - LQ.BW); this.cam.y = LQ.clamp(this.p.y - LQ.BH / 2 - 8, 0, this.map.H * T - LQ.BH);
+    }
+    return room;
+  },
+  async enterRoom(id, from) {
     await LQ.fadeTo(1, 0.3);
-    this.start(room); this.music();
+    const room = this.loadRoom(id, from || (this.room ? this.room.room : 'village')); this.music();
     await LQ.fadeTo(0, 0.4);
     ui.showBanner(room.title, room.sub());
     if (room.arrive) await room.arrive(this);
   },
   async exitRoom() {
+    const def = this.room.def;
+    if (def.exitTo) return this.enterRoom(def.exitTo);
     await LQ.fadeTo(1, 0.3);
     this.start(); this.p.dir = LQ.state.dir = 'down'; this.music();
     await LQ.fadeTo(0, 0.4);
+    if (def.exitBanner && def.exitBanner(LQ.state)) ui.showBanner(this.R.title, this.R.sub());
   },
 
   update(dt) {
@@ -361,9 +373,12 @@ const world = LQ.world = {
         c.fillStyle = '#ffcf4a'; c.beginPath(); c.moveTo(14, 0); c.lineTo(-10, -11); c.lineTo(-10, 11); c.fill(); c.restore();
       }
     }
-    if (this.hintT < 6 && !LQ.busy && !ui.menu) {
-      hud(130, 486, 700, 38);
-      ui.text(c, 'Arrows or WASD: move    Space: talk    E: use tool    J: journal    M: sound', LQ.VW / 2, 491, '#c9cdea', F(24), 'center');
+    const tip = LQ.tip ? LQ.tip(this) : null;
+    if ((tip || this.hintT < 6) && !LQ.busy && !ui.menu) {
+      const text = tip || 'Arrows or WASD: move    Space: talk    E: use tool    J: journal    M: sound';
+      c.font = F(24); const hw = Math.min(900, c.measureText(text).width + 44);
+      hud((LQ.VW - hw) / 2, 486, hw, 38);
+      ui.text(c, text, LQ.VW / 2, 491, tip ? '#ffe98a' : '#c9cdea', F(24), 'center', hw - 24);
     }
     // soft vignette
     const v = c.createRadialGradient(LQ.VW / 2, LQ.VH / 2, 260, LQ.VW / 2, LQ.VH / 2, 620); v.addColorStop(0, 'rgba(7,8,26,0)'); v.addColorStop(1, 'rgba(10,4,34,.3)');

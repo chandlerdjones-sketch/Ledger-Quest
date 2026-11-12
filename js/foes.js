@@ -5,6 +5,19 @@ const sfx = n => LQ.audio.sfx(n);
 const R = (g, x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
 let toldWisp = false;
 
+// Steps-to-the-hero for every walkable tile nearby, refreshed a few times a second and shared by all imps.
+let fieldAt = -1, fieldMap = new Map(), fieldFor = null;
+const field = w => {
+  if (fieldFor === w.map && LQ.time - fieldAt < .2) return fieldMap;
+  fieldAt = LQ.time; fieldFor = w.map;
+  const p = w.p, sx = Math.floor(p.x / T), sy = Math.floor((p.y - 3) / T), m = fieldMap = new Map([[sx + ',' + sy, 0]]), q = [[sx, sy, 0]];
+  for (let i = 0; i < q.length; i++) {
+    const [x, y, d] = q[i]; if (d >= 14) continue;
+    for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (x + ox) + ',' + (y + oy); if (m.has(k) || w.isSolid(x + ox, y + oy)) continue; m.set(k, d + 1); q.push([x + ox, y + oy, d + 1]); }
+  }
+  return m;
+};
+
 LQ.foes = {
   // Drifts back and forth between two points (in pixels). Touching it costs coins. Lantern light drives it off.
   wisp(w, ax, ay, bx, by, speed = 24) {
@@ -46,7 +59,13 @@ LQ.foes = {
       step(dt) {
         const p = w.p, dx = p.x - e.x, dy = p.y - 6 - e.y, d = Math.hypot(dx, dy);
         if (e.stun > 0) { e.stun -= dt; e.move(e.vx * dt, e.vy * dt); return; }
-        if (d < 110 && d > 1) e.move(dx / d * 36 * dt, dy / d * 36 * dt);
+        // follow the shortest walkable route to the hero, so walls and doorways do not trap it
+        const F = field(w), ex = Math.floor(e.x / T), ey = Math.floor(e.y / T), here = F.get(ex + ',' + ey);
+        let gx = p.x, gy = p.y - 6;
+        if (here == null || here > 12) return;
+        if (here > 1) { let best = here; for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const v = F.get((ex + ox) + ',' + (ey + oy)); if (v != null && v < best) { best = v; gx = (ex + ox) * T + 8; gy = (ey + oy) * T + 8; } } }
+        const tx2 = gx - e.x, ty2 = gy - e.y, td = Math.hypot(tx2, ty2);
+        if (td > 1) e.move(tx2 / td * 36 * dt, ty2 / td * 36 * dt);
         if (d < 10) LQ.kit.hurt(1, w, e.x, e.y);
       },
       draw(g, cx, cy, tm) {

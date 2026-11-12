@@ -9,7 +9,7 @@ global.LQ = { ui: { toast: noop, wrap: () => [], text: noop, panel: noop, choice
 const base = () => ({ quest: 9, w4: 0, savvy: 0, coins: 500, asked: 0, first: 0, journal: [], items: [], season: 'summer', chests: {}, coinsGot: {}, flags: { married: true }, career: 'nurse', streak: 0, gear: [], tips: {},
   lossBank: 0, region: 'canyon', q2: 8, rcpt: {}, w4b: 0, wh2: null, child: true, q3: 0, gig: null, est3: null, q4: null, inv: null, hold4: null, harv4: null, acct4: null });
 LQ.state = base();
-for (const f of ['taxdata', 'economy', 'household', 'chapter1', 'audit', 'battle', 'chapter2', 'chapter3', 'chapter4', 'world', 'coast', 'canyon', 'summit', 'kit', 'foes', 'rooms', 'vaults1'])
+for (const f of ['taxdata', 'economy', 'household', 'chapter1', 'audit', 'battle', 'chapter2', 'chapter3', 'chapter4', 'world', 'coast', 'canyon', 'summit', 'kit', 'foes', 'rooms', 'vaults1', 'intro'])
   vm.runInThisContext(fs.readFileSync(dir + '/js/' + f + '.js', 'utf8'), { filename: f + '.js' });
 let bad = 0; let fail = m => { bad++; console.log('  FAIL: ' + m); };
 const M = LQ.money, TX = LQ.TAX;
@@ -162,6 +162,31 @@ for (const career of ['nurse', 'food', 'owner']) {
   '1234I'.split('').forEach(ch => { const c = cells.find(x => x.ch === ch); if (!c || !near(a, c)) fail('cave: cannot reach part ' + ch + ' before the door opens'); });
   const chest = cells.find(c => c.ch === 'C'); if (near(a, chest)) fail('cave: the chest can be reached without lighting the fires'); if (!near(b, chest)) fail('cave: the chest cannot be reached after the door opens');
   console.log('  cave checked'); }
+{ LQ.state = base(); Object.assign(LQ.state, { region: 'village', flags: { intro: 1 }, quest: 0, items: [] });
+  const near = (set, c) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => set.has((c.tx + dx) + ',' + (c.ty + dy)));
+  // the cottage: every prop can be reached, and the crate can always be pushed off the trapdoor
+  let reg = LQ.roomRegion('cottage1'), m = reg.build(), cells = m.cells, at = ch => cells.filter(c => c.ch === ch);
+  if (m.W < 20 || m.H < 12) fail('cottage: room smaller than the screen');
+  const trap = at('H')[0], cSolid = new Set(cells.filter(c => 'bTchN'.includes(c.ch)).map(c => c.tx + ',' + c.ty)), start = [(reg.sx - 8) / 16, (reg.sy - 12) / 16];
+  const withCrate = new Set(cSolid); withCrate.add(trap.tx + ',' + trap.ty);
+  const a = roomFill(m, start, withCrate);
+  'bTch'.split('').forEach(ch => { if (!near(a, at(ch)[0])) fail('cottage: cannot reach ' + ch); });
+  const free = (x, y) => !m.solid[y][x] && !cSolid.has(x + ',' + y);
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!free(trap.tx - dx, trap.ty - dy) || !a.has((trap.tx - dx) + ',' + (trap.ty - dy)) || !free(trap.tx + dx, trap.ty + dy)) fail('cottage: the crate cannot be pushed off the trapdoor toward ' + [dx, dy]);
+  if (roomFill(m, start, cSolid).has(Math.floor(reg.exits[0].x0 / 16) + ',' + Math.floor(reg.exits[0].y0 / 16))) fail('cottage: the night door can be walked through');
+  for (const k in LQ.ROOMS.cottage1.from) { const p = LQ.ROOMS.cottage1.from[k]; if (!a.has(p[0] + ',' + p[1])) fail('cottage: arrival spot from ' + k + ' is blocked'); }
+  // the cellar: the gate holds, the stamp and seal come before it, and the great door cannot be passed
+  reg = LQ.roomRegion('cellar1'); m = reg.build(); cells = m.cells; at = ch => cells.filter(c => c.ch === ch);
+  if (m.W < 20 || m.H < 12) fail('cellar: room smaller than the screen');
+  const s0 = [(reg.sx - 8) / 16, (reg.sy - 12) / 16], solid = new Set(cells.filter(c => 'QVZPL'.includes(c.ch)).map(c => c.tx + ',' + c.ty)), shut = new Set(solid); at('G').forEach(c => shut.add(c.tx + ',' + c.ty));
+  const before = roomFill(m, s0, shut), after = roomFill(m, s0, solid);
+  'PZL'.split('').forEach(ch => { if (!near(before, at(ch)[0])) fail('cellar: cannot reach ' + ch + ' before the gate opens'); });
+  if (near(before, at('V')[0]) || before.has(at('m')[0].tx + ',' + at('m')[0].ty)) fail('cellar: the gate can be bypassed');
+  at('Q').concat(at('V')).forEach(c => { if (!near(after, c)) fail('cellar: cannot reach ' + c.ch); });
+  at('o').concat(at('m')).forEach(c => { if (!after.has(c.tx + ',' + c.ty)) fail('cellar: cannot reach ' + c.ch + ' at ' + c.tx + ',' + c.ty); });
+  if (!LQ.intro.active()) fail('intro: a new game at stage 1 is not treated as in the opening');
+  LQ.state.flags = {}; if (LQ.intro.active()) fail('intro: an old save is treated as in the opening');
+  console.log('  cottage and cellar checked'); }
 for (const t of LQ.TOOLS) if (!t.consumable && !t.free) fail('tool ' + t.id + ' has no route that costs no coins');
 for (const id in LQ.ROOMS) { LQ.state = base(); LQ.state.flags = {}; const rows = LQ.ROOMS[id].rows(LQ.state); if (rows.some(r => r.length !== rows[0].length)) fail('room ' + id + ' has rows of different lengths'); }
 
@@ -172,7 +197,7 @@ for (const [name, Q, C] of [['ch3', LQ.QUESTS3, LQ.CH3], ['ch4', LQ.QUESTS4, LQ.
   Object.values(C.chests).forEach(ch => { if (!LQ.JOURNAL[ch.tip]) fail(name + ' chest tip missing journal ' + ch.tip); });
 }
 LQ.AUDIT_POOL.forEach(p => { if (!LQ.JOURNAL[p.need]) fail('audit question needs unknown journal entry ' + p.need); if (p.o.length !== 3) fail('audit options ' + p.q); });
-const src = ['chapter3', 'chapter4', 'vaults1'].map(f => fs.readFileSync(dir + '/js/' + f + '.js', 'utf8')).join('\n');
+const src = ['chapter3', 'chapter4', 'vaults1', 'intro'].map(f => fs.readFileSync(dir + '/js/' + f + '.js', 'utf8')).join('\n');
 for (const m of src.matchAll(/LQ\.learn\('([^']+)'\)/g)) if (!LQ.JOURNAL[m[1]]) fail('learn of unknown journal id ' + m[1]);
 for (const m of src.matchAll(/LQ\.give\('([^']+)'\)/g)) if (!LQ.ITEMS[m[1]]) fail('give of unknown item id ' + m[1]);
 for (const m of src.matchAll(/j: '([^']+)'/g)) if (!LQ.JOURNAL[m[1]]) fail('tip with unknown journal id ' + m[1]);
