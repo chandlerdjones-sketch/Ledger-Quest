@@ -159,7 +159,7 @@ const world = LQ.world = {
     R.spawn(this, st);
     this.refresh();
     this.cam.x = LQ.clamp(this.p.x - LQ.BW / 2, 0, m.W * T - LQ.BW); this.cam.y = LQ.clamp(this.p.y - LQ.BH / 2 - 8, 0, m.H * T - LQ.BH);
-    this.zone = ''; this.hintT = 0; this.agent = null;
+    this.zone = ''; this.hintT = 0; this.agent = null; this.pushT = 0;
   },
   enter() { this.music(); },
   music() { LQ.audio.play(this.R.music(this, LQ.state)); },
@@ -213,6 +213,7 @@ const world = LQ.world = {
     const def = this.room.def;
     if (def.exitTo) return this.enterRoom(def.exitTo);
     await LQ.fadeTo(1, 0.3);
+    def.leave?.(LQ.state);
     this.start(); this.p.dir = LQ.state.dir = 'down'; this.music();
     await LQ.fadeTo(0, 0.4);
     if (def.exitBanner && def.exitBanner(LQ.state)) ui.showBanner(this.R.title, this.R.sub());

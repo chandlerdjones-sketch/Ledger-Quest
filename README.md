@@ -53,3 +53,11 @@ Then open `http://localhost:8765` in a browser.
 ```bash
 node tools/check.js .
 ```
+
+`tools/play-check.js` also runs the game's update and draw loops in Node with stubbed browser APIs. It walks through the opening and all four chapter quest chains, tests shop and broker transactions, and checks puzzle outcomes and save round-trips. It positions the hero at some interactions and uses a canvas stub, so use the browser for hands-on navigation and visual or audio checks.
+
+```bash
+node tools/play-check.js . nurse
+node tools/play-check.js . owner
+node tools/play-check.js . food
+```

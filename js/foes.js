@@ -47,14 +47,20 @@ LQ.foes = {
       } };
     w.ents.push(e); return e;
   },
-  // A crumpled-paper pest that chases you. Two hits with the Truth Stamp. Drops coins.
-  imp(w, tx, ty, onDown) {
+  // A crumpled-paper pest that takes two Stamp hits. Named rewards are paid once per save.
+  imp(w, tx, ty, rewardKey, onDown) {
     const e = { type: 'imp', foe: true, x: tx * T + 8, y: ty * T + 8, hp: 2, stun: 0, vx: 0, vy: 0, tx, base: ty * T + 14, glowR: 10,
       fits: (x, y) => ![[-4, -3], [4, -3], [-4, 4], [4, 4]].some(([ox, oy]) => w.isSolid(Math.floor((x + ox) / T), Math.floor((y + oy) / T))),
       move(mx, my) { if (e.fits(e.x + mx, e.y)) e.x += mx; if (e.fits(e.x, e.y + my)) e.y += my; e.tx = Math.floor(e.x / T); e.base = e.y + 6; },
       hit(w2, d) {
         e.hp--; e.stun = .28; e.vx = d[0] * 110; e.vy = d[1] * 110; sfx('hit'); w.burst(e.x, e.y, '#fdf8e7', 8, 40);
-        if (e.hp <= 0) { w.remove(e); w.burst(e.x, e.y, '#ffcf4a', 16, 55); LQ.state.coins += 5; sfx('coin'); if (onDown) onDown(e); }
+        if (e.hp > 0) return;
+        w.remove(e); w.burst(e.x, e.y, '#ffcf4a', 16, 55);
+        const s = LQ.state;
+        if (rewardKey && !s.flags[rewardKey]) {
+          s.flags[rewardKey] = true; s.coins += 5; sfx('coin'); LQ.save();
+        }
+        if (onDown) onDown(e);
       },
       step(dt) {
         const p = w.p, dx = p.x - e.x, dy = p.y - 6 - e.y, d = Math.hypot(dx, dy);

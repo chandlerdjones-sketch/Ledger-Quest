@@ -51,7 +51,7 @@ const R = LQ.REGIONS.coast = {
   auditOK: (st, zone) => st.q2 != null && st.q2 >= 1 && zone !== 'light',
   fallbackTarget: st => st.q2 >= 8 && st.q3 == null ? 'eastroad' : null,
   exits: [{ x0: 23 * T, x1: 25 * T, y0: 0, y1: 13, to: 'village', px: 24 * T, py: 40 * T, dir: 'up' },
-    { x0: 47 * T, x1: 49 * T, y0: 9 * T, y1: 13 * T, to: 'canyon', px: 2 * T + 8, py: 21 * T, dir: 'right' }],
+    { x0: 47 * T, x1: 49 * T, y0: 9 * T, y1: 13 * T, to: 'canyon', px: 2 * T + 8, py: 21 * T, dir: 'right', open: st => st.q2 >= 8 }],
   arrive: async () => { if (LQ.state.q2 == null) await LQ.CH2.begin(); },
   // lost receipts sparkle on the ground once Banker Brine has explained the hunt
   addReceipts(w, st) {

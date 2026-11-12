@@ -50,14 +50,14 @@ LQ.QUESTS3 = [
 
 Object.assign(LQ.JOURNAL, {
   gig3: { title: 'Employee or contractor', text: 'An employee has tax withheld from each paycheck, and the employer pays half of Social Security and Medicare. An independent contractor gets paid in full and handles all of it alone. A side gig run to make a profit is a business. Something done only for fun is a hobby: its income is still taxed, and its expenses cannot be deducted.' },
-  f1099: { title: 'Forms 1099-NEC and 1099-K', text: 'A business that pays a contractor $2,000 or more in 2026 sends Form 1099-NEC. A payment platform sends Form 1099-K when it pays you more than $20,000 in more than 200 payments. Both arrive by January 31, and the IRS gets a copy. A 1099-K shows the gross amount before the platform took its fees, so remember to deduct the fees.' },
+  f1099: { title: 'Forms 1099-NEC and 1099-K', text: 'Businesses generally send Form 1099-NEC for $2,000 or more in qualifying contractor payments in 2026. For payment apps and marketplaces, Form 1099-K is required above $20,000 and 200 transactions. Direct card payments have no minimum. Form 1099-K shows gross payments before fees. Report the income once and track the fees separately.' },
   allincome: { title: 'All income counts', text: 'Income from a gig is taxable whether or not a form arrives. Cash, small jobs, and sales under a reporting threshold all go on your return. The thresholds only decide who has to send paperwork, not what is taxed.' },
   expenses3: { title: 'Business expenses', text: 'A business deducts costs that are ordinary and necessary: common in your trade and helpful to it. Supplies, fees, licenses, and the business share of a phone all count. When something is used for both work and home, only the business share counts. Keep the receipt and write down what it was for.' },
   mileage3: { title: 'Vehicle costs: two methods', text: 'For business driving you can use the standard mileage rate, 72.5 cents a mile in the first half of 2026 and 76 cents from July 1, which already covers fuel, repairs, insurance, and wear. Tolls and parking on a job are extra. Or you can track actual costs and deduct the business share. Either way you need a log written at the time, and commuting from home to a regular workplace never counts.' },
   setax3: { title: 'Self-employment tax', text: 'Employees pay 7.65% for Social Security and Medicare, and the employer pays another 7.65%. Work for yourself and you pay both halves: 15.3%, applied to 92.35% of your net profit. It is owed once your net self-employment earnings reach $400, and it is added on top of income tax. Half of it is deducted from your income.' },
   qbi3: { title: 'Business income deduction', text: 'Most people with business profit can deduct 20% of it from taxable income. It is called the qualified business income deduction. You get it whether you itemize or take the standard deduction, and it lowers income tax only, not self-employment tax.' },
-  estimates3: { title: 'Quarterly estimated taxes', text: 'Tax is pay-as-you-go. With no employer withholding from gig income, you pay it yourself in four estimated payments using Form 1040-ES. They are due April 15, June 15, September 15, and January 15 of the next year. Estimates are expected if you will owe $1,000 or more at filing.' },
-  safeharbor: { title: 'The safe harbor', text: 'You owe no underpayment penalty if what you paid in during the year covers at least 90% of this year\'s tax, or 100% of last year\'s tax. If last year\'s income was over $150,000, that second figure is 110%. The penalty is worked out quarter by quarter, so one big payment at the end does not erase a penalty for the early quarters.' },
+  estimates3: { title: 'Quarterly estimated taxes', text: 'Tax is pay-as-you-go. With no employer withholding from gig income, you pay it yourself in four estimated payments using Form 1040-ES. They are due April 15, June 15, September 15, and January 15 of the next year. A balance of $1,000 or more is one part of the test. Check the safe harbor and use Form 1040-ES to see what to pay.' },
+  safeharbor: { title: 'The safe harbor', text: 'You can generally avoid an underpayment penalty if your payments are on time and cover at least 90% of this year\'s tax, or 100% of last year\'s tax. If last year\'s income was over $150,000, that second figure is 110%. The penalty is worked out quarter by quarter, so one big payment at the end does not erase a penalty for the early quarters.' },
   schedC: { title: 'Schedule C', text: 'Schedule C is where a one-person business reports its year: everything that came in, minus the expenses, equals net profit. The net profit goes on your Form 1040 as income, and it is also the number self-employment tax is figured on.' },
   meals3: { title: 'Meals, and what never counts', text: 'A business meal with a client is 50% deductible. Your own lunch on a normal work day is personal. Clothing counts only if it is required for the work and not suitable for everyday wear. Fines and penalties paid to a government are never deductible.' },
   tip3Log: { title: 'Tip: write the log at the time', text: 'A mileage log needs the date, the distance, and the business reason for each trip, written down when it happens. A log rebuilt from memory months later is the first thing an auditor throws out.' },
@@ -68,7 +68,7 @@ Object.assign(LQ.JOURNAL, {
   pro3Health: { title: 'Pro: self-employed health insurance', text: 'If you are self-employed and cannot get coverage through your own or your spouse\'s employer, you can deduct the health insurance premiums you pay for yourself and your family. It comes off your income directly, with no need to itemize.' },
   pro3Office: { title: 'Pro: the home office', text: 'A home office counts only if the space is used regularly and only for the business. The simple method is $5 a square foot, up to 300 square feet, for a most of $1,500. An employee working from home for an employer cannot claim it.' },
   pro3Car: { title: 'Pro: choosing a vehicle method', text: 'To use the standard mileage rate on a vehicle you own, choose it in the first year you use the vehicle for business. After that you may switch between methods year by year. Start with actual costs and you are usually locked out of the mileage rate for that vehicle.' },
-  pro3Bank: { title: 'Pro: a separate account', text: 'Run the gig through its own bank account. Every deposit is income and every payment out is a possible expense, which turns tax season into a matter of reading one statement. Mixing it with grocery money is how deductions get lost.' },
+  pro3Bank: { title: 'Pro: a separate account', text: 'Run the gig through its own bank account. Match deposits to sales and payments to receipts. Label transfers and loan proceeds separately so they do not get counted as sales. Mixing it with grocery money is how deductions get lost.' },
   pro3W4: { title: 'Pro: withhold instead of estimating', text: 'If you also have a paycheck, you can cover gig tax by raising the withholding on your W-4 instead of sending estimates. Withholding is treated as if it were paid evenly through the year, even when it comes out late in the year.' },
   pro3Hire: { title: 'Pro: when you pay a helper', text: 'When your business pays an independent contractor $2,000 or more in 2026, you are the one who must send a Form 1099-NEC, by January 31. Get a Form W-9 with their name and tax ID before you pay them the first time.' },
 });
@@ -201,7 +201,7 @@ async function qJuniper() {
 }
 const PAID = {
   driver: () => `Trailhail paid you ${M(21000)} across 900 rides. A payment platform sends Form 1099-K when it pays you more than ${M(TX.kThreshold)} in more than ${TX.kCount} payments. You are over both lines, so a 1099-K is coming, and the kingdom gets a copy. Your ${M(1000)} of private bookings came in cash. Nobody sends a form for those.`,
-  seller: () => `The Bazaar Board paid you ${M(16000)} across 340 orders. A payment platform sends Form 1099-K only when it pays you more than ${M(TX.kThreshold)} in more than ${TX.kCount} payments. You are under the dollar line, so no form is coming at all.`,
+  seller: () => `The Bazaar Board paid you ${M(16000)} across 340 orders. The Bazaar Board only has to send Form 1099-K above ${M(TX.kThreshold)} and ${TX.kCount} payments. It did not send one, so use your sales records.`,
   scribe: () => `Ironwood Mining paid you ${M(9000)} and Mesa Outfitters paid ${M(3600)}. A business that pays a contractor ${M(TX.necThreshold)} or more in 2026 must send Form 1099-NEC, so both of them will. Old Prospector Pete paid you ${M(1400)}. That is under ${M(TX.necThreshold)}, so he sends nothing.`,
 };
 async function qMesa() {
@@ -276,14 +276,14 @@ async function qDune() {
   await say(N.dune, `Tax is pay-as-you-go. The gig adds about ${M(f0.gigBill)} to your household's bill: income tax plus self-employment tax. The kingdom wants it in four estimated payments, sent with Form 1040-ES.`);
   await ask(N.dune, 'The first three are due April 15, June 15, and September 15. When is the fourth?', ['January 15 of the next year', 'December 31', 'April 15, with the return'],
     { wrong: ['Close, but you get two more weeks. It is in January.', 'By April the year is long over. The fourth payment is due in January.'] });
-  await say(N.dune, `January 15. Estimates are expected from anyone who will owe ${M(TX.estMinimum)} or more at filing. Miss them and an underpayment penalty builds, quarter by quarter.`);
-  await say(N.dune, 'There is a safe harbor. Pay in at least 90% of this year\'s tax, or 100% of last year\'s, and no penalty applies even if you still owe something in April.');
+  await say(N.dune, `January 15. If you expect to owe ${M(TX.estMinimum)} or more at filing, check whether withholding meets the safe harbor. Missing a required payment can cost you, quarter by quarter.`);
+  await say(N.dune, 'There is a safe harbor. The usual targets are 90% of this year\'s tax or 100% of last year\'s. Pay enough on time and you can avoid a penalty even if you owe something in April.');
   const p = await choose(N.dune, 'How will you pay the tax on your gig?', [`Four payments of about ${M(f0.quarter)}, each on its due date`, 'Skip the estimates and settle up in April', 'One big payment in January for the whole year'], i => { estDoc.pick = i; });
   s.est3 = p; LQ.audio.sfx('stamp');
   const f = LQ.fin3({ est: p });
   await say(N.dune, [
     `On schedule. ${M(f.quarter)} a quarter, and with your paycheck withholding the household pays in about ${M(f.withheld)} against a bill near ${M(f.total)}. No surprise in April.`,
-    `More coin in your purse all year. But only ${M(f.withheld)} goes in against a bill near ${M(f.total)}. The gap of ${M(Math.abs(f.diff))} comes due in April` + (f.diff <= -TX.estMinimum ? ', with an underpayment penalty on top.' : '.'),
+    `More coin in your purse all year. But only ${M(f.withheld)} goes in against a bill near ${M(f.total)}. The gap of ${M(Math.abs(f.diff))} comes due in April` + (f.diff <= -TX.estMinimum ? '. In the game, this shortfall also triggers an underpayment penalty.' : '.'),
     `The whole amount does get paid, so you will not owe much in April. But the penalty is worked out quarter by quarter. April, June, and September each came and went with nothing paid, and a penalty runs on all three.`][p]);
   ui.doc = null; LQ.learn('estimates3'); LQ.learn('safeharbor'); LQ.give('vouchers');
   await say(N.dune, 'Whatever you chose, the amounts follow your real profit. Find more expense slips and the bill shrinks. When you have hunted enough, Tallyman Brick next door will tally your Schedule C.');
@@ -307,8 +307,7 @@ async function qBrick() {
     [`Net profit: ${M(f.gigProfit)}`, `Gross receipts: ${M(f.gigGross)}`, `Expenses: ${M(f.gigExp)}`], 'Schedule C ends in net profit: what came in, minus what it cost.');
   if (!ok) LQ.gain(0, -Math.min(s.coins, 40), 'Correction fee');
   const left = HUNT.length - HUNT.filter(got).length;
-  await say(N.brick, `Net profit: ${M(f.gigProfit)}. Every ${M(100)} of real expense you prove saves you about ${M(100 * (f.top + TX.seRate * TX.seBase))}, because it lowers both income tax and self-employment tax.` + (left ? ' Whatever else you find before you file still counts.' : ''));
-  await say(N.brick, 'And the same warning I give everyone. A deduction returns part of the cost, never all of it. Do not buy things you do not need because they are deductible.');
+  await say(N.brick, `Net profit: ${M(f.gigProfit)}. A business expense can lower both your income tax and your self-employment tax. Your tax savings are only part of what you spent.` + (left ? ' Whatever else you find before you file still counts.' : ''));
   ui.doc = null; LQ.learn('schedC'); LQ.learn('meals3'); LQ.give('schedc');
   await say(N.brick, 'Now, a favor. Across Rattle Creek, in Off-the-Books Gulch, a fellow called Sidewinder Slick is telling gig workers that none of this applies to them. People are believing him. The rockfall on the Gulch trail has just been cleared.');
   await LQ.world.clear('gate', '#a8523a', 'South of the creek, the last boulders are hauled off the Gulch trail.');
@@ -335,12 +334,9 @@ function rows3(f) {
     [`${M(f.se)}: 15.3% of 92.35% of the profit`, `${M(f.half)}: only my own half`, 'Nothing. Paycheck withholding covers it'],
     ['Self-employed people pay both halves. The half you deducted earlier only lowered your income.', 'Paycheck withholding covers paychecks. Nobody withheld anything from your gig.']] });
   add('Credits  (child, care' + (f.saver ? ', saver)' : ')'), f.credits, { sign: '-', note: `Coral's ${M(f.ctc)} Child Tax Credit and the ${M(f.care)} care credit` + (f.saver ? `, plus a ${M(f.saver)} Saver's Credit` : '') + '. Credits come straight off the tax.'
-    + (LQ.has('guide') && !f.saver ? ` Your Saver's Credit is gone this year. With the gig, the household's income is over the ${M(TX.saverMaxAgiJoint)} limit.` : '') });
+    + (LQ.has('guide') && f.agi > TX.saverMaxAgiJoint ? ` Your Saver's Credit is gone this year. With the gig, the household's income is over the ${M(TX.saverMaxAgiJoint)} limit.` : '') });
   add('Paid in: withholding + estimates', f.withheld, { note: `Paycheck withholding of ${M(f.baseWh)}, plus ${M(f.est)} of estimated payments.` });
-  const owed = f.diff < 0, amt = Math.abs(f.diff);
-  add(owed ? 'Amount you owe' : 'Refund', amt, { owed, ask: [`Last line. Your total tax is ${M(f.total)} and you paid in ${M(f.withheld)}. So...`,
-    owed ? [`We owe ${M(amt)}`, `We get a refund of ${M(amt)}`, 'It comes out exactly even'] : [`We get a refund of ${M(amt)}`, `We owe ${M(amt)}`, 'It comes out exactly even'],
-    [owed ? 'You paid in less than your tax. The difference is still due.' : 'You paid in more than your tax. The extra comes back.', 'Check the subtraction once more.']] });
+  R.push(D.settlementRow(f));
   return R;
 }
 async function qSage() {
@@ -357,9 +353,9 @@ async function qSage() {
   FD.cur = -1;
   await LQ.wait(0.4); LQ.audio.sfx('stamp'); LQ.shake(0.25); await LQ.tween(0.35, k => { FD.stamp = k; });
   LQ.audio.sfx('fanfare'); await LQ.wait(0.8);
-  await say(N.sage, [
+  await say(N.sage, amt === 0 ? 'Your payments match the tax exactly. There is no balance due or refund.' : [
     `${owed ? 'You owe' : 'A refund of'} ${M(amt)}. You paid your estimates on time, so the year landed close to even and there is no penalty.`,
-    owed ? `You owe ${M(amt)}, all at once. Nothing was paid on the gig all year.` + (amt >= TX.estMinimum ? ` Because you owe ${M(TX.estMinimum)} or more, there is an underpayment penalty as well.` : '') : `A refund of ${M(amt)}, even with no estimates paid. Your withholding happened to cover it. That was luck, not a plan.`,
+    owed ? `You owe ${M(amt)}, all at once. Nothing was paid on the gig all year.` + (amt >= TX.estMinimum ? ` With ${M(TX.estMinimum)} or more due, an underpayment penalty can apply if you missed the safe harbor.` : '') : `A refund of ${M(amt)}, even with no estimates paid. Your withholding happened to cover it. That was luck, not a plan.`,
     `${owed ? 'You owe' : 'A refund of'} ${M(amt)}. The tax was paid, but in one lump in January. The penalty is figured quarter by quarter, so a small one applies for the three quarters you skipped.`][e]);
   let coins = LQ.clamp(Math.round(f.diff / 15), -350, 350);
   if (e === 0 && Math.abs(f.diff) < 1500) coins += 80;
@@ -367,7 +363,7 @@ async function qSage() {
   if (e === 2) coins -= 25;
   LQ.gain(60, coins, owed ? 'Tax settled' : 'Refund');
   await say(N.sage, 'Filed, with every coin of the gig on it. Plenty of people out here cannot say the same.');
-  ui.doc = null; LQ.give('return3'); s.q3 = 8; LQ.tick();
+  ui.doc = null; LQ.give('return3'); s.q3 = 8; LQ.tick(); LQ.save();
   await ending3(f);
 }
 async function ending3(f) {
@@ -378,14 +374,14 @@ async function ending3(f) {
     c.textAlign = 'center'; c.textBaseline = 'top'; c.font = F(20, true); c.fillStyle = '#1f6f5c'; c.fillText(LQ.rank().toUpperCase(), 480, 70);
     const L = (i, a, b, o) => D.line(c, 170, 106 + i * 29, 620, a, b, Object.assign({ size: 24 }, o));
     L(0, 'Gig receipts', M(f.gigGross)); L(1, 'Gig expenses', M(f.gigExp)); L(2, 'Gig net profit', M(f.gigProfit), D.GREEN);
-    L(3, 'Self-employment tax', M(f.se), D.RED); L(4, 'Total federal tax', M(f.total)); L(5, owed ? 'Paid at filing' : 'Refund received', M(Math.abs(f.diff)), owed ? D.RED : D.GREEN);
+    L(3, 'Self-employment tax', M(f.se), D.RED); L(4, 'Total federal tax', M(f.total)); L(5, D.settlement(f), M(Math.abs(f.diff)), owed ? D.RED : D.GREEN);
     L(6, 'Expense slips found', HUNT.filter(got).length + ' of ' + HUNT.length); L(7, 'Right on the first try', s.first + ' of ' + s.asked);
     L(8, 'Savvy', String(s.savvy)); L(9, 'Net worth', String(LQ.netWorth()), D.GREEN);
     L(10, 'Journal entries', s.journal.length + ' of ' + Object.keys(LQ.JOURNAL).length);
     c.font = F(22); c.textAlign = 'center'; c.fillStyle = '#5a5490';
     ui.wrap(c, 'Three chapters down. Every town stays open for trading, shopping, and audits.', 620).forEach((ln, i) => c.fillText(ln, 480, 430 + i * 22));
   } };
-  await LQ.fadeTo(0.5); await LQ.pressOk();
+  await LQ.fadeTo(0); await LQ.pressOk();
   ui.doc = { draw(c) { LQ.drawWorldMap(c, 110, 40, 740, 420); } };
   await LQ.pressOk();
   await LQ.fadeTo(1, 0.3); ui.doc = null; LQ.world.music(); await LQ.fadeTo(0, 0.9);
@@ -452,7 +448,7 @@ const TIPS = {
     q: ['What makes a room count as a home office?', ['It is used regularly and only for the business', 'It has a desk in it', 'I answer letters there on weekends']] },
   axle: { j: 'pro3Car', lines: ['I chose the standard mileage rate the first year I put my wagon to work. Smartest thing I did.', 'Pick the mileage rate in the first year a vehicle is used for business and you can switch methods later. Start with actual costs instead and you are usually locked out of the mileage rate for that vehicle. Either way, keep a log.'],
     q: ['When must you choose the standard mileage rate to keep it as an option for a vehicle you own?', ['In the first year the vehicle is used for business', 'Any year you like', 'Only after five years']] },
-  penny: { j: 'pro3Bank', lines: ['Half the people who come to my window pay for clay and groceries from the same purse. Then April comes and they cannot tell which was which.', 'Open a separate account for the gig. Every deposit is income. Every payment out is a possible expense. Tax season becomes a matter of reading one statement.'],
+  penny: { j: 'pro3Bank', lines: ['Half the people who come to my window pay for clay and groceries from the same purse. Then April comes and they cannot tell which was which.', 'Open a separate account for the gig. Label sales, expenses, and transfers as you go. A bank statement helps you check your books, and receipts show what each expense was for.'],
     q: ['Why keep a separate bank account for a side gig?', ['It keeps business income and expenses easy to prove', 'The law gives it a lower tax rate', 'It hides the income']] },
   tack: { j: 'pro3W4', lines: ['I drive nails for the mining company by day and build fences on the side. I have never sent an estimated payment in my life.', 'I raised the withholding on my W-4 at the day job instead. Withholding is treated as if it were paid evenly through the year, even when it comes out late. For someone with a paycheck and a gig, it is the easy way to stay out of penalties.'],
     q: ['How can someone with a paycheck cover the tax on a side gig without sending estimates?', ['Raise the withholding on their W-4', 'Ask the gig customers to withhold', 'Wait for a refund']] },

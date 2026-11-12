@@ -53,7 +53,7 @@ Object.assign(LQ.JOURNAL, {
   dependent: { title: 'Who is a qualifying child', text: 'A qualifying child is your son, daughter, stepchild, foster child, sibling, or a child of one of them, who lives with you for more than half the year, is under 19 (or under 24 and a full-time student), and does not pay more than half of their own support. A baby born at any point in the year counts for the whole year. Pets never count.' },
   ctc: { title: 'Child Tax Credit', text: 'For 2026 the Child Tax Credit is up to $2,200 for each qualifying child under 17 who has a Social Security number. It is a credit, so it comes straight off your tax. Up to $1,700 of it can be refunded even if you owe no tax. It starts to shrink above $400,000 of income for joint filers and $200,000 for everyone else.' },
   carecredit: { title: 'Child care credit', text: "If you pay for care so that you and your spouse can work, the child and dependent care credit covers part of it. It counts up to $3,000 of costs for one child under 13, or $6,000 for two or more. From 2026 the rate runs from 50% at low incomes down to 20% at high ones. For joint incomes between about $45,000 and $150,000 it is 35%. You need the provider's name and tax ID, and married couples must file jointly." },
-  w4two: { title: 'W-4 for two earners', text: "Each W-4 assumes its job is the household's only income. When both spouses work, both should tick the box in Step 2(c), or use the free IRS Tax Withholding Estimator. Claim the Child Tax Credit in Step 3 on one W-4 only, usually the higher earner's. Get it wrong and too little is withheld. Owe $1,000 or more at filing and an underpayment penalty can apply." },
+  w4two: { title: 'W-4 for two earners', text: "Each W-4 assumes its job is the household's only income. For two jobs with similar pay, both spouses can tick Step 2(c). If pay differs a lot, or either spouse is self-employed, use the free IRS Tax Withholding Estimator. Claim the Child Tax Credit in Step 3 on one W-4 only, usually the higher earner's. Get it wrong and too little is withheld. Owe $1,000 or more at filing and an underpayment penalty can apply." },
   itemize2: { title: 'Itemizing as a homeowner', text: 'Buying a home does not mean you should itemize. Add up mortgage interest, points, state and local taxes, and gifts to charity. Itemize only if the total beats the standard deduction, which is $32,200 for a joint return in 2026. Many homeowners still come out ahead with the standard deduction. Check again every year.' },
   charity2: { title: 'Charity: two rulebooks', text: 'From 2026, people who take the standard deduction can still deduct cash gifts to charity, up to $1,000, or $2,000 on a joint return. People who itemize can deduct more, but only the part of their gifts above 0.5% of their income. Either way, you can only deduct what you gave beyond what you got back, so raffle tickets and bake sale cookies do not count.' },
   medical: { title: 'Medical bills', text: 'Medical and dental costs are deductible only if you itemize, and only the part above 7.5% of your adjusted gross income. On $100,000 of income, the first $7,500 of bills does not count. In most years most people get nothing from this one. An HSA or FSA is usually the better tool.' },
@@ -200,7 +200,7 @@ async function qBrine() {
   await say(N.brine, `Last thing. Box 6 is blank on my copy. At closing you paid points, which is interest paid up front to get a better rate: 1% of the loan, ${M(H.points)}. Points on a loan to buy your main home usually count in the year you pay them. But only with the closing papers to prove it, and Marlowe took those home.`);
   ui.doc = null; s.rcpt.r1098 = true; s.rcpt.rProp = true; LQ.learn('mortgage'); LQ.learn('salt'); LQ.give('deed');
   await say(N.brine, `Here are your Form 1098 and your property tax bill. Two receipts down. Marlowe tells me ${HUNT.length} more are scattered around Shelter Coast. Watch for a sparkle on the ground, and try the sea chest beside your cottage door.`);
-  await say(N.brine, 'But hear this before you get excited. None of it matters unless you itemize, and whether you should is a question for later. For now: you have a wedding to get to! Officiant Pearl is waiting at the chapel.');
+  await say(N.brine, 'But hear this before you get excited. Some receipts only help if you itemize. Bring what you find to the Records Hall later and we will compare. For now: you have a wedding to get to! Officiant Pearl is waiting at the chapel.');
   advance2();
   LQ.REGIONS.coast.addReceipts(LQ.world, s);
 }
@@ -266,7 +266,7 @@ async function qStone() {
   const f = LQ.fin2({ itemize: false }), gap = Math.abs(f.diff);
   await say(N.stone, [
     `On target. Between you, about ${M(f.withheld)} goes in during the year against a bill of about ${M(f.total)}. No loan to the kingdom and no surprise in April.`,
-    `Bigger paychecks all year. But only ${M(f.withheld)} goes in against a bill of about ${M(f.total)}. ` + (own ? 'With no estimates paid, the' : 'You both claimed Coral and both took the full deduction, so the') + ` gap of ${M(gap)} comes due in April` + (gap >= 1000 ? ', with an underpayment penalty on top.' : '.'),
+    `Bigger paychecks all year. But only ${M(f.withheld)} goes in against a bill of about ${M(f.total)}. ` + (own ? 'With no estimates paid, the' : 'You both claimed Coral and both took the full deduction, so the') + ` gap of ${M(gap)} comes due in April` + (gap >= 1000 ? '. In the game, this shortfall also triggers an underpayment penalty.' : '.'),
     `Safe. About ${M(f.withheld)} goes in against a bill of about ${M(f.total)}, because nothing on the forms mentions Coral's credits. Expect a refund near ${M(gap)}. It will feel like a prize. It is your own money coming home.`][p]);
   ui.doc = null; LQ.learn('w4two'); LQ.give('w4pair');
   await say(N.stone, 'New forms take effect on your next paychecks, and you can change them again whenever life changes. Now, I hear you have been collecting receipts. Assessor Tallow at the Records Hall can tell you what they are worth.');
@@ -282,18 +282,19 @@ async function qTallow() {
   }
   const f = LQ.fin2();
   await say(N.tallow, `Two shields, and you may carry only one. The standard deduction for a joint return is ${M(STD.mfj)}. Or you itemize: add up your mortgage interest, your state and local taxes, and your gifts to charity.`);
-  await say(N.tallow, 'First, what does not belong in the pile. ' + (got('rMedical') ? `Your healer's bills: medical costs count only above 7.5% of your income, which for you is ${M(f.medFloor)}. So, nothing. ` : '')
-    + (got('rRaffle') ? 'The raffle ticket: you bought a chance at a prize. Not a gift. ' : '') + (got('rMedical') || got('rRaffle') ? 'And the' : 'The') + ' nursery statement earns a credit, not a deduction, so it stays out.');
+  await say(N.tallow, 'Set the nursery statement aside for the care credit. ' + (got('rMedical') ? `Your healer's bills: medical costs count only above 7.5% of your income, which for you is ${M(f.medFloor)}. So, nothing. ` : '')
+    + (got('rRaffle') ? 'The raffle ticket bought a chance at a prize, so it does not count as a gift.' : ''));
   await say(N.tallow, `Your state and local taxes come to ${M(f.saltRaw)}. That is under the ${M(TX.saltCap)} cap, so all of it counts.`);
   await say(N.tallow, f.gifts ? `Your cash gifts come to ${M(f.gifts)}, and here the law keeps two rulebooks. Carry the standard shield, and up to ${M(TX.charityJoint)} of cash gifts counts on top of it. Itemize, and only the part above 0.5% of your income counts: ${M(f.gifts)} minus ${M(f.giftFloor)} leaves ${M(f.giftItem)}.`
     : `You brought no gift receipts. For the record, the law keeps two rulebooks. With the standard shield, up to ${M(TX.charityJoint)} of cash gifts counts on top of it. Itemized, only the part above 0.5% of your income counts.`);
   const item = f.better === 'item';
-  const ok = await LQ.quiz(N.tallow, `So. Itemized, your pile comes to ${M(f.itemized)}. The standard shield${f.giftStd ? ' plus your gifts' : ''} comes to ${M(f.stdTotal)}. Which do you carry?`,
+  const equal = f.itemized === f.stdTotal;
+  const ok = equal || await LQ.quiz(N.tallow, `So. Itemized, your pile comes to ${M(f.itemized)}. The standard shield${f.giftStd ? ' plus your gifts' : ''} comes to ${M(f.stdTotal)}. Which do you carry?`,
     item ? [`Itemized: ${M(f.itemized)}`, `Standard: ${M(f.stdTotal)}`] : [`Standard: ${M(f.stdTotal)}`, `Itemized: ${M(f.itemized)}`], 'Always carry the larger one.');
   if (!ok) LQ.gain(0, -Math.min(s.coins, 40), 'Correction fee');
   rcDoc.lit = f.better;
   const gap = Math.abs(f.itemized - f.stdTotal), left = HUNT.length - HUNT.filter(got).length;
-  await say(N.tallow, item ? `Itemizing wins by ${M(gap)}, worth about ${M(gap * f.top)} of tax at your ${pct(f.top)} rate. See how close it was. ` + (got('rPoints') ? 'Without the points from your closing papers, the standard shield would have won.' : 'Every receipt mattered.')
+  await say(N.tallow, equal ? 'Both deductions are the same with the receipts you have. We will use the standard deduction for now.' : item ? `Itemizing wins by ${M(gap)}, worth about ${M(gap * f.top)} of tax at your ${pct(f.top)} rate. See how close it was. ` + (got('rPoints') ? 'Without the points from your closing papers, the standard shield would have won.' : 'Every receipt mattered.')
     : `The standard shield wins by ${M(gap)}. You own a home, you pay ${M(H.interest)} of interest a year, and you still should not itemize. That is true for a great many homeowners.` + (left ? ' A few more receipts might yet tip it. Whatever you find before you file still counts.' : ''));
   await say(N.tallow, `And remember what a deduction is worth: its amount times your tax rate. A ${M(1000)} deduction at ${pct(f.top)} saves ${M(1000 * f.top)}. Never spend a coin just to deduct it.`);
   ui.doc = null; LQ.learn('itemize2'); LQ.learn('charity2'); LQ.learn('writeoff'); LQ.give('folder');
@@ -330,10 +331,7 @@ function rows2(f) {
   if (f.care) add('Child care credit', f.care, { sign: '-', note: `And the care credit: ${pct(TX.careRate)} of ${M(TX.careMaxOne)}, another ${M(f.care)} off the tax.` });
   if (f.saver) add("Saver's Credit", f.saver, { sign: '-', note: `Your Saver's Credit: ${M(f.saver)}. For a joint return the income limit is ${M(TX.saverMaxAgiJoint)}.` });
   add('Tax paid during the year', f.withheld, { note: own ? "Your estimated payments, plus the tax withheld from Marlowe's pay." : 'Box 2 from both W-2s, added together.' });
-  const owed = f.diff < 0, amt = Math.abs(f.diff);
-  add(owed ? 'Amount you owe' : 'Refund', amt, { owed, ask: [`Last line. Your total tax is ${M(f.total)} and you paid in ${M(f.withheld)}. So...`,
-    owed ? [`We owe ${M(amt)}`, `We get a refund of ${M(amt)}`, 'It comes out exactly even'] : [`We get a refund of ${M(amt)}`, `We owe ${M(amt)}`, 'It comes out exactly even'],
-    [owed ? 'You paid in less than your tax. The difference is still due.' : 'You paid in more than your tax. The extra comes back.', 'Check the subtraction once more.']] });
+  R.push(D.settlementRow(f));
   return R;
 }
 async function qFathom() {
@@ -351,16 +349,16 @@ async function qFathom() {
   await LQ.wait(0.4); LQ.audio.sfx('stamp'); LQ.shake(0.25); await LQ.tween(0.35, k => { FD.stamp = k; });
   LQ.audio.sfx('fanfare'); await LQ.wait(0.8);
   const w = s.w4b || 0;
-  await say(N.fathom, [
+  await say(N.fathom, amt === 0 ? 'Your payments match the tax exactly. There is no balance due or refund.' : [
     `${owed ? 'You owe' : 'A refund of'} ${M(amt)}. You set your payments with the Estimator, so the year landed close to even` + (f.diff > 400 ? ', and what you saved since then is coming back to you.' : '.'),
-    owed ? `You owe ${M(amt)}, all at once. ` + (f.kind === 'se' ? "Marlowe's W-4 acted as if your shop did not exist, and you skipped your estimates, so almost nothing went in all year." : "Your W-4s counted the deduction and Coral's credit twice, so too little went in all year.") + (amt >= 1000 ? ' Because you owe more than $1,000, there is an underpayment penalty as well.' : '') : `A refund of ${M(amt)}. Your deductions and credits made up for the light withholding. That was luck, not planning.`,
+    owed ? `You owe ${M(amt)}, all at once. ` + (f.kind === 'se' ? "Marlowe's W-4 acted as if your shop did not exist, and you skipped your estimates, so almost nothing went in all year." : "Your W-4s counted the deduction and Coral's credit twice, so too little went in all year.") + (amt >= 1000 ? ' A balance of $1,000 or more can also mean a penalty if you missed the safe harbor.' : '') : `A refund of ${M(amt)}. Your deductions and credits made up for the light withholding. That was luck, not planning.`,
     `${owed ? 'You owe' : 'A refund of'} ${M(amt)}. ` + (owed ? '' : "Nothing on your forms mentioned Coral's credits, so you overpaid all year. It is your own money, lent to the kingdom at no interest.")][w]);
   let coins = LQ.clamp(Math.round(f.diff / 15), -350, 350);
   if (w === 0 && Math.abs(f.diff) < 1500) coins += 80;
   if (f.diff <= -1000) coins -= 60;
   LQ.gain(60, coins, owed ? 'Tax settled' : 'Refund');
   await say(N.fathom, 'Filed, on time, with both signatures. A home, a marriage, and a child, and you understood what each one did to this page. That is rarer than you think.');
-  ui.doc = null; LQ.give('return2'); s.q2 = 8; LQ.tick();
+  ui.doc = null; LQ.give('return2'); s.q2 = 8; LQ.tick(); LQ.save();
   await ending2();
 }
 async function ending2() {
@@ -371,14 +369,14 @@ async function ending2() {
     c.textAlign = 'center'; c.textBaseline = 'top'; c.font = F(20, true); c.fillStyle = '#1f6f5c'; c.fillText(LQ.rank().toUpperCase(), 480, 70);
     const L = (i, a, b, o) => D.line(c, 170, 106 + i * 29, 620, a, b, Object.assign({ size: 24 }, o));
     L(0, 'Household income', M(f.income)); L(1, f.itemize ? 'Itemized deductions' : 'Standard deduction' + (f.giftStd ? ' + gifts' : ''), M(f.ded));
-    L(2, 'Credits claimed', M(f.credits), D.GREEN); L(3, 'Total federal tax', M(f.total)); L(4, owed ? 'Paid at filing' : 'Refund received', M(Math.abs(f.diff)), owed ? D.RED : D.GREEN);
+    L(2, 'Credits claimed', M(f.credits), D.GREEN); L(3, 'Total federal tax', M(f.total)); L(4, D.settlement(f), M(Math.abs(f.diff)), owed ? D.RED : D.GREEN);
     L(5, 'Lost receipts found', HUNT.filter(got).length + ' of ' + HUNT.length); L(6, 'Right on the first try', s.first + ' of ' + s.asked);
     L(7, 'Savvy', String(s.savvy)); L(8, 'Audits faced', String(s.audits || 0)); L(9, 'Net worth', String(LQ.netWorth()), D.GREEN);
     L(10, 'Journal entries', s.journal.length + ' of ' + Object.keys(LQ.JOURNAL).length);
     c.font = F(22); c.textAlign = 'center'; c.fillStyle = '#5a5490';
     ui.wrap(c, 'Two chapters down. Shelter Coast and Paystub Village both stay open for trading, shopping, and audits.', 620).forEach((ln, i) => c.fillText(ln, 480, 430 + i * 22));
   } };
-  await LQ.fadeTo(0.5); await LQ.pressOk();
+  await LQ.fadeTo(0); await LQ.pressOk();
   ui.doc = { draw(c) { LQ.drawWorldMap(c, 110, 40, 740, 420); } };
   await LQ.pressOk();
   await LQ.fadeTo(1, 0.3); ui.doc = null; LQ.world.music(); await LQ.fadeTo(0, 0.9);

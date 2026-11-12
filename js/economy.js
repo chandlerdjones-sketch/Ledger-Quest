@@ -26,6 +26,13 @@ LQ.heroLook = () => {
 };
 
 // ---------- the player's tax picture, from the real 2026 figures, their career, W-4 choice, and gear
+// The two spouses each have a $2,000 contribution limit for this credit.
+LQ.saverCredit = (agi, own, spouse = 0, joint = false) => {
+  if (!LQ.has('guide')) return 0;
+  const m = joint ? 2 : 1;
+  const rate = agi <= m * TX.saverHalfAgi ? .5 : agi <= m * TX.saverFifthAgi ? .2 : agi <= m * TX.saverMaxAgi ? .1 : 0;
+  return Math.round(rate * (Math.min(2000, own) + Math.min(2000, spouse)));
+};
 function ownerCalc(profit, adj, charity) {
   const std = TX.standardDeduction.single;
   const se = Math.round(profit * TX.seBase * TX.seRate), half = Math.round(se / 2);
@@ -35,14 +42,16 @@ function ownerCalc(profit, adj, charity) {
 }
 LQ.fin = (w4 = st().w4 || 0) => {
   const c = LQ.career(), std = TX.standardDeduction.single, has = LQ.has;
-  const retire = has('chest') ? (has('mantle') ? 7500 : 3000) : 0, roth = has('roth') ? 3000 : 0, hsa = has('hsa') ? 2000 : 0, charity = has('charity') ? 500 : 0;
+  const roth = has('roth') ? 3000 : 0, hsa = has('hsa') ? 2000 : 0, charity = has('charity') ? 500 : 0;
+  const boosted = c.kind === 'se' ? TX.iraLimit - roth : TX.iraLimit;
+  const retire = has('chest') ? (has('mantle') ? boosted : 3000) : 0;
   const f = { c, kind: c.kind, std, retire, roth, hsa, charity, pays: c.pays, w4, ot: 0, se: 0, half: 0, qbi: 0 };
   if (c.kind === 'w2') {
     f.wages = c.wages; f.gross = c.wages / c.pays; f.ot = c.ot;
     f.box1 = c.wages - retire; f.income = f.box1; f.agi = f.box1 - hsa;
     f.taxable = Math.max(0, f.agi - std - c.ot - charity);
     f.per = Math.ceil(LQ.taxOn(Math.max(0, c.wages - std - (w4 === 2 ? 8000 : 0))).total / c.pays) + (w4 === 1 ? 40 : 0);
-    f.ss = f.gross * TX.ssRate; f.med = f.gross * TX.medicareRate; f.net = f.gross - f.per - f.ss - f.med;
+    f.ss = f.gross * TX.ssRate; f.med = f.gross * TX.medicareRate; f.retirePerCheck = retire / c.pays; f.net = f.gross - f.retirePerCheck - f.per - f.ss - f.med;
     f.ssYear = f.ss * c.pays; f.medYear = f.med * c.pays; f.netYear = f.net * c.pays;
   } else {
     f.sales = c.sales; f.baseExpenses = c.expenses;
@@ -58,8 +67,7 @@ LQ.fin = (w4 = st().w4 || 0) => {
   if (!f.tiers.length) f.tiers = [LQ.taxOn(1).tiers[0]];
   f.tax = Math.round(LQ.taxOn(f.taxable).total);
   f.top = f.tiers[f.tiers.length - 1].rate;
-  // Saver's Credit: the game uses the lowest rate (10%). Lower incomes can qualify for 20% or 50%.
-  f.credit = has('guide') && f.agi <= TX.saverMaxAgi && retire + roth > 0 ? Math.min(f.tax, Math.round(0.10 * Math.min(2000, retire + roth))) : 0;
+  f.credit = Math.min(f.tax, LQ.saverCredit(f.agi, retire + roth));
   f.total = f.tax - f.credit + f.se; f.withheld = f.per * c.pays; f.diff = f.withheld - f.total;
   return f;
 };
@@ -117,9 +125,7 @@ LQ.fin2 = (o = {}) => {
   f.tax = Math.round(t.total); f.top = f.tiers[f.tiers.length - 1].rate;
   const kid = o.child != null ? o.child : s.child;
   f.ctc = kid ? TX.ctc : 0; f.care = kid && (o.care || got('rCare')) ? Math.round(TX.careRate * TX.careMaxOne) : 0;
-  const saved = Math.min(2000, b.retire + b.roth) + Math.min(2000, sp401);
-  // Saver's Credit: the game uses the lowest rate (10%), as in Chapter 1.
-  f.saver = has('guide') && f.agi <= TX.saverMaxAgiJoint && saved > 0 ? Math.round(0.10 * saved) : 0;
+  f.saver = LQ.saverCredit(f.agi, b.retire + b.roth, sp401, true);
   f.credits = Math.min(f.tax, f.ctc + f.care + f.saver);
   f.total = f.tax - f.credits + f.se;
   f.withheld = o.wh != null ? o.wh : s.wh2 != null ? s.wh2 : LQ.withhold2(0);
@@ -150,7 +156,7 @@ LQ.score = (right) => {
 };
 // One-shot question (no retries). The first option is the correct one.
 LQ.quiz = async (who, prompt, options, why) => {
-  const order = options.map((_, i) => i).sort(() => Math.random() - .5);
+  const order = LQ.shuffle(options.map((_, i) => i));
   const s = st(); s.asked++;
   const pick = order[await LQ.choose(who, prompt, order.map(i => options[i]))];
   if (pick === 0) { s.first++; LQ.audio.sfx('right'); LQ.score(true); return true; }
@@ -166,41 +172,41 @@ const finderNote = region => {
 };
 LQ.GEAR = [
   { id: 'ledger', name: 'Receipt Ledger', price: 40, desc: 'Good records win audits. With this ledger, one correct answer out of three is enough to pass.' },
-  { id: 'guide', name: "Saver's Credit Guidebook", price: 120, desc: "Shows you how to claim the Saver's Credit. If your income is under $40,250, money you put toward retirement earns a tax credit." },
+  { id: 'guide', name: "Saver's Credit Guidebook", price: 120, desc: "Unlocks the Saver's Credit for qualifying retirement contributions. The 2026 income limit is $40,250 for single filers and $80,500 for joint filers." },
   { id: 'charity', name: 'Charity Lantern', price: 200, desc: 'Give $500 to charity. Starting in 2026, people who take the standard deduction can still deduct up to $1,000 of cash gifts. In the field it is a working lantern: it lights dark places and keeps Myth Wisps away.' },
   { id: 'miles', only: 'se', name: 'Mileage Logbook', price: 250, desc: 'Log 4,000 business miles. At the 2026 rates (72.5 cents, then 76 cents from July) that is a $2,970 write-off.' },
-  { id: 'hsa', save: 1, name: 'HSA Flask', price: 300, desc: 'Put $2,000 in a Health Savings Account (2026 limit: $4,400 with a high-deductible health plan). Deductible going in, tax-free for medical costs.' },
+  { id: 'hsa', save: 1, name: 'HSA Flask', price: 300, desc: 'Put $2,000 in a Health Savings Account (2026 limit: $4,400 with a high-deductible health plan). Deductible going in, tax-free for qualified medical costs.' },
   { id: 'hearth', only: 'se', name: 'Home Office Hearth', price: 350, desc: 'Claim a 200 square foot home office the simple way: $5 per square foot, a $1,000 write-off.' },
   { id: 'chest', save: 1, name: 'Retirement Chestplate', price: 500, desc: 'Put $3,000 in a pre-tax retirement account: a 401(k) at work, or a traditional IRA if you are self-employed. It lowers your taxable income today.' },
-  { id: 'roth', save: 1, name: 'Roth Amulet', price: 500, desc: 'Put $3,000 in a Roth IRA. No deduction today, but it grows and comes out tax-free in retirement.' },
-  { id: 'mantle', save: 1, needs: 'chest', name: 'Max-Out Mantle', price: 1200, desc: 'Raises your Retirement Chestplate contribution from $3,000 to $7,500.' },
+  { id: 'roth', save: 1, name: 'Roth Amulet', price: 500, desc: 'Put $3,000 in a Roth IRA. No deduction today. Qualified withdrawals are tax-free. For shop owners with the Max-Out Mantle, this uses $3,000 of the same IRA limit.' },
+  { id: 'mantle', save: 1, needs: 'chest', name: 'Max-Out Mantle', price: 1200, desc: 'Raises your Retirement Chestplate contribution to $7,500. For shop owners who own a Roth Amulet, the two IRAs share a cap, leaving $4,500 here.' },
   { id: 'abacus', name: 'Golden Abacus', price: 3000, desc: 'The mark of a true Tax Tycoon. Doubles your audit rewards and crowns your hero.' },
   { id: 'spyglass', coast: 1, name: 'Receipt Spyglass', price: 120, desc: 'Automatically names the nearest missing receipt and shows its direction in Shelter Coast.', status: () => finderNote('coast') },
-  { id: 'plan529', coast: 1, save: 1, name: "Coral's 529 Plan", price: 400, desc: 'Open a 529 education savings plan for Coral. There is no federal deduction going in, but the money grows tax-free and comes out tax-free for education.' },
+  { id: 'plan529', coast: 1, save: 1, name: "Coral's 529 Plan", price: 400, desc: 'Open a 529 education savings plan for Coral. Adds 400 coins to your in-game savings. No federal deduction. In a real 529, withdrawals for qualified education expenses are generally tax-free.' },
   { id: 'cask', coast: 1, save: 1, needs: 'hsa', name: 'Family HSA Cask', price: 700, desc: 'Move to a family health plan and add $4,000 more to your HSA. The 2026 family limit is $8,750. Every dollar comes off your joint income.' },
   { id: 'anchor', coast: 1, save: 1, name: "Marlowe's 401(k) Anchor", price: 800, desc: 'Marlowe puts $4,000 of pay into the shipyard 401(k). Those wages never reach the joint return, and the savings are still yours.' },
   { id: 'rod', at: 'canyon', name: 'Dowsing Rod', price: 120, desc: 'Automatically names the nearest missing expense slip and shows its direction in Hustle Canyon.', status: () => finderNote('canyon') },
-  { id: 'toolkit', at: 'canyon', name: 'Gig Tool Kit', price: 350, desc: 'Buy $800 of tools for your side gig. Items that cost $2,500 or less each can be written off in full in the year you buy them, so all $800 comes off your gig profit.' },
+  { id: 'toolkit', at: 'canyon', name: 'Gig Tool Kit', price: 350, desc: 'Deduct $800 of gig tools under the small-purchase safe harbor. Eligible businesses can elect to expense up to $2,500 per invoice or item without an applicable financial statement.' },
   { id: 'sep', at: 'canyon', save: 1, name: 'SEP IRA Saddlebag', price: 600, desc: 'Put $1,200 of gig profit into a SEP IRA, a retirement account for the self-employed. It comes off your income now and grows untaxed until you retire.' },
-  { id: 'munis', at: 'summit', save: 1, name: 'Muni Bond Lantern', price: 500, desc: 'Move your savings into municipal bonds. Their interest is generally free of federal income tax, so the $300 of bank interest leaves your return.' },
-  { id: 'ring', at: 'summit', save: 1, name: "Marlowe's Roth Ring", price: 500, desc: 'Open a Roth IRA for Marlowe with $3,000. No deduction today. It grows tax-free, and dividends inside it never show up on a return.' },
+  { id: 'munis', at: 'summit', save: 1, name: 'Muni Bond Lantern', price: 500, desc: 'Move your savings into municipal bonds. Their interest is generally free of federal income tax, so the $300 of bank interest is exempt from income tax. Tax-exempt interest can still be reported on a real return.' },
+  { id: 'ring', at: 'summit', save: 1, name: "Marlowe's Roth Ring", price: 500, desc: 'Open a Roth IRA for Marlowe with $3,000. No deduction today. Adds 500 coins to savings and counts toward the Saver\'s Credit if your household qualifies. Qualified Roth withdrawals are tax-free.' },
   { id: 'stepup', at: 'summit', save: 1, needs: 'anchor', name: '401(k) Step-Up Crampons', price: 900, desc: "Raise Marlowe's 401(k) contribution by another $3,000. Those wages never reach the joint return." },
 ];
 LQ.gearFor = () => LQ.GEAR.filter(g => (!g.only || g.only === LQ.career().kind) && (!g.coast || st().region === 'coast') && (!g.at || g.at === st().region));
-const shopDoc = { item: null, draw(c) {
+const shopDoc = { item: null, choiceRows: 8, draw(c) {
   const g = this.item; if (!g) return;
-  ui.panel(c, 30, 16, 900, 128, '#1b2044');
+  ui.panel(c, 30, 16, 900, 148, '#1b2044');
   ui.text(c, g.name, 52, 26, '#ffe98a', F(14, true), 'left', 682);
   ui.text(c, LQ.has(g.id) ? 'OWNED' : g.price + ' coins', 908, 24, LQ.has(g.id) ? '#7fd6a8' : '#fdf8e7', F(28), 'right');
-  c.font = F(24); ui.wrap(c, g.desc, 850).slice(0, 3).forEach((ln, i) => ui.text(c, ln, 52, 54 + i * 25, '#c9cdea', F(24)));
+  c.font = F(24); ui.wrap(c, g.desc, 850).forEach((ln, i) => ui.text(c, ln, 52, 54 + i * 25, '#c9cdea', F(24)));
 } };
 const SHOP_HELLO = {
-  coast: ['shop2Seen', 'Welcome to the Driftwood Bazaar! I stock everything Saffron sells up north, plus a few things for a growing household. All of it changes your return when you file.'],
-  canyon: ['shop3Seen', 'Welcome to the Trading Post! The usual tax advantages, plus a few things for people who work for themselves. All of it changes your return when you file.'],
-  summit: ['shop4Seen', 'Welcome to the Summit Outfitter! The usual tax advantages, plus a few things for investors. All of it changes your return when you file.'],
+  coast: ['shop2Seen', 'Welcome to the Driftwood Bazaar! I stock everything Saffron sells up north, plus a few things for a growing household. Read the item descriptions before you spend.'],
+  canyon: ['shop3Seen', 'Welcome to the Trading Post! The usual tax advantages, plus a few things for people who work for themselves. Read the item descriptions before you spend.'],
+  summit: ['shop4Seen', 'Welcome to the Summit Outfitter! The usual tax advantages, plus a few things for investors. Read the item descriptions before you spend.'],
 };
 LQ.shop = async who => {
-  const hello = SHOP_HELLO[st().region] || ['shopSeen', 'Welcome to the Saffron Bazaar! I do not sell swords. I sell tax advantages. Everything here changes your return when you file.'], seen = hello[0];
+  const hello = SHOP_HELLO[st().region] || ['shopSeen', 'Welcome to the Saffron Bazaar! I have savings gear and supplies for the field. Check what each item does before you spend.'], seen = hello[0];
   await LQ.say(who, st().flags[seen] ? 'Back for more? Pick an item to see what it does.' : hello[1]);
   st().flags[seen] = true;
   for (;;) {
@@ -212,14 +218,19 @@ LQ.shop = async who => {
     if (LQ.has(g.id)) { await LQ.say(who, 'You already own that one.'); continue; }
     if (g.needs && !LQ.has(g.needs)) { await LQ.say(who, 'That one only works with the ' + LQ.GEAR.find(x => x.id === g.needs).name + '. Buy that first.'); continue; }
     if (st().coins < g.price) { await LQ.say(who, 'You are ' + (g.price - st().coins) + ' coins short. Answer well, pass audits, and invest wisely. Come back richer.'); continue; }
+    ui.doc = shopDoc;
+    const confirm = await LQ.choose(who, `${g.name} costs ${g.price} coins. You will have ${st().coins - g.price} left.`, ['Back', 'Buy ' + g.name]);
+    ui.doc = null;
+    if (confirm === 0) continue;
     const before = LQ.cur().total;
     st().coins -= g.price; st().gear.push(g.id); LQ.audio.sfx('fanfare');
     const saved = before - LQ.cur().total;
     if (!st().journal.includes('gearTiming')) LQ.learn('gearTiming');
     LQ.save();
-    await LQ.say(who, 'Sold! ' + g.name + ' is yours.' + (saved > 0 ? ' That just cut your tax bill for the year by ' + M(saved) + '.' : '') + (g.save ? ' And the money is still yours. It sits in your savings and counts toward your net worth.' : ''));
+    const effect = saved === 0 ? '' : ` Your ${st().q4 === 9 ? 'modeled' : 'projected'} federal tax ${saved > 0 ? 'fell' : 'rose'} by ${M(Math.abs(saved))}.`;
+    await LQ.say(who, 'Sold! ' + g.name + ' is yours.' + effect + (g.save ? ' The price you paid now counts toward your in-game savings.' : ''));
   }
-  await LQ.say(who, 'Come back any time before you file.');
+  await LQ.say(who, 'Safe travels.');
 };
 
 // ---------- brokerage
@@ -346,7 +357,7 @@ LQ.broker = async who => {
   if (!s.flags.brokerSeen) {
     s.flags.brokerSeen = true;
     await LQ.say(who, (s.region === 'coast' ? 'A word on how this works.' : 'Welcome to the Village Exchange.') + ' This is a taxable brokerage account. Buy a share, and you own a slice of a real local business.');
-    await LQ.say(who, 'Two rules of the road. One: the Gazette on the notice board prints news a day before prices react, so read it. Two: when you sell for a gain, the taxman takes a cut. Hold for more than a year and the cut is smaller.');
+    await LQ.say(who, 'Two rules of the road. One: the Gazette on the notice board prints news a day before prices react, so read it. Two: when you sell for a gain, the taxman takes a cut. Hold for more than a year and you may get a lower rate.');
     LQ.learn('brokerage');
   }
   await LQ.say(who, "Today's Gazette: " + (s.news ? s.news.text : 'No news.') + ' Prices react tomorrow.');
@@ -358,14 +369,17 @@ LQ.broker = async who => {
     const p = LQ.price(x.id), have = LQ.shares(x.id), can = Math.floor(s.coins / p);
     const acts = [['Buy 1', () => LQ.buy(x.id, 1)], ['Buy 5', () => can >= 5 ? LQ.buy(x.id, 5) : 0], ['Buy as many as I can (' + can + ')', () => LQ.buy(x.id, can)]];
     const a = await LQ.choose(who, x.name + ' at ' + p + ' coins. You hold ' + have + '.', acts.map(q => q[0]).concat(have ? ['Sell 1', 'Sell all (' + have + ')'] : [], 'Back'));
-    if (a < 3) { const n = acts[a][1](); LQ.audio.sfx(n ? 'coin' : 'wrong'); await LQ.say(who, n ? 'Bought ' + n + ' share' + (n > 1 ? 's' : '') + ' of ' + x.id + ' for ' + n * p + ' coins.' : 'Not enough coins for that.'); }
+    if (a < 3) { const n = acts[a][1](); if (n) LQ.save(); LQ.audio.sfx(n ? 'coin' : 'wrong'); await LQ.say(who, n ? 'Bought ' + n + ' share' + (n > 1 ? 's' : '') + ' of ' + x.id + ' for ' + n * p + ' coins.' : 'Not enough coins for that.'); }
     else if (have && a < 5) {
-      const r = LQ.sell(x.id, a === 3 ? 1 : have); LQ.audio.sfx('coin');
+      const r = LQ.sell(x.id, a === 3 ? 1 : have); LQ.save(); LQ.audio.sfx('coin');
       const f = LQ.cur(); let msg = 'Sold ' + r.sold + ' for ' + r.proceeds + ' coins. ';
       if (r.deferred) msg += (r.net === 0 ? 'No gain and no loss.' : (r.net > 0 ? 'A gain of ' + r.net : 'A loss of ' + (-r.net)) + ' coins, ' + (r.ltG !== 0 && r.stG === 0 ? 'long-term' : r.stG !== 0 && r.ltG === 0 ? 'short-term' : 'part short-term and part long-term') + '.') + ' No tax today. I have recorded it for Schedule D, and it is settled when you file. Each coin counts as ' + M(LQ.COIN_USD) + ' on the form.';
       else if (r.net < 0) msg += 'That is a loss of ' + (-r.net) + '. I have banked it. Losses cancel out future gains, so it is not wasted.';
       else if (r.net === 0) msg += 'No gain, no tax.';
-      else msg += 'Gain: ' + r.net + (r.used ? ', minus ' + r.used + ' of banked losses' : '') + '. ' + (r.ltG > 0 && r.stG <= 0 ? (LQ.ltRate() ? 'Held over a year, so the long-term rate applies: 15%.' : 'Held over a year, and your taxable income is under ' + M(LQ.ltZeroMax()) + ', so the long-term rate is 0%.') : 'Held under a year, so it is taxed like wages at your top rate of ' + Math.round(f.top * 100) + '%.') + ' Tax: ' + r.tax + ' coins.';
+      else {
+        const terms = [r.stG > 0 ? 'short-term gains at ' + Math.round(f.top * 100) + '%' : '', r.ltG > 0 ? 'long-term gains at ' + Math.round(LQ.ltRate() * 100) + '%' : ''].filter(Boolean).join(' and ');
+        msg += 'Gain: ' + r.net + (r.used ? ', minus ' + r.used + ' of banked losses' : '') + '. The exchange uses a simplified rate: ' + terms + '. Tax: ' + r.tax + ' coins.';
+      }
       await LQ.say(who, msg);
     }
   }

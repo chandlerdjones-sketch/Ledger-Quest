@@ -54,15 +54,15 @@ LQ.QUESTS4 = [
 Object.assign(LQ.JOURNAL, {
   realize4: { title: 'Gains on the return', text: 'An investment that has gone up is not taxed while you hold it. You owe tax in the year you sell. Your broker reports each sale on Form 1099-B by mid-February, you list them on Form 8949, and the totals go on Schedule D of your return.' },
   basis4: { title: 'Cost basis', text: 'Your basis is what an investment cost you: the price you paid, plus fees, plus any dividends you reinvested. Your gain or loss is what you sold it for minus your basis. A higher basis means a smaller taxable gain, so keep the records.' },
-  stepup4: { title: 'Inherited and gifted shares', text: 'When you inherit an investment, your basis steps up to its value on the day the owner died, so the growth during their lifetime is never taxed as a gain. Inherited property always counts as long-term. A gift made during life is different: you take over the giver\'s original basis.' },
+  stepup4: { title: 'Inherited and gifted shares', text: 'When you inherit an investment, your basis is generally its market value at the owner\'s death, even if the value went down. Inherited shares get long-term treatment. Gifts usually keep the giver\'s basis for figuring a gain, with special rules for losses.' },
   holding4: { title: 'Short-term and long-term', text: 'A gain is long-term if you held the investment for more than one year, counting from the day after you bought it. Long-term gains are taxed at 0%, 15%, or 20%. A short-term gain, held one year or less, is taxed like wages at your ordinary rate.' },
-  dividends4: { title: 'Dividends', text: 'Dividends are taxable in the year they are paid, even if you reinvest them automatically and never see the cash. Reinvested dividends add to your basis. Most dividends from ordinary company shares held more than 60 days are qualified, and qualified dividends are taxed at the long-term gain rates. They arrive on Form 1099-DIV.' },
+  dividends4: { title: 'Dividends', text: 'Dividends are taxable in the year they are paid, even if you reinvest them automatically and never see the cash. Reinvested dividends add to your basis. Qualified dividends get long-term gain rates. For most common stock, you must hold the shares more than 60 days within the 121-day window around the ex-dividend date. The company must also qualify. They arrive on Form 1099-DIV.' },
   interest4: { title: 'Interest', text: 'Interest from savings accounts, certificates of deposit, and most bonds is taxed like wages, at your ordinary rate. It arrives on Form 1099-INT. Interest from municipal bonds is generally free of federal income tax.' },
   harvest4: { title: 'Tax-loss harvesting', text: 'Selling an investment at a loss turns the loss into something useful. Losses cancel out gains first. If losses are larger than gains, up to $3,000 of the rest comes off your other income each year, and anything beyond that carries forward to later years with no time limit.' },
   washsale4: { title: 'The wash sale rule', text: 'If you sell at a loss and buy the same or a substantially identical investment within 30 days before or after the sale, the loss is disallowed for now. It is added to the basis of the new shares instead. To keep the loss, wait 31 days, or buy something similar but not identical.' },
   stack4: { title: 'How gains stack', text: 'On the return, your ordinary income fills the brackets first. Long-term gains and qualified dividends sit on top of it and are taxed at their own rates. A large long-term gain never raises the rate on your wages.' },
   zero4: { title: 'The 0% zone', text: 'For 2026, long-term gains and qualified dividends are taxed at 0% as long as your taxable income stays at or under $98,900 on a joint return, or $49,450 for a single filer. Above that the rate is 15%, and 20% only above $613,700 on a joint return.' },
-  accounts4: { title: 'Four kinds of account', text: 'A taxable account is taxed every year on dividends, interest, and sales. A traditional 401(k) or IRA takes money before tax, grows untaxed, and is taxed as income when you take it out. A Roth takes money after tax, grows untaxed, and comes out tax-free in retirement. An HSA is untaxed going in, growing, and coming out for medical costs.' },
+  accounts4: { title: 'Four kinds of account', text: 'A taxable account is taxed every year on dividends, interest, and sales. A traditional 401(k) or IRA takes money before tax, grows untaxed, and is taxed as income when you take it out. A Roth takes money after tax, grows untaxed, and offers tax-free qualified withdrawals. An HSA is untaxed going in, growing, and coming out for medical costs.' },
   location4: { title: 'What goes where', text: 'Hold investments that throw off a lot of taxable income every year, such as bonds and high-dividend funds, inside tax-sheltered accounts. Hold broad index funds you plan to keep for years in the taxable account, where they are taxed lightly. The same investments can cost less in tax just by sitting in the right account.' },
   tip4Reinvest: { title: 'Tip: reinvested dividends', text: 'Every reinvested dividend buys new shares and adds to your basis. If you forget them when you sell, you pay tax on the same money twice.' },
   tip4B: { title: 'Tip: check your 1099-B', text: 'Form 1099-B lists each sale and the basis your broker has on record. For shares that were inherited, gifted, or moved from another broker, that basis may be missing or wrong. Correct it on Form 8949.' },
@@ -294,23 +294,23 @@ async function qTamsin() {
   acctDoc.hl = 0; ui.doc = acctDoc;
   await say(N.tamsin, 'The taxable brokerage account is the one you have been using. Money goes in after tax. Dividends and interest are taxed every year, and gains are taxed when you sell.');
   acctDoc.hl = 1;
-  await say(N.tamsin, `A traditional 401(k) or IRA takes money before tax, so it lowers your income today. Inside, nothing is taxed. When you take it out in retirement, every coin is taxed as ordinary income. The 2026 limits are ${M(TX.k401Limit)} for a 401(k) and ${M(TX.iraLimit)} for an IRA.`);
+  await say(N.tamsin, `Pre-tax 401(k) contributions and deductible traditional IRA contributions lower your income today. Taxes on those contributions and their earnings wait until you withdraw them. The 2026 limits are ${M(TX.k401Limit)} for a 401(k) and ${M(TX.iraLimit)} for an IRA.`);
   acctDoc.hl = 2;
-  await say(N.tamsin, 'A Roth is the mirror image. Money goes in after tax, with no deduction today. Inside, nothing is taxed. In retirement it comes out tax-free, growth and all.');
+  await say(N.tamsin, 'A Roth is the mirror image. Money goes in after tax, with no deduction today. Inside, nothing is taxed. Qualified withdrawals are tax-free, growth and all.');
   acctDoc.hl = 3;
   await say(N.tamsin, 'And the HSA, if you have a high-deductible health plan. Untaxed going in, untaxed growing, and untaxed coming out for medical costs. Nothing else gets all three.');
   acctDoc.hl = -1;
-  await ask(N.tamsin, 'Which account is taxed on the way in and never again?', ['A Roth', 'A traditional 401(k)', 'A taxable brokerage account'],
+  await ask(N.tamsin, 'Which account uses after-tax money and offers tax-free qualified withdrawals?', ['A Roth', 'A traditional 401(k)', 'A taxable brokerage account'],
     { wrong: ['Traditional accounts are untaxed going in and taxed coming out.', 'A taxable account is taxed going in and then again every year.'] });
   await say(N.tamsin, 'A rule of thumb. If you expect a higher tax rate in retirement than you have today, lean Roth. If you expect a lower one, lean traditional. Nobody knows for certain, so many people hold some of each.');
   s.acct4 = 0; const f0 = LQ.fin4(); s.acct4 = 1; const f1 = LQ.fin4(); s.acct4 = null;
   const cut = Math.max(0, f0.total - f1.total);
-  const p = await choose(N.tamsin, `Your household has ${M(SAVE)} of new savings this year. Where does it go?`, ['A Roth IRA: no deduction now, tax-free later', `Into ${pre}: a deduction now, taxed later`, 'The taxable brokerage account'], i => { acctDoc.hl = [2, 1, 0][i]; });
+  const p = await choose(N.tamsin, `Your household has ${M(SAVE)} of new savings this year. Where does it go?`, ["Marlowe's Roth IRA: no deduction now", `Into ${pre}: a deduction now, taxed later`, 'The taxable brokerage account'], i => { acctDoc.hl = [2, 1, 0][i]; });
   s.acct4 = p; ui.doc = null; LQ.audio.sfx('stamp');
   await say(N.tamsin, [
-    `A Roth IRA. Nothing changes on this year's return. But every coin that ${M(SAVE)} earns from now on is yours, tax-free, for life. And what you put in can come back out at any time without tax or penalty if you ever truly need it.`,
+    `Marlowe's Roth IRA. The contribution gives no deduction. The earnings can come out tax-free once the withdrawal qualifies, and regular contributions can come back out tax-free at any time.`,
     `Pre-tax. That takes ${M(SAVE)} off this year's income and cuts your tax bill by about ${M(cut)} right now. The kingdom will collect when you take it out in retirement, at whatever your rate is then.`,
-    `The taxable account. It works, and the money stays easy to reach. But its dividends will be taxed every year and its gains when you sell, where a Roth or a 401(k) would have sheltered them. Worth it only for money you will need before retirement.`][p]);
+    `The taxable account. It works, and the money stays easy to reach. But its dividends will be taxed every year and its gains when you sell, where a Roth or a 401(k) would have sheltered them. That flexibility can help if you need the money before retirement.`][p]);
   if (p < 2) LQ.gain(10, 0, 'Sheltered savings');
   await say(N.tamsin, 'Last knot. What you hold where matters too. Things that throw off taxable income every year, like bonds and high-dividend funds, belong inside the sheltered accounts. Broad index funds you will hold for years do fine in the taxable account.');
   LQ.learn('accounts4'); LQ.learn('location4'); LQ.give('ropes');
@@ -349,10 +349,7 @@ function rows4(f) {
   add('Self-employment tax  (Schedule SE)', f.se, { sign: '+' });
   add('Credits  (child, care' + (f.saver ? ', saver)' : ')'), f.credits, { sign: '-', note: `Coral's ${M(f.ctc)} Child Tax Credit and a ${M(f.care)} care credit.` + (f.careRate < TX.careRate ? ` Your income passed ${M(TX.careFullJoint)}, so the care credit rate slipped from ${pct(TX.careRate)} to ${pct(f.careRate)}. Extra income can shave a credit.` : '') });
   add('Paid in: withholding + estimates', f.withheld, { note: `Paycheck withholding of ${M(f.baseWh)}, plus ${M(f.est)} of estimated payments for the gig.` });
-  const owed = f.diff < 0, amt = Math.abs(f.diff);
-  add(owed ? 'Amount you owe' : 'Refund', amt, { owed, ask: [`Last line. Your total tax is ${M(f.total)} and you paid in ${M(f.withheld)}. So...`,
-    owed ? [`We owe ${M(amt)}`, `We get a refund of ${M(amt)}`, 'It comes out exactly even'] : [`We get a refund of ${M(amt)}`, `We owe ${M(amt)}`, 'It comes out exactly even'],
-    [owed ? 'You paid in less than your tax. The difference is still due.' : 'You paid in more than your tax. The extra comes back.', 'Check the subtraction once more.']] });
+  R.push(D.settlementRow(f));
   return R;
 }
 async function qAlpen() {
@@ -369,14 +366,14 @@ async function qAlpen() {
   FD.cur = -1;
   await LQ.wait(0.4); LQ.audio.sfx('stamp'); LQ.shake(0.25); await LQ.tween(0.35, k => { FD.stamp = k; });
   LQ.audio.sfx('fanfare'); await LQ.wait(0.8);
-  await say(N.alpen, owed ? `You owe ${M(amt)}. Your withholding and estimates covered the wages and the gig. What is left is the tax on this year's investment income.` + (amt < TX.estMinimum ? ` It is under ${M(TX.estMinimum)}, so no penalty applies.` : " As long as what you paid in during the year covers all of last year's tax, there is no penalty on the difference. That is the safe harbor at work.")
+  await say(N.alpen, amt === 0 ? 'Your payments match the tax exactly. There is no balance due or refund.' : owed ? `You owe ${M(amt)}. Your withholding and estimates covered the wages and the gig. What is left is the tax on this year's investment income.` + (amt < TX.estMinimum ? ` It is under ${M(TX.estMinimum)}, so no penalty applies.` : " As long as what you paid in during the year covers all of last year's tax, there is no penalty on the difference. That is the safe harbor at work.")
     : f.prefTax === 0 ? `A refund of ${M(amt)}. Your long-term gains and qualified dividends sat in the 0% zone, so they added next to nothing to the bill your withholding and estimates had already covered.`
     : `A refund of ${M(amt)}. Your losses and your savings brought the bill under what you had already paid in.`);
   if (f.carryNext) await say(N.alpen, `And ${M(f.carryNext)} of unused loss carries forward. I have banked it for you. It will cancel gains in a later year.`);
   LQ.gain(80, LQ.clamp(Math.round(f.diff / 15), -500, 500), owed ? 'Tax settled' : 'Refund');
   await say(N.alpen, 'Filed. Wages, a household, a business, and investments, and you understood every line. Most people go their whole lives without being able to say that.');
   ui.doc = null; LQ.give('return4');
-  s.lossBank = Math.round(f.carryNext / LQ.COIN_USD); s.inv = { st: 0, lt: 0, qd: 0, int: 0 }; s.q4 = 9; LQ.tick();
+  s.lossBank = Math.round(f.carryNext / LQ.COIN_USD); s.inv = { st: 0, lt: 0, qd: 0, int: 0 }; s.q4 = 9; LQ.tick(); LQ.save();
   await ending4(f);
 }
 async function ending4(f) {
@@ -388,20 +385,20 @@ async function ending4(f) {
     const L = (i, a, b, o) => D.line(c, 170, 106 + i * 29, 620, a, b, Object.assign({ size: 24 }, o));
     L(0, 'Household income', M(f.income)); L(1, 'Net capital gain or loss', M(f.capNet), f.capNet >= 0 ? D.GREEN : D.RED);
     L(2, 'Gains and dividends taxed at 0%', M(f.at0), D.GREEN); L(3, 'Gains and dividends taxed at 15%', M(f.at15));
-    L(4, 'Total federal tax', M(f.total)); L(5, owed ? 'Paid at filing' : 'Refund received', M(Math.abs(f.diff)), owed ? D.RED : D.GREEN);
+    L(4, 'Total federal tax', M(f.total)); L(5, D.settlement(f), M(Math.abs(f.diff)), owed ? D.RED : D.GREEN);
     L(6, 'Right on the first try', s.first + ' of ' + s.asked); L(7, 'Savvy', String(s.savvy)); L(8, 'Audits faced', String(s.audits || 0));
     L(9, 'Net worth', String(LQ.netWorth()), D.GREEN); L(10, 'Journal entries', s.journal.length + ' of ' + Object.keys(LQ.JOURNAL).length);
     c.font = F(22); c.textAlign = 'center'; c.fillStyle = '#5a5490';
     ui.wrap(c, 'Four chapters, four returns. The whole of the Ledgerlands is open to you.', 620).forEach((ln, i) => c.fillText(ln, 480, 430 + i * 22));
   } };
-  await LQ.fadeTo(0.5); await LQ.pressOk();
+  await LQ.fadeTo(0); await LQ.pressOk();
   ui.doc = { draw(c) { LQ.drawWorldMap(c, 110, 40, 740, 420); } };
   await LQ.pressOk();
   ui.doc = { draw(c) {
     D.paper(c, 130, 40, 700, 420, 'LEDGER QUEST', 'The end, and the beginning');
     c.textAlign = 'center'; c.textBaseline = 'top'; c.font = F(26); c.fillStyle = '#15122e';
     ['You came to Paystub Village with an empty coin purse', 'and no idea how taxes worked.', '', 'You leave the Summit able to read a paystub, file a return,',
-      'claim a child, run a business, and invest with your eyes open.', '', 'Everything in this game follows real US federal rules', 'for tax year ' + TX.year + '. It is for learning, not tax advice.',
+      'claim a child, run a business, and invest with your eyes open.', '', 'This game models selected US federal tax rules', 'using simplified examples for tax year ' + TX.year + '.',
       'When your own return gets complicated, a professional', 'is worth the fee, and now you can check their work.'].forEach((ln, i) => c.fillText(ln, 480, 96 + i * 30, 650));
     c.font = F(14, true); c.fillStyle = '#1f6f5c'; c.fillText('FINAL RANK: ' + LQ.rank().toUpperCase(), 480, 412);
   } };

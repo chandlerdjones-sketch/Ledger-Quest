@@ -40,6 +40,7 @@ LQ.taxOn = (taxable, status = 'single') => {
 //     https://www.irs.gov/newsroom/working-families-tax-cuts-individuals-and-workers
 //   401(k), IRA, and Saver's Credit limits (IR-2025-111):
 //     https://www.irs.gov/newsroom/401k-limit-increases-to-24500-for-2026-ira-limit-increases-to-7500
+//   Saver's Credit rate tiers (Notice 2025-67): https://www.irs.gov/irb/2025-49_IRB
 //   HSA limit (Publication 15-B, 2026): https://www.irs.gov/pub/irs-pdf/p15b.pdf
 //   Capital gains thresholds and student loan interest: Rev. Proc. 2025-32 (link above)
 //   Mileage rates (72.5 cents, 76 cents from July 1, 2026):
@@ -52,6 +53,7 @@ Object.assign(LQ.TAX, {
   k401Limit: 24500,
   iraLimit: 7500,
   hsaSelf: 4400,
+  saverHalfAgi: 24250, saverFifthAgi: 26250,
   saverMaxAgi: 40250,       // Saver's Credit income cap, single filer
   ltcgZeroMax: 49450,       // long-term gains taxed at 0% up to this taxable income (single)
   ltcg15Max: 545500,
@@ -95,10 +97,12 @@ Object.assign(LQ.TAX, {
 // Sources:
 //   Form 1099-NEC and 1099-MISC threshold ($2,000 for payments made in 2026) and the Form 1099-K
 //   threshold (more than $20,000 and more than 200 transactions):
-//     https://www.irs.gov/newsroom/one-big-beautiful-bill-provisions
+//     https://www.irs.gov/businesses/small-businesses-self-employed/am-i-required-to-file-a-form-1099-or-other-information-return
+//     https://www.irs.gov/newsroom/form-1099-k-faqs-general-information
 //   Self-employment tax and estimated tax rules: IRS Publication 334 and Form 1040-ES
 //     https://www.irs.gov/forms-pubs/about-form-1040-es
-//   Business meals (50%), fines, clothing, commuting: IRS Publication 463 and Publication 535 topics
+//   Business meals, clothing, and commuting: IRS Publication 463. Business expenses and fines: Publication 334.
+//   Expensing low-cost equipment: https://www.irs.gov/businesses/small-businesses-self-employed/tangible-property-final-regulations
 //   Home office simplified method: https://www.irs.gov/businesses/small-businesses-self-employed/simplified-option-for-home-office-deduction
 //   Child and Dependent Care Credit phase-down above $150,000 (joint): Internal Revenue Code section 21, as amended
 //   Capital gains thresholds for joint returns, capital loss limit: Rev. Proc. 2025-32 (link at top) and Publication 550

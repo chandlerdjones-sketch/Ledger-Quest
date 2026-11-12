@@ -48,7 +48,7 @@ const R = LQ.REGIONS.canyon = {
   fallbackTarget: st => st.q3 >= 8 && st.q4 == null ? 'northtrail' : null,
   exits: [
     { x0: 0, x1: 12, y0: 19 * T, y1: 23 * T, to: 'coast', px: 45 * T, py: 11 * T, dir: 'left' },
-    { x0: 23 * T, x1: 25 * T, y0: 0, y1: 13, to: 'summit', px: 24 * T, py: 42 * T, dir: 'up' },
+    { x0: 23 * T, x1: 25 * T, y0: 0, y1: 13, to: 'summit', px: 24 * T, py: 42 * T, dir: 'up', open: st => st.q3 >= 8 },
   ],
   arrive: async () => { if (LQ.state.q3 == null) await LQ.CH3.begin(); },
   // lost expense slips sparkle on the ground once Bookkeeper Lupe has explained the hunt
