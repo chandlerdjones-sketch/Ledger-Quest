@@ -21,7 +21,7 @@ function careerSelect() {
           c.globalAlpha = on ? 1 : .6; ui.panel(c, x, y, w, h, on ? '#161a4a' : '#0d0f2a');
           if (on) { c.strokeStyle = '#35f0e6'; c.lineWidth = 4; c.strokeRect(x - 5, y - 5, w + 10, h + 10); }
           c.fillStyle = '#1a1d4a'; c.fillRect(x + 76, y + 16, 120, 132); c.imageSmoothingEnabled = false;
-          c.drawImage(LQ.charSprite(Object.assign({ id: 'card-' + id }, cr.look), 'down', on ? Math.floor(LQ.time * 5) % 4 : 0), x + 91, y + 16, 90, 130);
+          c.drawImage(LQ.charSprite(Object.assign({ id: 'card-' + id }, cr.look), 'down', on ? Math.floor(LQ.time * 5) % 4 : 0), x + 96, y + 22, 80, 120);
           c.font = F(13, true); ui.wrap(c, cr.name.toUpperCase(), 250).forEach((ln, k, a) => ui.text(c, ln, x + w / 2, y + 160 + k * 20 - (a.length - 1) * 4, '#a8fff6', F(13, true), 'center'));
           ui.text(c, pay[id], x + w / 2, y + 200, '#eef4ff', F(24), 'center', w - 24);
           ui.text(c, 'Difficulty: ' + cr.diff, x + w / 2, y + 226, '#7fd6a8', F(22), 'center');
@@ -63,7 +63,7 @@ const T = LQ.title = {
         if (done == null) done = LQ.exportSlot(n);
         await LQ.say(null, done ? `Backup saved as ledger-quest-slot${n}.json in your downloads folder. Keep it somewhere safe. You can load it into any empty slot, on any computer.` : 'The backup could not be saved.');
       }
-      if (a === 2 && await LQ.choose(null, `Delete the save in slot ${n} for good? This cannot be undone.`, ['No, keep it', 'Yes, delete it']) === 1) { LQ.deleteSlot(n); LQ.audio.sfx('wrong'); }
+      if (a === 2 && await LQ.choose(null, `Delete the save in slot ${n} for good? This cannot be undone.`, ['Back', 'Yes, delete it']) === 1) { LQ.deleteSlot(n); LQ.audio.sfx('wrong'); }
       return back();
     }
     const a = await LQ.choose(null, `Slot ${n} is empty.`, ['New Game', 'Load a backup file', 'Back'], k => { LQ.gesture = k === 1 ? () => { this.file = LQ.pickFile(); } : null; });
