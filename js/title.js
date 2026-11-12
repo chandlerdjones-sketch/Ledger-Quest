@@ -1,7 +1,7 @@
 // Title screen and opening.
 (() => {
 const LQ = window.LQ, ui = LQ.ui, F = LQ.F;
-function careerSelect() {
+const careerSelect = LQ.careerSelect = () => {
   return new Promise(res => {
     const ids = ['nurse', 'owner', 'food']; let sel = 0, done = false;
     const pay = { nurse: '$83,200 a year in wages', owner: '$52,000 a year in profit', food: '$31,200 a year in wages' };
@@ -32,7 +32,7 @@ function careerSelect() {
       },
     });
   });
-}
+};
 // What the title screen shows for a save slot.
 function slotInfo(n) {
   const s = LQ.loadSlot(n); if (!s) return null;
@@ -98,18 +98,25 @@ const T = LQ.title = {
       if (skip) await LQ.say(null, ['', 'You are skipping ahead. Your hero has already finished Chapter 1 in Paystub Village: the Mythmonger is beaten, the first return is filed, and there are 500 coins in the purse.',
         'You are skipping ahead. Your hero has already finished Chapters 1 and 2: two returns filed, a cottage by the sea, a marriage to Marlowe, a stepdaughter called Coral, and 900 coins in the purse.',
         'You are skipping ahead. Your hero has already finished Chapters 1 to 3: three returns filed, a family in Shelter Coast, a side gig in Hustle Canyon, and 1,400 coins in the purse.'][skip]);
-      else await LQ.say(null, 'You have just come to Paystub Village with an empty coin purse and no idea how taxes work.');
-      await LQ.say(null, skip ? 'First, though: what does your hero do for a living?' : 'Good news: that is about to change. First, though: what do you do for a living?');
-      LQ.state.career = await careerSelect(); LQ.initMarket();
+      else await LQ.say(null, 'You have just come to Paystub Village with a new job, twenty coins, and no idea how taxes work. Your cottage rents for almost nothing. Nobody would say why.');
+      // The playable opening picks the career from a letter in the cottage. Skipping it picks the career here, as before.
+      const play = !skip && await LQ.choose(null, 'How do you want to begin?', ['Play the opening', 'Skip the opening (I know how to play)']) === 0;
+      if (play) Object.assign(LQ.state, { px: 16 * 16 + 8, py: 34 * 16 + 14, dir: 'down' }).flags.intro = 1;
+      else {
+        LQ.state.flags.intro = 9;
+        await LQ.say(null, skip ? 'First, though: what does your hero do for a living?' : 'Good news: that is about to change. First, though: what do you do for a living?');
+        LQ.state.career = await careerSelect(); LQ.initMarket();
+      }
       if (skip) LQ.CH2.starter();
       if (skip >= 2) LQ.CH3.starter();
       if (skip >= 3) await LQ.CH4.starter();
       LQ.busy--; await LQ.fadeTo(1, 0.4);
     }
-    LQ.world.start(); LQ.setScene(LQ.world); await LQ.fadeTo(0, 0.7);
+    LQ.world.start(); if (LQ.intro.active()) LQ.intro.resume(LQ.world);
+    LQ.setScene(LQ.world); await LQ.fadeTo(0, 0.7);
     if (!saved) ui.showBanner(LQ.world.R.title, LQ.world.R.sub());
     LQ.save();
-    const R = LQ.world.R; if (R.arrive) LQ.script(() => R.arrive());
+    const R = LQ.world.R; if (R.arrive) LQ.script(() => R.arrive(LQ.world));
   },
   draw(g) {
     const t = LQ.time, W = LQ.BW, H = LQ.BH;

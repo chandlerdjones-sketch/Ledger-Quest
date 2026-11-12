@@ -23,7 +23,8 @@ addEventListener('resize', resize); resize();
 const KEYMAP = { ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down',
   ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right',
   ' ': 'ok', Enter: 'ok', z: 'ok', Z: 'ok', Escape: 'back', x: 'back', X: 'back',
-  j: 'menu', J: 'menu', Tab: 'menu', m: 'mute', M: 'mute' };
+  j: 'menu', J: 'menu', Tab: 'menu', m: 'mute', M: 'mute',
+  e: 'use', E: 'use', c: 'use', C: 'use', q: 'cycle', Q: 'cycle' };
 const input = LQ.input = { down: {}, pressed: {} };
 addEventListener('keydown', e => {
   const k = KEYMAP[e.key]; if (!k) return;
@@ -67,7 +68,8 @@ LQ.newState = () => ({ ver: LQ.SAVE_VERSION, quest: 0, w4: null, savvy: 0, coins
   season: 'summer', px: 24 * 16, py: 37 * 16 + 14, dir: 'up', chests: {}, coinsGot: {}, flags: {},
   career: null, streak: 0, gear: [], tips: {}, audits: 0, auditDist: 0, auditNext: 2200, day: 0, prices: null, prev: null, lots: null, gazette: [], news: null, lossBank: 0, capTax: 0, divs: 0, seed: 1,
   region: 'village', q2: null, rcpt: {}, w4b: null, wh2: null, child: false,
-  q3: null, gig: null, est3: null, q4: null, inv: null, hold4: null, harv4: null, acct4: null });
+  q3: null, gig: null, est3: null, q4: null, inv: null, hold4: null, harv4: null, acct4: null,
+  hp: 4, tool: null });
 LQ.state = LQ.newState();
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }, del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } } };
 // Accept only data shaped like a save, and keep only the fields the game knows about.
@@ -91,6 +93,8 @@ LQ.cleanSave = raw => {
     if (out[k] != null && (!Number.isInteger(out[k]) || out[k] < 0 || out[k] > max)) return null;
   }
   if (!['up', 'down', 'left', 'right'].includes(out.dir)) return null;
+  out.hp = LQ.clamp(Math.round(out.hp) || 4, 1, 6);
+  if (out.tool != null && typeof out.tool !== 'string') out.tool = null;
   if (out.gig != null && !(typeof out.gig === 'string' && Object.hasOwn(LQ.GIGS, out.gig))) return null;
   if (out.inv != null && (!record(out.inv) || ['st', 'lt', 'qd', 'int'].some(k => !Number.isFinite(out.inv[k])))) return null;
   if (out.prices != null) {

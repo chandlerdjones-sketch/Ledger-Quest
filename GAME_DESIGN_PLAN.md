@@ -1,0 +1,128 @@
+# Ledger Quest: Gameplay Depth Plan
+
+## Context
+Ledger Quest (`~/Desktop/Ledger Quest/`, plain HTML and JS, about 5,300 lines, no engine) has four finished chapters and a neon dark fantasy look. Today the only gameplay is walk, talk, and answer a multiple-choice question. Chandler wants an adventure his friends enjoy: things to do, a story thread, and money and items that matter. This plan turns the approved direction into a phased build that starts with one complete slice in Paystub Village.
+
+## Approved direction (Chandler, Nov 11)
+| Decision | Answer |
+|---|---|
+| Puzzles | Mix: about half tax-rule puzzles, half classic adventure puzzles |
+| Danger | Mix of real-time combat and avoidance |
+| Story spine | The Torn Ledger |
+| Extras | Shift work, boss movement phase, villager consequences, the Back Office |
+| Core | Puzzle rooms, usable tools, fair economy |
+
+## What the code has today (verified)
+- Verbs: move, Talk (`world.interact`), menu. No Use key. Keys live in `KEYMAP` in `engine.js`.
+- Every challenge is `LQ.ask` multiple choice: quests, tips, `audit.js`, `battle.js`.
+- Maps are `LQ.newMap` tile grids. Entities have `use`, `pick`, `draw`, `solid`. No interiors, pushables, switches, hazards, or enemies. Barriers clear by quest number through `world.clear`.
+- Gear: 20 items in `economy.js`. Only `ledger`, `abacus`, `spyglass`, and `rod` act in the world.
+- Reusable: `fx.js` light pass, `world.burst`, `world.clear`, `LQ.script`, `state.flags`, `st.tips`, `finderStatus`, the reachability check in `tools/check.js`, and the mountain fog in `REGIONS.village.overlay`.
+
+## Design
+
+### 1. Field Kit (new `js/kit.js`)
+- New **Use** key (E or C) uses the equipped tool. Q cycles tools. Tools also show in the Items tab.
+- Existing items gain a world job, so nothing is rebuilt:
+
+| Tool | Source today | World function |
+|---|---|---|
+| Truth Stamp (new) | Given free by the Mayor | Short melee swing. Also presses seal switches. |
+| Standard Shield | Story item, quest 5 | Hold to block fog bolts |
+| Bracket Compass | Story item, quest 6 | Reveals hidden rune paths and false walls |
+| Charity Lantern | Bazaar gear, 200 coins | Lights dark rooms. Wisps keep out of the light. |
+| 401(k) Step-Up Crampons | Summit gear | Cross ice (Phase 3) |
+| One new tool each for Coast and Canyon | Phase 3 | Decided in that phase |
+
+### 2. Hearts, combat, and avoidance (new `js/foes.js`)
+- Four hearts in the overworld, drawn like the battle hearts. Tonics heal.
+- At zero hearts you wake at the last Notary Lamp (checkpoint) and lose at most 20 coins. No progress is ever lost.
+- **Myth Wisp:** cannot be hit. Touching one costs coins ("it sold you a bad idea"). Avoid it or carry the Lantern.
+- **Scrap Imp:** chases you. Two Stamp hits. Drops coins.
+- **Red Tape Crawler** (Phase 3): must be blocked with the Shield, then hit.
+- Enemies live only in vaults, caves, and fog zones, never in town. Combat stays at one attack and three enemy types.
+
+### 3. Rooms and puzzle parts (new `js/rooms.js`)
+- Small interior maps entered through doors. The save keeps the parent region and door position, so the save format and `LQ.cleanSave` region list do not change.
+- Parts: push block, pressure plate, seal switch, door, brazier, dark room flag, bolt trap. A room resets when you re-enter. Solved state is a flag.
+
+### 4. Paystub Village slice content (new `js/vaults1.js`)
+- **Bracket Vault** (tax rule, inside Bracket Mountain). Push income crates onto seven ledges, lowest first. Only the overflow reaches a higher ledge. The exit door opens when you stand on the ledge your last dollar landed on. Figures come from `taxdata.js` and the player's own career. It replaces the middle of Sage Altamira's lecture. Her chart stays as the recap.
+- **Lantern Cave** (classic, north forest). Dark room. Light four braziers in the order shown by clues on village signs. Imps inside. Reward: a Ledger Page and a rare item.
+- **Compass cache.** A hidden path the Compass reveals, guarded by wisps.
+- **Three Ledger Pages:** vault, cave, and boss. Each one visibly repairs the village (fog thins, lamps relight, a shortcut bridge appears).
+
+### 5. Fair economy (`economy.js`)
+- Every tool needed to progress has three routes: buy, find, or rent for about 10 coins.
+- Tools sell back at full price. Tax gear stays as it is.
+- Consumables: Tonic (heal), Hint Token (a wandering merchant points at the next secret).
+- New coin sources: imps, vault rewards, secrets, shift work. Prices and rewards get a tuning pass so rank and net worth do not inflate.
+
+### 6. The Torn Ledger (story spine)
+- The Great Ledger held the plain truth about money. Pages were torn out, and fog spreads where they are missing.
+- Twelve pages, three per region. Eight open the Back Office, so 100% is not required.
+- Each boss drops an invoice from the same supplier. Found objects (flyers, an abandoned stall, a ledger stub) tell the story. No new long dialogue.
+- The supplier's identity is settled in a short story pass at the start of Phase 4.
+
+### 7. Extras
+- **Shift work** (new `js/jobs.js`): a 30-second job game per career at the workplace. Pay arrives with withholding taken out by the player's own W-4 or estimate choice.
+- **Boss movement phase** (`battle.js`): dodge myth bolts and grab a truth shard to unlock each answer. All existing myths stay.
+- **Villager consequences:** three fooled villagers per region, fixed by an action, not a quiz. Fixed villagers reopen stalls, give discounts, or open shortcuts. Tracked in `st.flags`.
+- **The Back Office:** hidden fifth area under the village and the finale.
+
+## Phases
+| Phase | Scope | Effort | Ends with |
+|---|---|---|---|
+| 0 | Switch the folder to `main`, pull, create branch `gameplay-depth`. Write `GAME_DESIGN_PLAN.md` in the game folder from this plan. | Low | Design doc committed |
+| 1 | Kit, Use key, hearts and checkpoints, rooms and puzzle parts, wisps and imps, Bracket Vault, Lantern Cave, Compass cache, three pages, fair economy, checker updates | High | **Chandler playtests the village slice** |
+| 2 | Shift work for the three careers, boss 1 movement phase, village consequences, tuning from playtest notes | Medium | Second playtest |
+| 3 | Roll out to Coast, Canyon, Summit, one region per session: one tax vault, one classic puzzle, one new tool, pages, consequences, boss movement phase | High, three times | Playtest per region |
+| 4 | Story pass, the Back Office, finale | High | Full-game playtest |
+| 5 | Balance, polish, README, and vault notes update | Low | Merge to `main` |
+
+**Cut line:** if combat does not feel good in the Phase 1 playtest, it drops to avoidance only before Phase 3. That is the one system I rated a weak fit, and the plan is built so removing it costs nothing else.
+
+## Files
+- **New:** `js/kit.js`, `js/foes.js`, `js/rooms.js`, `js/vaults1.js`, `js/jobs.js`, later `js/vaults2.js` to `vaults4.js` and `js/backoffice.js`, plus `GAME_DESIGN_PLAN.md`
+- **Changed:** `engine.js` (Use and cycle keys, new save fields `hp`, `tool`, `cp` in `newState`, which `cleanSave` defaults for old saves), `world.js` (entity `step(dt)` hook, pushing, room enter and exit, dark overlay, hearts on the HUD), `ui.js` (tool slot, equip in Items), `economy.js` (tools, rent, buyback, consumables), `art.js` and `audio.js` (sprites and sounds), `battle.js` (movement phase), `chapter1.js` (Altamira's quest, Mayor gives the Stamp, sign clues), `index.html` (script order), `tools/check.js`
+
+## Rules for every implementation session
+- Read `GAME_DESIGN_PLAN.md` first. Do not reread the long history transcripts.
+- No changes to tax math. Puzzle figures come from `taxdata.js`.
+- Keep the neon palette (`LQ.NEON`) and the 320 by 180 buffer.
+- Old saves must load.
+
+## Verification
+- `node tools/check.js .` after every change. Extend it to check: every room's door, parts, and exit are reachable, each puzzle has a valid solution from its reset state, and every progress-gating tool has a route that costs no coins.
+- Test only the changed feature in the `ledger-quest` preview by setting state directly (quest number, flags, tool), not by playing through.
+- Load a pre-change save and confirm it still works.
+- Chandler's playtest at the end of each phase is the gate for the next one.
+
+## Status
+| Phase | State | Notes |
+|---|---|---|
+| 0 | Done | Branch `gameplay-depth`, this document |
+| 1 | Built, waiting on Chandler's playtest | Village slice. See the Phase 1 notes below. |
+| Opening | Built, waiting on Chandler's playtest | The cottage and cellar prologue. See `INTRO_TUTORIAL_PLAN.md`. The cellar's great door is the Back Office entrance for Phase 4. |
+| 2 to 5 | Not started | |
+
+## Phase 1 notes (Nov 11)
+What was built
+- `js/kit.js`: Use key (E or C), Q to switch, Truth Stamp, Standard Shield, Bracket Compass, Lantern, Tonic, hearts, fainting, the HUD, and the extra shop lines (tonic, lantern rental, rumors)
+- `js/rooms.js`: rooms as rows of characters, plus crates, plates, doors, braziers, seals, plaques, Notary Lamps, pages, bolt traps, and darkness
+- `js/foes.js`: Myth Wisp and Scrap Imp
+- `js/vaults1.js`: the Bracket Vault, the Lantern Cave, the hidden cache, four rune stones, street lamps, the west bridge, and pages 1 to 3
+- `tools/check.js`: village paths, the Compass gate, a crate solver for the vault for all three careers, the cave, and the free-route rule for tools
+
+Where the build differs from the plan
+- Checkpoints: a Notary Lamp stands outside each room door. Fainting puts you back outside that door, so no checkpoint field was added to the save. The only new save fields are `hp` and `tool`. Everything else is in `flags`.
+- Buyback: no pure tool is sold yet (the Charity Lantern is tax gear), so full-price buyback waits for Phase 3.
+- Hints: rumors are sold at the existing shops for now. The wandering merchant waits for Phase 3.
+- The Lantern must be in hand (Q) to light a wide area and repel wisps. Holding the Stamp instead leaves you in a small circle of light. That trade-off is on purpose.
+
+Page effects in the village
+- Page 1 (vault): the mountain fog thins
+- Page 2 (cave chest): the street lamps relight, and the Notary's Seal adds a fifth heart
+- Page 3 (after the Mythmonger): the west bridge rises, and the Fog Invoice is found
+
+Tested in the browser by setting state directly: vault from entry to page for the Nurse, cave puzzle wrong and right order, imp fight, bolt and shield, wisp toll with and without the lantern, compass reveal, tonic, fainting, old save loading, Altamira's recap. Not yet tested by hand: a real keyboard run of either room, the Mayor's new line, the lantern rental, the reset seal, the page 3 scene after the boss, and difficulty tuning.

@@ -10,11 +10,13 @@ Open the game link in a browser on a computer with a keyboard. There is nothing 
 |---|---|
 | Arrow keys or WASD | Move |
 | Space or Enter | Talk, confirm |
+| E or C | Use the tool in hand (hold it for the shield) |
+| Q | Switch tools |
 | J or Tab | Menu: quests, journal, items, map, broker |
 | Esc | Back |
 | M | Sound on or off |
 
-Progress saves in your browser. The title screen has three save slots, and each slot can be saved to a backup file and loaded on another computer.
+A new game opens in your cottage and teaches the controls as you play. You can skip it. Progress saves in your browser. The title screen has three save slots, and each slot can be saved to a backup file and loaded on another computer.
 
 In the J menu, use Left and Right to change tabs. Use Up and Down to select notes, items, gear, or stocks. Press Enter to read a selected note or item in full, then Esc to return to the list. The Broker tab shows where to buy or sell each stock. Speak to the broker at that exchange to trade.
 

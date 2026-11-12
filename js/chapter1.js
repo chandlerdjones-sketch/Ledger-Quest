@@ -298,12 +298,14 @@ const advance = () => {
 };
 
 async function qMayor() {
-  const c = LQ.career();
-  await say(N.mayor, c.kind === 'se' ? "Welcome to Paystub Village, traveler! I'm Mayor Marigold. You must be the one opening the new candle shop. We love a small business here."
-    : `Welcome to Paystub Village, traveler! I'm Mayor Marigold. You must be the new ${c.name.toLowerCase()} at ${c.work}.`);
-  await say(N.mayor, "A word of warning. A strange fog has been rolling down from Bracket Mountain, and it fills people's heads with nonsense about taxes. Worse, auditors have started leaping out at folks to test what they know.");
-  await say(N.mayor, 'Learn how taxes really work and neither can touch you. Start with Foreman Brannock at the Work Hall, west of the plaza. And talk to everyone. This village is full of people who know a trick or two.');
-  await say(N.mayor, 'Oh, and take these 50 coins to get started. Merchant Saffron and Broker Bex in the plaza will happily help you spend them.');
+  const c = LQ.career(), had = st().items.includes('stamp');
+  await say(N.mayor, (had ? 'There you are! That crash had me worried. ' : '') + (c.kind === 'se' ? "Welcome to Paystub Village! I'm Mayor Marigold. You must be the one opening the new candle shop."
+    : `Welcome to Paystub Village! I'm Mayor Marigold. You must be the new ${c.name.toLowerCase()} at ${c.work}.`));
+  if (had) await say(N.mayor, 'Is that a Truth Stamp? Clerk Vell carried one just like it, right up to the night he vanished from your cottage. Keep it close. The things that crawl out of the fog cannot stand an honest mark.');
+  await say(N.mayor, "That fog rolls down from Bracket Mountain and fills people's heads with nonsense about taxes. And lately, auditors leap out at folks to test what they know.");
+  await say(N.mayor, 'Learn how taxes really work and neither can touch you. Start with Foreman Brannock at the Work Hall, west of the plaza. And talk to everyone.');
+  await say(N.mayor, 'Take these 50 coins. Merchant Saffron and Broker Bex in the plaza will help you spend them. Saffron sells tonics, which mend hearts.');
+  if (!had) { await say(N.mayor, 'One more thing. Take this Truth Stamp. The creatures that crawl out of the fog cannot stand an honest mark. Press E to swing it.'); LQ.give('stamp'); }
   LQ.gain(0, 50, 'Welcome gift'); advance();
 }
 
@@ -498,17 +500,10 @@ async function qThorn() {
 
 async function qAltamira() {
   const f = LQ.fin(), t = f.tiers, b = TX.brackets.single;
-  await say(N.altamira, 'So. You have come to learn the mountain. Most people fear it because they believe one lie: that climbing higher costs you everything below.');
-  Object.assign(mountDoc, { income: f.taxable, show: 0, anim: 1 }); ui.doc = mountDoc;
-  await say(N.altamira, `Seven ledges, seven rates. Your taxable income of ${M(f.taxable)} does not land on one ledge. It fills them from the bottom, like water.`);
-  for (let i = 0; i < t.length; i++) {
-    const tr = t[i], next = b[i + 1] ? b[i + 1][1] : .37;
-    if (i === 0) await ask(N.altamira, `Your first ${M(tr.amount)} sits on the lowest ledge. What is the tax on that part?`, [`${M(tr.tax)}  (10%)`, `${M(tr.amount * .12)}  (12%)`, '$0'],
-      { wrong: ['The lowest ledge is taxed at 10%, not 12%.', 'Every taxable dollar pays something. The lowest ledge pays 10%.'] });
-    else await ask(N.altamira, `The next ${M(tr.amount)} spills up to the ${pct(tr.rate)} ledge. What is the tax on that slice?`, [M(tr.tax), M(f.taxable * tr.rate), M(tr.amount * next)],
-      { wrong: [`That is ${pct(tr.rate)} of all ${M(f.taxable)}. The lower ledges already paid their lower rates.`, `This slice sits on the ${pct(tr.rate)} ledge, not the one above it.`] });
-    mountDoc.show = i + 1; await LQ.tween(0.9, k => { mountDoc.anim = k; });
-  }
+  if (LQ.V1 && !st().flags.vaultDone) return LQ.V1.altamiraIntro(N.altamira, f);
+  await say(N.altamira, 'You filled the ledges with your own hands. Now see them all at once.');
+  Object.assign(mountDoc, { income: f.taxable, show: t.length, anim: 1 }); ui.doc = mountDoc;
+  await say(N.altamira, `Seven ledges, seven rates. Your taxable income of ${M(f.taxable)} did not land on one ledge. It filled them from the bottom, like water.`);
   await say(N.altamira, `Add the ledges and your federal income tax is ${M(f.tax)}. Your top rate is ${pct(f.top)}, yet the bill is only about ${(f.tax / f.income * 100).toFixed(1)}% of the ${M(f.income)} you earned.`);
   const std = STD.single, w1 = 62000, w2 = 72000, t1 = LQ.taxOn(w1 - std).total, t2 = LQ.taxOn(w2 - std).total, over = w2 - std - b[2][0];
   Object.assign(mountDoc, { income: w2 - std, show: 0 });
