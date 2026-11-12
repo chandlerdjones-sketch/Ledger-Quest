@@ -35,7 +35,7 @@ async function readLetter(w) {
   await LQ.wait(.5); sfx('rumble'); LQ.shake(.5); await LQ.wait(.4);
   await say(null, 'THUMP. Something moved under the floor. When you look up, the shelf by the door is bare. Your coin purse is gone.');
   await say(null, 'Fresh scratch marks cross the boards and stop at the crate.');
-  if (H.crate) H.crate.push = true;
+  if (H.crate) { H.crate.push = true; delete H.crate.use; }
   setStage(2);
 }
 LQ.ROOMS.cottage1 = {
@@ -106,9 +106,8 @@ LQ.ROOMS.cottage1 = {
 // ---------- the old records cellar
 let C = null;
 const spawnImp = w => {
-  C.imp = LQ.foes.imp(w, 9, 4, e => {
+  C.imp = LQ.foes.imp(w, 9, 4, 'cellarImp', e => {
     C.imp = null;
-    if (st().flags.cellarImp) st().coins -= 5; else st().flags.cellarImp = true;   // its coins are paid once, even if you reload and fight it again
     const tx = Math.floor(e.x / T), ty = Math.floor(e.y / T);
     C.purse = { type: 'purse', tx, ty, base: ty * T + 12,
       pick: async () => {
@@ -208,7 +207,7 @@ const curQuest0 = LQ.curQuest;
 LQ.curQuest = () => {
   const q = curQuest0(), n = stage();
   if (st().quest !== 0 || n > 4) return q;
-  return { short: 'Your first night', target: null, text: n === 1 ? 'Read the letter on the table' : n === 4 ? 'Look around the cellar, then head back up' : 'Find whatever took your coin purse' };
+  return { short: 'Your first night', target: null, text: n === 1 ? 'Read the letter on the table' : n === 4 ? (st().flags.sawDoor ? 'Head back up the stairs' : 'Read the tall door beyond the gate') : 'Find whatever took your coin purse' };
 };
 
 // One line of help at the bottom of the screen, only while the opening is being played.

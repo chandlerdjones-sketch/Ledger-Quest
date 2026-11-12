@@ -105,18 +105,23 @@ LQ.startBattle = async (id = 'baron') => {
   const st = LQ.state, K = LQ.BOSSES[id];
   await LQ.say(null, K.approach);
   await LQ.fadeTo(1, 0.35); Object.assign(B, { cfg: K, bossHP: 7, hearts: 4, flash: 0, hurt: 0, slash: 0, scraps: 0, dead: 0, bubble: '' });
-  const queue = K.myths().slice(); B.maxHP = B.bossHP = queue.length + 1;
+  const queue = K.myths().slice(), attempted = new Set(); B.maxHP = B.bossHP = queue.length + 1;
   ui.banner = null; LQ.setScene(B); LQ.audio.play('battle'); await LQ.fadeTo(0, 0.5);
   for (const ln of K.intro) await LQ.say(K.who, ln);
   while (queue.length) {
     const m = queue.shift();
     B.bubble = m.myth; LQ.audio.sfx('wrong'); B.scraps = 1; await LQ.tween(0.5, k => { B.scraps = 1 - k; }); B.scraps = 0;
-    st.asked++;
-    const order = [0, 1, 2].sort(() => Math.random() - .5);
+    const first = !attempted.has(m);
+    attempted.add(m);
+    if (first) st.asked++;
+    const order = LQ.shuffle([0, 1, 2]);
     const pick = order[await LQ.choose(LQ.HERO, 'Counter the myth:', order.map(i => m.opts[i]))];
-    if (pick === 0) { st.first++; LQ.score(true); await strike(m.truth); }
-    else {
-      LQ.score(false); LQ.audio.sfx('hit'); LQ.shake(0.3); B.hurt = 1; B.hearts = Math.max(0, B.hearts - 1); await LQ.wait(0.5); B.hurt = 0; B.bubble = '';
+    if (pick === 0) {
+      if (first) { st.first++; LQ.score(true); }
+      await strike(m.truth);
+    } else {
+      if (first) LQ.score(false);
+      LQ.audio.sfx('hit'); LQ.shake(0.3); B.hurt = 1; B.hearts = Math.max(0, B.hearts - 1); await LQ.wait(0.5); B.hurt = 0; B.bubble = '';
       await LQ.say(K.who, K.taunt);
       await LQ.say(null, K.fogLine + ' The truth: ' + m.truth);
       queue.push(m);
@@ -125,12 +130,12 @@ LQ.startBattle = async (id = 'baron') => {
   }
   const fin = K.final();
   B.bubble = fin.bubble; LQ.audio.sfx('wrong'); await LQ.wait(0.4);
-  await LQ.ask(LQ.HERO, fin.prompt, fin.opts, { onWrong: () => { B.hurt = 1; setTimeout(() => { B.hurt = 0; }, 400); }, wrong: fin.wrong });
+  await LQ.ask(LQ.HERO, fin.prompt, fin.opts, { onWrong: async () => { B.hurt = 1; await LQ.wait(0.4); B.hurt = 0; }, wrong: fin.wrong });
   await strike(fin.strike);
   await LQ.say(K.who, K.lastWords);
   LQ.audio.sfx('rumble'); LQ.shake(0.8); await LQ.tween(1.6, k => { B.dead = k; }); LQ.audio.stop(); LQ.audio.sfx('fanfare');
   await LQ.say(null, K.after);
-  await K.win();
+  await K.win(); LQ.save();
   await LQ.fadeTo(1, 0.4); LQ.world.start(); LQ.setScene(LQ.world); await LQ.fadeTo(0, 0.6);
   await K.done();
 };

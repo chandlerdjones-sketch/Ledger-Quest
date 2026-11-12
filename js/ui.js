@@ -58,10 +58,17 @@ LQ.choose = (who, prompt, options, onMove) => new Promise(res => {
   if (onMove) onMove(0);
 });
 LQ.pressOk = () => new Promise(res => { ui.okWait = res; });
+LQ.shuffle = values => {
+  const shuffled = values.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 // Quiz helper. The first option is the correct one; options are shuffled on screen.
 LQ.ask = async (who, prompt, options, o = {}) => {
-  const order = options.map((_, i) => i);
-  for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  const order = LQ.shuffle(options.map((_, i) => i));
   let first = true; LQ.state.asked++;
   for (;;) {
     const pick = order[await LQ.choose(who, prompt, order.map(i => options[i]), o.onMove && (s => o.onMove(order[s])))];
@@ -95,7 +102,7 @@ const menuGear = () => LQ.GEAR.filter(g => LQ.has(g.id));
 const menuEntries = [
   menuGear,
   () => LQ.state.journal.map(id => LQ.JOURNAL[id]),
-  () => LQ.state.items.map(id => LQ.ITEMS[id]).concat(menuGear()),
+  () => LQ.state.items.map(id => LQ.ITEMS[id]).concat(menuGear(), LQ.kit?.supplies() || []),
   () => [],
   menuStocks,
 ];
@@ -199,12 +206,13 @@ function choiceTop(c, ch) {
   c.font = F(28);
   ch.lines = ui.wrap(c, ch.prompt || '', 848);
   ch.rh = ch.options.length > 8 ? 26 : 31;
-  ch.rows = Math.min(10, ch.options.length);
+  ch.rows = Math.min(ui.doc?.choiceRows ?? 10, ch.options.length);
   ch.h = 24 + (ch.prompt ? ch.lines.length * 29 + 10 : 0) + ch.rows * ch.rh + 10;
-  return 520 - ch.h;
+  ch.y = 520 - ch.h;
 }
+ui.choiceTop = () => ui.choice?.y ?? (ui.dlg ? 378 : 520);
 function drawChoice(c) {
-  const ch = ui.choice, y = choiceTop(c, ch), x = 30, w = 900;
+  const ch = ui.choice, y = ch.y, x = 30, w = 900;
   ui.panel(c, x, y, w, ch.h); nameTab(c, ch.who, x + 14, y - 30);
   let ty = y + 14;
   if (ch.prompt) { ch.lines.forEach((ln, i) => ui.text(c, ln, x + 26, ty + i * 29, '#eef4ff')); ty += ch.lines.length * 29 + 10; }
@@ -290,14 +298,16 @@ function drawMenu(c) {
   const bodyH = 326;
   if (m.reading) drawEntry(c, m.reading.entry, bx, by, 764, bodyH, m.reading);
   else if (m.tab === 0) {
+    const opening = LQ.intro?.active();
     const chap = st.q4 != null ? [LQ.QUESTS4, st.q4, 'Chapter 4: Summit of Gains'] : st.q3 != null ? [LQ.QUESTS3, st.q3, 'Chapter 3: Hustle Canyon'] : st.q2 != null ? [LQ.QUESTS2, st.q2, 'Chapter 2: Shelter Coast'] : [LQ.QUESTS, st.quest, 'Chapter 1: The Paystub Village'];
     const qs = chap[0].slice(0, chap[0].length - 1), at = chap[1];
     ui.text(c, chap[2], bx, by, '#35f0e6', F(26), 'left', 412);
-    qs.forEach((q, i) => {
+    if (opening) ui.text(c, LQ.curQuest().text, bx, by + 40, '#eef4ff', F(26), 'left', 412);
+    else qs.forEach((q, i) => {
       const done = at > i, cur = at === i;
       ui.text(c, (done ? '[x] ' : cur ? '[>] ' : '[ ] ') + q.short, bx, by + 40 + i * 30, done ? '#7fd6a8' : cur ? '#eef4ff' : '#9298bc', F(28), 'left', 412);
     });
-    ui.text(c, `${LQ.career().name}   Savvy ${st.savvy}   Net worth ${LQ.netWorth()}   Rank: ${LQ.rank()}`, bx, by + 312, '#c9cdea', F(24), 'left', 760);
+    ui.text(c, `${st.career ? LQ.career().name : 'New hero'}   Savvy ${st.savvy}   Net worth ${LQ.netWorth()}   Rank: ${LQ.rank()}`, bx, by + 312, '#c9cdea', F(24), 'left', 760);
     ui.text(c, 'GEAR', bx + 430, by + 6, '#35f0e6', F(10, true));
     const gear = menuGear(), off = scrollStart(m.sel, gear.length, 9);
     if (!gear.length) ui.text(c, 'None yet. Visit the Bazaar.', bx + 430, by + 40, '#6d7299', F(24));
@@ -348,12 +358,13 @@ function drawMenu(c) {
   ui.text(c, footer, x + w / 2, y + h - 32, '#c9cdea', F(21), 'center', 764);
 }
 ui.draw = c => {
+  if (ui.choice) choiceTop(c, ui.choice);
   if (ui.doc) {
     c.fillStyle = 'rgba(7,8,26,.66)'; c.fillRect(0, 0, VW, VH);
     ui.doc.draw(c);
   }
   if (ui.choice) drawChoice(c); else if (ui.dlg) drawDialogue(c);
-  else if (ui.okWait && Math.floor(LQ.time * 2) % 2) ui.text(c, 'Press Space', VW / 2, 500, '#35f0e6', F(26), 'center');
+  else if (ui.okWait) ui.text(c, 'Space: continue', VW / 2, 500, '#35f0e6', F(26), 'center');
   if (ui.banner && !hasModal()) drawBanner(c);
   if (canShowToasts()) drawToasts(c);
   if (ui.menu) drawMenu(c);

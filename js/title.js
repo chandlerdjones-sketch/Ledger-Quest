@@ -28,7 +28,7 @@ const careerSelect = LQ.careerSelect = () => {
           cr.lines.forEach((ln, k) => ui.text(c, ln, x + w / 2, y + 262 + k * 25, '#c9cdea', F(20), 'center', w - 24));
           c.globalAlpha = 1;
         });
-        if (Math.floor(LQ.time * 2) % 2) ui.text(c, 'Left / Right to choose, Space to confirm', LQ.VW / 2, 496, '#eef4ff', F(26), 'center');
+        ui.text(c, 'Left / Right to choose, Space to confirm', LQ.VW / 2, 496, '#eef4ff', F(26), 'center');
       },
     });
   });
@@ -104,6 +104,7 @@ const T = LQ.title = {
       if (play) Object.assign(LQ.state, { px: 16 * 16 + 8, py: 34 * 16 + 14, dir: 'down' }).flags.intro = 1;
       else {
         LQ.state.flags.intro = 9;
+        LQ.state.coins = 20;
         await LQ.say(null, skip ? 'First, though: what does your hero do for a living?' : 'Good news: that is about to change. First, though: what do you do for a living?');
         LQ.state.career = await careerSelect(); LQ.initMarket();
       }
@@ -167,7 +168,7 @@ const T = LQ.title = {
       ui.text(c, o ? `${o.career}    ${o.chapter}    ${o.coins} coins    ${o.rank}` : 'Empty. Start a new game here', cx + 308, oy + 8, o ? '#eef4ff' : '#8f96c0', F(26), 'right', 526);
     });
     if (this.msg) ui.text(c, this.msg, cx, 436, '#a8fff6', F(26), 'center');
-    else if (!ui.choice && !ui.dlg && Math.floor(t * 2) % 2) ui.text(c, 'Up / Down: choose a slot    Space: select', cx, 436, '#eef4ff', F(26), 'center');
+    else if (!ui.choice && !ui.dlg) ui.text(c, 'Up / Down: choose a slot    Space: select', cx, 436, '#eef4ff', F(26), 'center');
     ui.text(c, 'Educational game. US federal figures for tax year 2026. Not tax advice.', cx, 498, 'rgba(201,205,234,.8)', F(22), 'center');
   },
 };

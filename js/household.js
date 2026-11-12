@@ -102,8 +102,8 @@ LQ.fin3 = (o = {}) => {
   f.prefTax = Math.round(0.15 * f.at15); f.tax = f.ordTax + f.prefTax;
   // credits
   f.ctc = TX.ctc; f.careRate = LQ.careRate(f.agi); f.care = Math.round(f.careRate * TX.careMaxOne);
-  const saved = Math.min(2000, b.retire + b.roth + f.sep + f.acct) + Math.min(2000, f.sp401);
-  f.saver = has('guide') && f.agi <= TX.saverMaxAgiJoint && saved > 0 ? Math.round(0.10 * saved) : 0;
+  const spouseRoth = (has('ring') ? 3000 : 0) + (useInv && s.acct4 === 0 ? 3000 : 0);
+  f.saver = LQ.saverCredit(f.agi, b.retire + b.roth + f.acct, f.sp401 + spouseRoth, true);
   f.credits = Math.min(f.tax, f.ctc + f.care + f.saver);
   f.total = f.tax - f.credits + f.se;
   // paid in during the year: paycheck withholding that covers the day jobs, plus estimated payments for the gig

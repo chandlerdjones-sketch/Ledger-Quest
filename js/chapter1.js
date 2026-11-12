@@ -50,7 +50,7 @@ LQ.QUESTS = [
 
 LQ.JOURNAL = {
   withholding: { title: 'Withholding (W-4)', text: 'Your employer holds back part of every paycheck and sends it to the IRS for you. Form W-4 tells them how much. Too little withheld means a bill at tax time. Too much means smaller paychecks and a refund later. You can hand in a new W-4 whenever your life changes.' },
-  estimates: { title: 'Estimated taxes', text: 'If nobody withholds tax for you, you pay it yourself four times a year with Form 1040-ES. Skip the payments and the IRS adds an underpayment penalty. You are generally safe if you owe under $1,000 at filing, or paid at least 90% of this year\'s tax or 100% of last year\'s.' },
+  estimates: { title: 'Estimated taxes', text: 'If withholding will leave you short, you may need quarterly estimated payments. You generally avoid a penalty if you owe under $1,000 after withholding and refundable credits, or pay enough on time to meet a safe harbor. The usual targets are 90% of this year\'s tax or 100% of last year\'s, with a higher prior-year target for higher incomes.' },
   paystub: { title: 'Reading a paystub', text: 'Gross pay is what you earned. Net pay is what you take home. The gap between them is mostly federal income tax, Social Security, and Medicare. Many states take income tax too.' },
   fica: { title: 'Social Security & Medicare', text: 'Two payroll taxes that are a flat share of your wages: 6.2% for Social Security (on wages up to $184,500 in 2026) and 1.45% for Medicare. Your employer pays a matching amount. Your W-4 does not change them.' },
   selfEmp: { title: 'Self-employment tax', text: 'When you work for yourself, you are the employee and the employer, so you pay both halves of Social Security and Medicare: 15.3% on 92.35% of your net profit. You may deduct half of it. You are taxed on profit (sales minus business expenses), so every legitimate expense you track lowers the bill.' },
@@ -58,15 +58,15 @@ LQ.JOURNAL = {
   records: { title: 'Year-end records (1099)', text: 'Clients may send Form 1099-NEC showing what they paid you. But you must report all of your business income, whether or not a form arrives. Your own books are the real record.' },
   status: { title: 'Filing status', text: 'Your status sets your standard deduction and your brackets. It depends on your real situation on the last day of the year: Single, Married Filing Jointly, Married Filing Separately, Head of Household, or Qualifying Surviving Spouse.' },
   deduction: { title: 'Standard vs. itemized', text: 'A deduction lowers the income that gets taxed. You take the standard deduction (2026: $16,100 single, $32,200 married filing jointly, $24,150 head of household) or the total of your itemized deductions, whichever is larger. Most people take the standard deduction.' },
-  overtime: { title: 'Overtime deduction', text: 'For 2025 through 2028 you can deduct qualified overtime pay: the extra "half" in time-and-a-half, up to $12,500 for a single filer. It works even if you take the standard deduction, and it starts shrinking above $150,000 of income. Social Security and Medicare still apply.' },
+  overtime: { title: 'Overtime deduction', text: 'For 2025 through 2028 you can deduct qualified overtime required by federal labor law: the extra "half" in time-and-a-half, up to $12,500 for a single filer. It works even if you take the standard deduction, and it starts shrinking above $150,000 of income. Social Security and Medicare still apply.' },
   qbi: { title: 'Business income deduction', text: 'Many small business owners can deduct up to 20% of their qualified business income. For most small shops it is 20% of the smaller of your business profit or your taxable income. You do not need to itemize to take it.' },
   brackets: { title: 'Marginal tax brackets', text: 'Income is taxed in layers. For a single filer in 2026, the first $12,400 of taxable income is taxed at 10%, the next slice up to $50,400 at 12%, then 22% up to $105,700, and so on up to 37%. Only the dollars inside a layer get that layer\'s rate.' },
-  raise: { title: 'The raise myth', text: 'Crossing into a higher bracket never shrinks your whole paycheck. Only the dollars above the line are taxed at the higher rate, so a raise always leaves you with more than you had before.' },
+  raise: { title: 'The raise myth', text: 'Crossing into a higher bracket never shrinks your whole paycheck. Only the dollars above the line are taxed at the higher rate, so the higher federal bracket alone cannot make your after-tax pay go down.' },
   refund: { title: 'Refund or balance due', text: 'Tax owed minus tax already paid. If you paid in more than you owe, the difference comes back as a refund. It was your money all along. If you paid in less, you pay the difference.' },
   filing: { title: 'Filing a return', text: 'The heart of Form 1040: income, minus your deductions, equals taxable income. Work out the tax on that, subtract credits and what you already paid, and you have a refund or a balance due. Most returns are due April 15.' },
   latefile: { title: 'File even if you can\'t pay', text: 'The penalty for filing late is usually 5% of the unpaid tax per month. The penalty for paying late is usually 0.5% per month. So file on time, pay what you can, and ask the IRS about a payment plan.' },
   audit: { title: 'How audits really work', text: 'In the game, auditors leap out of bushes. In real life audits are rare, most are handled by mail, and they usually just ask you to back up a number on your return. Honest filers with good records have little to fear. Keep your receipts and answer on time.' },
-  brokerage: { title: 'Taxable brokerage account', text: 'An ordinary investing account with no special tax shelter. You owe tax when you sell for a gain and on dividends. Gains on shares held a year or less are taxed like wages. Held longer, they get lower long-term rates. (The game settles the tax the moment you sell. In real life it goes on your return.)' },
+  brokerage: { title: 'Taxable brokerage account', text: 'An ordinary investing account with no special tax shelter. You owe tax when you sell for a gain and on dividends. Gains on shares held a year or less are taxed like wages. Held longer, they get lower long-term rates. (The game usually charges simplified tax at the counter. Chapter 4 records sales for the return, as in real life.)' },
   gearTiming: { title: 'When savings count', text: 'IRA and HSA contributions can count for a tax year right up to the filing deadline. 401(k) contributions have to come out of your paychecks during the year. The game keeps it simple: anything you buy before you file counts.' },
   tipDeadline: { title: 'Tip: the deadline', text: 'For most people the federal return is due April 15. If you need more time to file you can request an extension, but an extension to file is not an extension to pay.' },
   tipRecords: { title: 'Tip: keep records', text: 'Keep your returns and the papers behind them (W-2s, receipts) for at least three years. That is the usual window for the IRS to ask questions or for you to claim a missed refund.' },
@@ -81,7 +81,7 @@ LQ.JOURNAL = {
   proGains: { title: 'Pro: hold for a year', text: 'Gains on investments held a year or less are taxed like wages. Hold more than a year and the long-term rates apply: 0%, 15%, or 20%. In 2026 a single filer with taxable income up to $49,450 pays 0% on long-term gains.' },
   proLoss: { title: 'Pro: harvest your losses', text: 'Selling at a loss cancels out gains. If losses are larger than gains, up to $3,000 a year can offset other income and the rest carries forward. If you buy the same investment back within 30 days, the wash sale rule disallows the loss.' },
   proBiz: { title: 'Pro: self-employed write-offs', text: 'Business miles are deductible: 72.5 cents a mile in early 2026 and 76 cents from July 1. A home office used only for work can be claimed the simple way at $5 per square foot, up to 300 square feet. Keep a log. No records, no deduction.' },
-  proSaver: { title: "Pro: the Saver's Credit", text: "If your income is under $40,250 as a single filer in 2026, the Saver's Credit gives back 10% to 50% of up to $2,000 you put into a retirement account. It is a credit, so it comes straight off your tax. Many people who qualify never claim it." },
+  proSaver: { title: "Pro: the Saver's Credit", text: "If your income is $40,250 or less as a single filer in 2026, the Saver's Credit gives back 10% to 50% of up to $2,000 you put into a retirement account. It is a credit, so it comes straight off your tax. Many people who qualify never claim it." },
 };
 LQ.ITEMS = {
   w4: { name: 'Tax Payment Plan', desc: 'Your W-4 or estimated payment schedule.' },
@@ -116,10 +116,24 @@ const RED = { vcolor: '#b0332e' }, GREEN = { vcolor: '#1f6f5c' };
 function sideBox(c, title, rows) {
   c.fillStyle = '#f4f6ff'; c.fillRect(592, 62, 286, 216); c.strokeStyle = '#7a74b8'; c.strokeRect(593, 63, 284, 214);
   c.font = F(11, true); c.textAlign = 'left'; c.fillStyle = '#5a5490'; c.fillText(title, 608, 76);
-  rows.forEach((r, i) => { if (r === 0) return rule(c, 608, 100 + i * 32 - 4, 254); line(c, 608, 100 + i * 32, 254, r[0], r[1], r[2]); });
+  const rh = Math.min(32, Math.floor(170 / rows.length));
+  rows.forEach((r, i) => {
+    const y = 100 + i * rh;
+    if (r === 0) return rule(c, 608, y - 3, 254);
+    line(c, 608, y, 254, r[0], r[1], { ...r[2], size: Math.min(r[2]?.size || 26, rh - 2) });
+  });
 }
 
-LQ.docs = { paper, line, rule, sideBox, RED, GREEN };
+const settlement = f => f.diff < 0 ? 'Paid at filing' : f.diff > 0 ? 'Refund received' : 'Balance settled';
+function settlementRow(f, who = 'We') {
+  const owed = f.diff < 0, amt = Math.abs(f.diff), money = M(amt || f.total);
+  const pay = `${who} owe ${money}`, refund = `${who} get a refund of ${money}`, even = 'It comes out exactly even';
+  const opts = owed ? [pay, refund, even] : f.diff > 0 ? [refund, pay, even] : [even, pay, refund];
+  return { label: owed ? 'Amount you owe' : f.diff > 0 ? 'Refund' : 'Balance due', val: amt, owed,
+    ask: [`Your total tax is ${M(f.total)} and you paid in ${M(f.withheld)}. What is the result?`, opts,
+      [owed ? 'You paid in less than your tax.' : f.diff > 0 ? 'You paid in more than your tax.' : 'Your payments already covered the full tax.', 'Subtract what you paid from what you owed.']] };
+}
+LQ.docs = { paper, line, rule, sideBox, RED, GREEN, settlement, settlementRow };
 
 const w4Doc = { pick: 0, signed: false, draw(c) {
   const f = LQ.fin(this.pick), p = this.pick;
@@ -129,7 +143,7 @@ const w4Doc = { pick: 0, signed: false, draw(c) {
   L(3, 'Step 4(b) Extra deductions', p === 2 ? '$8,000' : '$0', p === 2);
   L(4, 'Step 4(c) Extra withholding', p === 1 ? '$40 per check' : '$0', p === 1);
   L(5, 'Step 5   Signature', this.signed ? '~ signed ~' : '____________');
-  sideBox(c, 'EACH PAYCHECK', [['Gross pay', M(f.gross)], ['Federal tax', '-' + M(f.per), { vcolor: '#b0332e', hl: true }], ['Soc. Security', '-' + M(f.ss), RED], ['Medicare', '-' + M(f.med), RED], 0, ['Take-home', M(f.net), GREEN]]);
+  sideBox(c, 'EACH PAYCHECK', [['Gross pay', M(f.gross)], ['Federal tax', '-' + M(f.per), { vcolor: '#b0332e', hl: true }], ['Soc. Security', '-' + M(f.ss), RED], ['Medicare', '-' + M(f.med), RED], f.retire ? ['Traditional 401(k)', '-' + M(f.retirePerCheck), RED] : 0, ['Take-home', M(f.net), GREEN]]);
 } };
 const estDoc = { pick: 0, signed: false, draw(c) {
   const f = LQ.fin(this.pick);
@@ -142,12 +156,13 @@ const estDoc = { pick: 0, signed: false, draw(c) {
 } };
 
 const stubDoc = { hl: null, draw(c) {
-  const f = LQ.fin(), L = (i, key, a, b, o = {}) => line(c, 240, 70 + i * 38, 480, a, b, Object.assign({ hl: this.hl === key }, o));
+  const f = LQ.fin(), L = (i, key, a, b, o = {}) => line(c, 240, 70 + i * (f.retire && f.kind === 'w2' ? 33 : 38), 480, a, b, Object.assign({ hl: this.hl === key }, o));
   if (f.kind === 'w2') {
     paper(c, 210, 20, 540, 272, f.c.work.toUpperCase(), 'Pay statement  1 of 26');
     L(0, 'gross', 'Gross pay', M(f.gross)); L(1, 'fed', 'Federal income tax', '-' + M(f.per), RED);
     L(2, 'ss', 'Social Security  6.2%', '-' + M(f.ss), RED); L(3, 'med', 'Medicare  1.45%', '-' + M(f.med), RED);
-    rule(c, 240, 226, 480); L(4.4, 'net', 'Net pay (take-home)', M(f.net), GREEN);
+    if (f.retire) L(4, 'retire', 'Traditional 401(k)', '-' + M(f.retirePerCheck), RED);
+    rule(c, 240, f.retire ? 232 : 226, 480); L(f.retire ? 5.2 : 4.4, 'net', 'Net pay (take-home)', M(f.net), GREEN);
   } else {
     paper(c, 210, 20, 540, 272, 'YOUR CANDLE SHOP', 'Profit statement  Quarter 1 of 4');
     L(0, 'sales', 'Sales', M(f.sales / 4)); L(1, 'exp', 'Business expenses', '-' + M(f.expenses / 4), RED);
@@ -157,12 +172,13 @@ const stubDoc = { hl: null, draw(c) {
 } };
 
 const yearDoc = { k: 0, draw(c) {
-  const f = LQ.fin(), n = Math.max(1, Math.round(this.k * f.pays)), L = (i, a, b, o) => line(c, 222, 84 + i * 40, 516, a, b, o);
+  const f = LQ.fin(), n = Math.max(1, Math.round(this.k * f.pays)), L = (i, a, b, o) => line(c, 222, 84 + i * (f.retire && f.kind === 'w2' ? 33 : 40), 516, a, b, o);
   if (f.kind === 'w2') {
     paper(c, 190, 30, 580, 300, 'A YEAR AT WORK', 'Payday ' + n + ' of 26');
     L(0, 'Gross pay so far', M(f.gross * n)); L(1, 'Federal income tax withheld', M(f.per * n), RED);
     L(2, 'Social Security', M(f.ss * n), RED); L(3, 'Medicare', M(f.med * n), RED);
-    rule(c, 222, 246, 516); L(4.3, 'Take-home so far', M(f.net * n), GREEN);
+    if (f.retire) L(4, 'Traditional 401(k)', '-' + M(f.retirePerCheck * n), RED);
+    rule(c, 222, 246, 516); L(f.retire ? 5.2 : 4.3, 'Take-home so far', M(f.net * n), GREEN);
   } else {
     paper(c, 190, 30, 580, 300, 'A YEAR IN BUSINESS', 'Quarter ' + n + ' of 4');
     L(0, 'Sales so far', M(f.sales / 4 * n)); L(1, 'Business expenses', M(f.expenses / 4 * n), RED);
@@ -251,12 +267,16 @@ const mountDoc = { income: 0, show: 0, anim: 1, draw(c) {
 } };
 
 const formDoc = { rows: [], vals: [], cur: -1, stamp: 0, draw(c) {
-  const n = this.rows.length, rh = Math.min(34, Math.floor(282 / n)), fs = Math.min(26, rh - 1);
-  paper(c, 130, 12, 700, 330, 'FORM 1040', 'U.S. Individual Income Tax Return (simplified)  ' + TX.year);
-  this.rows.forEach((r, i) => {
-    const last = i === n - 1; if (last) rule(c, 158, 52 + i * rh - 2, 644);
-    line(c, 158, 52 + i * rh + (last ? 3 : 0), 644, r.label, this.vals[i] == null ? '________' : (r.sign || '') + M(this.vals[i]),
-      { hl: i === this.cur, size: fs, vcolor: last && this.vals[i] != null ? (r.owed ? '#b0332e' : '#1f6f5c') : r.sign === '-' ? '#1f6f5c' : '#15122e' });
+  const n = this.rows.length, h = Math.min(330, ui.choiceTop() - 44), rh = this.cur < 0 ? Math.min(34, Math.floor((h - 48) / n)) : 26;
+  const count = Math.min(n, Math.floor((h - 48) / rh));
+  const start = LQ.clamp(this.cur - Math.floor(count / 2), 0, n - count);
+  const range = count < n ? `    Lines ${start + 1}–${start + count} of ${n}` : '';
+  paper(c, 130, 12, 700, h, 'FORM 1040', `Simplified   ${TX.year}${range}`);
+  this.rows.slice(start, start + count).forEach((r, j) => {
+    const i = start + j, y = 52 + j * rh, last = i === n - 1;
+    if (last) rule(c, 158, y - 3, 644);
+    line(c, 158, y + (last ? 3 : 0), 644, r.label, this.vals[i] == null ? '________' : (r.sign || '') + M(this.vals[i]),
+      { hl: i === this.cur, size: Math.min(26, rh - 2), vcolor: last && this.vals[i] != null ? (r.owed ? '#b0332e' : '#1f6f5c') : r.sign === '-' ? '#1f6f5c' : '#15122e' });
   });
   if (this.stamp > 0) {
     c.save(); c.translate(660, 170); c.rotate(-0.22); const s = 1 + (1 - this.stamp) * 2; c.scale(s, s); c.globalAlpha = this.stamp;
@@ -374,7 +394,6 @@ async function qPim() {
   const f = LQ.fin();
   await say(N.pim, `First paycheck! Congratulations. You earned ${M(f.gross)}... and here is what you actually get.`);
   stubDoc.hl = null; ui.doc = stubDoc;
-  await say(N.pim, "Don't panic. Everyone squints at their first paystub. Let's read it together.");
   await ask(N.pim, 'Which number actually lands in your coin purse?', ['Net pay', 'Gross pay', 'Federal income tax'],
     { right: 'Right. Gross is what you earned. Net is what you take home.', wrong: ['Gross is what you earned before anything came out. Look lower.', 'That one is money leaving, not arriving!'] });
   stubDoc.hl = 'ss';
@@ -512,7 +531,7 @@ async function qAltamira() {
     { wrong: ['That is the lie the fog whispers. The lower ledges keep their lower rates.', 'Never. Only the dollars above the line pay the higher rate.'] });
   mountDoc.show = 3; await LQ.tween(1.1, k => { mountDoc.anim = k; });
   const extra = t2 - t1, fica = (w2 - w1) * (TX.ssRate + TX.medicareRate);
-  await say(N.altamira, `The raise adds ${M(w2 - w1)} of pay and only ${M(extra)} of income tax. Even after Social Security and Medicare he would keep about ${M(w2 - w1 - extra - fica)}. A raise never leaves you poorer.`);
+  await say(N.altamira, `The raise adds ${M(w2 - w1)} of pay and only ${M(extra)} of income tax. Even after Social Security and Medicare he would keep about ${M(w2 - w1 - extra - fica)}. The new bracket only affects the dollars above the line.`);
   ui.doc = null; LQ.learn('brackets'); LQ.learn('raise'); LQ.give('compass');
   await say(N.altamira, 'Take this Bracket Compass. The one who spreads the fog waits at the summit: Baron Befuddle, the Mythmonger. He fights with lies. You now carry the truth.');
   await LQ.world.openGate();
@@ -525,7 +544,7 @@ function buildRows(f) {
   if (!owner) {
     add('Wages  (W-2, Box 1)', f.box1, { ask: ['First line, wages. Which number goes here?', [`W-2 Box 1: ${M(f.box1)}`, `W-2 Box 2: ${M(f.withheld)}`, `My total take-home pay: ${M(f.netYear)}`],
       ['Box 2 is tax already withheld. It comes later.', 'The return starts from what you earned, before anything was taken out.']] });
-    if (f.retire) R[0].note = `Notice Box 1 is ${M(f.retire)} lower than your pay. That is your Retirement Chestplate at work. Money put in a 401(k) never shows up as taxable wages.`;
+    if (f.retire) R[0].note = `Notice Box 1 is ${M(f.retire)} lower than your pay. That is your Retirement Chestplate at work. Pre-tax 401(k) contributions lower Box 1. Social Security and Medicare still apply.`;
     if (f.hsa) add('HSA deduction', f.hsa, { sign: '-', note: `Your HSA Flask comes off next: ${M(f.hsa)}.` });
   } else {
     add('Business net profit', f.profit, { ask: ['First line, business income. Which number goes here?', [`Net profit: ${M(f.profit)}`, `Total sales: ${M(f.sales)}`, 'The $18,000 on the 1099'],
@@ -540,20 +559,17 @@ function buildRows(f) {
   if (owner) add('Business income deduction', f.qbi, { sign: '-', note: `The business income deduction takes off ${M(f.qbi)}. Here that is 20% of your taxable income before it, because that is smaller than your profit.` });
   add('Taxable income', f.taxable, { ask: ['Taxable income. Start from the top line and subtract every deduction. What is left?', [M(f.taxable), M(f.income), M(f.taxable + f.std)],
     ['The shields have to block something. Subtract the deductions.', 'Not quite. The Standard Shield has to come off too.']] });
-  add('Income tax', f.tax, { ask: [`The tax on ${M(f.taxable)}. Remember the mountain.`, [M(f.tax), M(f.taxable * f.top), M(f.taxable * (f.top === .12 ? .10 : .12))],
-    [`That is ${pct(f.top)} of everything. The lower ledges are taxed at lower rates.`, 'Fill the ledges from the bottom, each at its own rate.']],
+  add('Income tax', f.tax, { ask: [`The tax on ${M(f.taxable)}. Remember the mountain.`, [M(f.tax), M(f.taxable * (f.top === .10 ? .22 : f.top)), M(f.taxable * (f.top === .12 ? .10 : .12))],
+    [f.top === .10 ? 'Your taxable income stays on the 10% ledge.' : `That is ${pct(f.top)} of everything. The lower ledges are taxed at lower rates.`, 'Fill the ledges from the bottom, each at its own rate.']],
     note: 'Ledge by ledge. (The official tax table rounds a little, so a real return may differ by a few dollars.)' });
   if (owner) add('Self-employment tax', f.se, { sign: '+', note: `Now add self-employment tax, your Social Security and Medicare: ${M(f.se)}. Notice it is bigger than your income tax.` });
-  if (f.credit) add("Saver's Credit", f.credit, { sign: '-', note: `Your Saver's Credit comes straight off the bill: ${M(f.credit)}. A credit is worth its full amount. (The game uses the 10% rate. Lower incomes can get 20% or 50%.)` });
+  if (f.credit) add("Saver's Credit", f.credit, { sign: '-', note: `Your Saver's Credit comes straight off the bill: ${M(f.credit)}. A credit is worth its full amount. (The rate is 10%, 20%, or 50%, depending on your income.)` });
   add(owner ? 'Estimated payments made' : 'Tax withheld  (W-2, Box 2)', f.withheld, { ask: owner
     ? ['Tax you already paid during the year. Where is it?', [`My four estimated payments: ${M(f.withheld)}`, `My business expenses: ${M(f.expenses)}`, 'I can leave this line blank and keep the difference'],
       ['Expenses lowered your profit earlier. This line is for tax payments.', 'Leaving off payments you made would only cheat yourself.']]
     : ['Tax you already paid during the year. Where do you find it?', [`W-2 Box 2: ${M(f.withheld)}`, `W-2 Box 4: ${M(f.ssYear)}`, 'Nowhere. I have not paid any yet.'],
       ['Box 4 is Social Security tax. It does not count toward income tax.', 'You have been paying all year, one paycheck at a time. That is what withholding is.']] });
-  const owed = f.diff < 0, amt = Math.abs(f.diff);
-  add(owed ? 'Amount you owe' : 'Refund', amt, { owed, ask: [`Last line. Your total tax is ${M(f.total)} and you already paid ${M(f.withheld)}. So...`,
-    owed ? [`I owe ${M(amt)}`, `I get a refund of ${M(amt)}`, 'It comes out exactly even'] : [`I get a refund of ${M(amt)}`, `I owe ${M(amt)}`, 'It comes out exactly even'],
-    [owed ? 'You paid in less than your tax. The difference is still due.' : 'You paid in more than your tax. The extra comes back to you.', 'Check the subtraction once more.']] });
+  R.push(settlementRow(f, 'I'));
   return R;
 }
 async function qJuno() {
@@ -579,30 +595,30 @@ async function qJuno() {
     : w === 2 ? (owed ? `You owe ${M(amt)}. You wrote $8,000 of deductions on your W-4, more than you really had, so too little was withheld. Your paychecks were bigger all year, and now the difference is due by April 15.`
       : `A refund of ${M(amt)}. Your W-4 guess turned out close to the deductions you really ended up with.`)
     : `${owed ? 'You owe' : 'A refund of'} ${M(amt)}.` + (f.diff > 300 ? ' Your plain W-4 did not know about your extra deductions, so more was withheld than you owed. A new W-4 could put that money in your paychecks instead.' : ' Your plain W-4 landed your withholding almost exactly on your real tax. That is a well-tuned W-4.');
-  await say(N.juno, why);
+  await say(N.juno, amt === 0 ? 'Your payments match the tax exactly. There is no balance due or refund.' : why);
   const coins = Math.max(-400, Math.round(f.diff / 5)) - (owner && w === 2 ? 60 : 0);
   LQ.gain(50, coins, owed ? 'Tax settled' : 'Refund');
   await say(N.juno, 'Either way: filed, on time, and you understood every line. One last thing. Even if you could not pay what you owe, you should still file on time. Filing late costs far more than paying late.');
   ui.doc = null; LQ.learn('refund'); LQ.learn('filing'); LQ.learn('latefile'); LQ.give('return');
-  st().quest = 9; LQ.tick();
+  st().quest = 9; st().season = 'summer'; LQ.tick(); LQ.save();
   await ending();
 }
 
 async function ending() {
   const f = LQ.fin(), s = st(), owed = f.diff < 0;
-  await LQ.fadeTo(1); ui.toasts = []; s.season = 'summer'; LQ.world.setSeason('summer'); LQ.audio.play('title');
+  await LQ.fadeTo(1); ui.toasts = []; LQ.world.setSeason('summer'); LQ.audio.play('title');
   ui.doc = { draw(c) {
     paper(c, 130, 20, 700, 458, 'CHAPTER 1 COMPLETE', f.c.name);
     c.textAlign = 'center'; c.textBaseline = 'top'; c.font = F(20, true); c.fillStyle = '#1f6f5c'; c.fillText(LQ.rank().toUpperCase(), 480, 70);
     const L = (i, a, b, o) => line(c, 170, 108 + i * 31, 620, a, b, Object.assign({ size: 25 }, o));
-    L(0, 'Income', M(f.income)); L(1, 'Total federal tax', M(f.total)); L(2, owed ? 'Paid at filing' : 'Refund received', M(Math.abs(f.diff)), owed ? RED : GREEN);
+    L(0, 'Income', M(f.income)); L(1, 'Total federal tax', M(f.total)); L(2, settlement(f), M(Math.abs(f.diff)), owed ? RED : GREEN);
     L(3, 'Right on the first try', s.first + ' of ' + s.asked); L(4, 'Savvy', String(s.savvy)); L(5, 'Audits faced', String(s.audits || 0));
     L(6, 'Coins', String(s.coins)); L(7, 'Stocks', String(LQ.portfolio())); L(8, 'Net worth', String(LQ.netWorth()), GREEN);
     L(9, 'Journal entries', s.journal.length + ' of ' + Object.keys(LQ.JOURNAL).length);
     c.font = F(23); c.textAlign = 'center'; c.fillStyle = '#5a5490';
     ui.wrap(c, 'Your return is filed and the South Road is open. Chapter 2 begins in Shelter Coast. The village stays open too.', 620).forEach((ln, i) => c.fillText(ln, 480, 424 + i * 24));
   } };
-  await LQ.fadeTo(0.5); await LQ.pressOk();
+  await LQ.fadeTo(0); await LQ.pressOk();
   ui.doc = { draw(c) { LQ.drawWorldMap(c, 110, 40, 740, 420); } };
   await LQ.pressOk();
   await LQ.fadeTo(1, 0.3); ui.doc = null; LQ.audio.play('village'); await LQ.fadeTo(0, 0.9);
@@ -633,7 +649,7 @@ const TIPS = {
     q: ['Your losses are bigger than your gains this year. How much of the extra can offset your other income?', ['Up to $3,000 a year, and the rest carries forward', 'All of it, right away', 'None. Losses are simply gone']] },
   juniper: { j: 'proBiz', lines: ['I drive this cart for my own business, so every business mile is a write-off: 72.5 cents a mile in early 2026, and 76 cents from July on.', 'A home office used only for work counts too. The simple method is $5 a square foot, up to 300 square feet. But keep a log. No records, no deduction.'],
     q: ['What do you need to back up a mileage deduction?', ['A log of the business miles I drove', 'Nothing. A rough guess is fine', 'A letter from my customers']] },
-  basil: { j: 'proSaver', lines: ["Cooks do not get rich, but we have a secret. If your income is under $40,250 as a single filer in 2026, the Saver's Credit pays back 10% to 50% of up to $2,000 you put into a retirement account.", 'It is a credit, so it comes straight off your tax. Most people who qualify never claim it.'],
+  basil: { j: 'proSaver', lines: ["Cooks do not get rich, but we have a secret. If your income is $40,250 or less as a single filer in 2026, the Saver's Credit pays back 10% to 50% of up to $2,000 you put into a retirement account.", 'It is a credit, so it comes straight off your tax. Most people who qualify never claim it.'],
     q: ["Who is the Saver's Credit meant for?", ['Lower and middle income workers who save for retirement', 'Anyone with a savings account', 'Only business owners']] },
 };
 async function tip(id) {
