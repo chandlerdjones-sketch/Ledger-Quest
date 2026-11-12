@@ -167,7 +167,7 @@ const finderNote = region => {
 LQ.GEAR = [
   { id: 'ledger', name: 'Receipt Ledger', price: 40, desc: 'Good records win audits. With this ledger, one correct answer out of three is enough to pass.' },
   { id: 'guide', name: "Saver's Credit Guidebook", price: 120, desc: "Shows you how to claim the Saver's Credit. If your income is under $40,250, money you put toward retirement earns a tax credit." },
-  { id: 'charity', name: 'Charity Lantern', price: 200, desc: 'Give $500 to charity. Starting in 2026, people who take the standard deduction can still deduct up to $1,000 of cash gifts.' },
+  { id: 'charity', name: 'Charity Lantern', price: 200, desc: 'Give $500 to charity. Starting in 2026, people who take the standard deduction can still deduct up to $1,000 of cash gifts. In the field it is a working lantern: it lights dark places and keeps Myth Wisps away.' },
   { id: 'miles', only: 'se', name: 'Mileage Logbook', price: 250, desc: 'Log 4,000 business miles. At the 2026 rates (72.5 cents, then 76 cents from July) that is a $2,970 write-off.' },
   { id: 'hsa', save: 1, name: 'HSA Flask', price: 300, desc: 'Put $2,000 in a Health Savings Account (2026 limit: $4,400 with a high-deductible health plan). Deductible going in, tax-free for medical costs.' },
   { id: 'hearth', only: 'se', name: 'Home Office Hearth', price: 350, desc: 'Claim a 200 square foot home office the simple way: $5 per square foot, a $1,000 write-off.' },
@@ -204,9 +204,10 @@ LQ.shop = async who => {
   await LQ.say(who, st().flags[seen] ? 'Back for more? Pick an item to see what it does.' : hello[1]);
   st().flags[seen] = true;
   for (;;) {
-    const items = LQ.gearFor(); shopDoc.item = items[0]; ui.doc = shopDoc;
-    const i = await LQ.choose(who, 'You have ' + st().coins + ' coins.', items.map(g => (LQ.has(g.id) ? '[owned] ' : '') + g.name + '  -  ' + g.price).concat('Leave'), s => { shopDoc.item = items[s] || null; });
+    const items = LQ.gearFor(), extras = LQ.shopExtras ? LQ.shopExtras() : []; shopDoc.item = items[0]; ui.doc = shopDoc;
+    const i = await LQ.choose(who, 'You have ' + st().coins + ' coins.', items.map(g => (LQ.has(g.id) ? '[owned] ' : '') + g.name + '  -  ' + g.price).concat(extras.map(x => x.label), 'Leave'), s => { shopDoc.item = items[s] || null; });
     ui.doc = null;
+    if (i >= items.length && i < items.length + extras.length) { await extras[i - items.length].run(who); continue; }
     const g = items[i]; if (!g) break;
     if (LQ.has(g.id)) { await LQ.say(who, 'You already own that one.'); continue; }
     if (g.needs && !LQ.has(g.needs)) { await LQ.say(who, 'That one only works with the ' + LQ.GEAR.find(x => x.id === g.needs).name + '. Buy that first.'); continue; }

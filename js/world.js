@@ -90,6 +90,7 @@ function buildVillage() {
   solid[23][13] = solid[23][14] = true; m.block(23, 26, 24, 27);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (g[y][x] === 'w') solid[y][x] = true;
   m.keepClear(LQ.CH1, { g: 1, f: 1, w: 1 }); m.mark(24, 37, 2);
+  if (LQ.V1) LQ.V1.carve(m);
   // trees: border, northern forest, scattered
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (g[y][x] !== 'g' || solid[y][x] || m.keep[y][x]) continue;
@@ -123,7 +124,7 @@ LQ.REGIONS.village = {
   },
   overlay(g, w, st) {
     if (st.flags.bossDown) return;
-    const f = LQ.clamp((13.5 * T - w.p.y) / (8 * T), 0, 1), tm = LQ.time; if (f <= 0) return;
+    const f = LQ.clamp((13.5 * T - w.p.y) / (8 * T), 0, 1) * (st.flags.page1 ? .55 : 1), tm = LQ.time; if (f <= 0) return;
     g.fillStyle = `rgba(110,60,160,${f * .3})`; g.fillRect(0, 0, LQ.BW, LQ.BH);
     for (let i = 0; i < 7; i++) { g.fillStyle = `rgba(190,150,235,${f * .13})`; const fx = (LQ.hash(i, 5, 40) * 420 + tm * (6 + i * 2)) % 420 - 60, fy = LQ.hash(i, 6, 40) * LQ.BH; g.fillRect(fx, fy, 70, 9); g.fillRect(fx + 12, fy - 5, 44, 19); }
   },
@@ -139,13 +140,15 @@ const world = LQ.world = {
     if (!this.grounds[k]) this.grounds[k] = LQ.bakeGround(this.map, se, R.id);
     this.ground = this.grounds[k]; this.season = se;
   },
-  start() {
-    const st = LQ.state, R = this.R = LQ.REGIONS[st.region] || LQ.REGIONS.village, C = this.C = R.content();
+  // With no argument this loads the saved region. A room (see rooms.js) is a temporary interior on top of it.
+  start(room) {
+    const st = LQ.state, R = this.R = room || LQ.REGIONS[st.region] || LQ.REGIONS.village, C = this.C = R.content();
+    this.room = room || null;
     if (!this.maps[R.id]) this.maps[R.id] = R.build();
     const m = this.map = this.maps[R.id];
     if (LQ.ensureMarket) LQ.ensureMarket();
     this.setSeason(st.season);
-    Object.assign(this.p, { x: st.px, y: st.py, dir: st.dir || 'up' });
+    Object.assign(this.p, room ? { x: room.sx, y: room.sy, dir: 'up' } : { x: st.px, y: st.py, dir: st.dir || 'up' });
     this.ents = [];
     m.trees.forEach(t => this.ents.push({ type: 'tree', tx: t.x, ty: t.y, kind: t.kind, base: (t.y + 1) * T - 2 }));
     R.buildings.forEach(b => this.ents.push({ type: 'building', b, base: (b.y + 3) * T - 1 }));
@@ -187,6 +190,21 @@ const world = LQ.world = {
     ui.showBanner(this.R.title, this.R.sub());
     if (this.R.arrive) await this.R.arrive();
   },
+  // The save keeps the spot outside the door, so quitting inside a room is always safe.
+  async enterRoom(id) {
+    const room = LQ.roomRegion(id);
+    delete this.maps[room.id]; delete this.grounds[room.id + '|summer'];
+    await LQ.fadeTo(1, 0.3);
+    this.start(room); this.music();
+    await LQ.fadeTo(0, 0.4);
+    ui.showBanner(room.title, room.sub());
+    if (room.arrive) await room.arrive(this);
+  },
+  async exitRoom() {
+    await LQ.fadeTo(1, 0.3);
+    this.start(); this.p.dir = LQ.state.dir = 'down'; this.music();
+    await LQ.fadeTo(0, 0.4);
+  },
 
   update(dt) {
     const p = this.p, st = LQ.state, inp = LQ.input.down, R = this.R;
@@ -194,19 +212,23 @@ const world = LQ.world = {
     this.parts = this.parts.filter(pt => pt.t > 0);
     if (LQ.busy || ui.menu) { p.moving = false; p.frame = 0; return this.follow(dt); }
     if (LQ.hit('menu')) { ui.openMenu(); return; }
+    if (LQ.kit) LQ.kit.update(dt, this);
+    for (const e of this.ents.slice()) if (e.step) e.step(dt, this);
+    if (LQ.busy) { p.moving = false; p.frame = 0; return this.follow(dt); }
     let dx = (inp.right ? 1 : 0) - (inp.left ? 1 : 0), dy = (inp.down ? 1 : 0) - (inp.up ? 1 : 0);
     p.moving = !!(dx || dy);
     if (p.moving) {
       this.hintT += dt;
       if (dx) p.dir = dx < 0 ? 'left' : 'right'; else p.dir = dy < 0 ? 'up' : 'down';
-      const sp = 78 * dt * (dx && dy ? .7071 : 1);
+      const sp = 78 * dt * (dx && dy ? .7071 : 1) * (LQ.kit ? LQ.kit.speed() : 1);
       const oldX = p.x, oldY = p.y;
       if (dx && this.canStand(p.x + dx * sp, p.y)) p.x += dx * sp;
       if (dy && this.canStand(p.x, p.y + dy * sp)) p.y += dy * sp;
       p.anim += dt * 9; p.frame = Math.floor(p.anim) % 4;
       p.dust -= dt; if (p.dust <= 0) { p.dust = .22; this.parts.push({ x: p.x, y: p.y, vx: 0, vy: -8, t: .3, col: this.season === 'winter' ? '#eaf4ff' : '#8ff4ff' }); }
-      st.px = p.x; st.py = p.y; st.dir = p.dir;
-      for (const x of R.exits || []) if (p.x >= x.x0 && p.x < x.x1 && p.y >= x.y0 && p.y < x.y1 && (!x.open || x.open(st))) { p.moving = false; p.frame = 0; LQ.script(() => this.travel(x)); return; }
+      if (LQ.rooms) LQ.rooms.tryPush(this, dx, dy, dt);
+      if (!this.room) { st.px = p.x; st.py = p.y; st.dir = p.dir; }
+      for (const x of R.exits || []) if (p.x >= x.x0 && p.x < x.x1 && p.y >= x.y0 && p.y < x.y1 && (!x.open || x.open(st))) { p.moving = false; p.frame = 0; LQ.script(() => x.leave ? this.exitRoom() : this.travel(x)); return; }
       if (R.auditOK(st, this.zone)) {
         st.auditDist = (st.auditDist || 0) + Math.hypot(p.x - oldX, p.y - oldY);
         if (st.auditDist > (st.auditNext || 2200)) { st.auditDist = 0; st.auditNext = 2200 + Math.random() * 2000; if (LQ.auditPool().length >= 3) { p.moving = false; p.frame = 0; LQ.script(LQ.audit); return; } }
@@ -288,8 +310,9 @@ const world = LQ.world = {
         g.drawImage(LQ.prop('mark'), x - 3, y - 39 + Math.round(Math.sin(tm * 10) * 2));
       } else if (e.type === 'player') {
         const x = Math.round(p.x) - cx, y = Math.round(p.y) - cy; shadow(x, y, 10);
-        g.drawImage(LQ.charSprite(LQ.HERO.look, p.dir, p.moving ? p.frame : idle(0)), x - 9, y - 25);
+        if (!LQ.kit || !LQ.kit.blink()) g.drawImage(LQ.charSprite(LQ.HERO.look, p.dir, p.moving ? p.frame : idle(0)), x - 9, y - 25);
         fx.light(x, y - 10, 30, '#35f0e6', .26); fx.light(x, y - 12, 12, '#c8fbff', .3);
+        if (LQ.kit) LQ.kit.drawHero(g, x, y, p, tm);
       }
     }
     fx.end(g);
@@ -297,6 +320,7 @@ const world = LQ.world = {
     g.globalAlpha = 1;
     fx.flush(g, tm);
     fx.ambient(g, this.R.id, cx, cy, tm);
+    if (this.R.dark && LQ.rooms) LQ.rooms.darkness(g, this, cx, cy);
     if (win) { g.fillStyle = '#eaf4ff'; for (let i = 0; i < 46; i++) { const sx = (LQ.hash(i, 1, 30) * LQ.BW + tm * (8 + i % 5 * 4) + Math.sin(tm + i) * 6) % LQ.BW, sy = (LQ.hash(i, 2, 30) * LQ.BH + tm * (18 + i % 4 * 7)) % LQ.BH; g.fillRect(sx, sy, i % 3 ? 1 : 2, i % 3 ? 1 : 2); } g.fillStyle = 'rgba(120,130,255,.07)'; g.fillRect(0, 0, LQ.BW, LQ.BH); }
     if (this.R.overlay) this.R.overlay(g, this, st);
   },
@@ -324,6 +348,7 @@ const world = LQ.world = {
       hud(LQ.VW - ew - 16, 56, ew, 8 + lines.length * 24);
       lines.forEach((line, i) => ui.text(c, line, LQ.VW - 30, 58 + i * 24, i ? '#ffe98a' : '#c9cdea', F(24), 'right', ew - 28));
     }
+    if (LQ.kit) LQ.kit.drawHUD(c, hud);
     // pointer toward an off-screen quest target
     const tgt = this.questTarget(), fb = R.fallbackTarget ? R.fallbackTarget(st) : null;
     const e = this.ents.find(x => (x.type === 'npc' && x.npc.id === tgt) || (tgt && x.qid === tgt)) || (fb && this.ents.find(x => x.qid === fb));
@@ -337,8 +362,8 @@ const world = LQ.world = {
       }
     }
     if (this.hintT < 6 && !LQ.busy && !ui.menu) {
-      hud(170, 486, 620, 38);
-      ui.text(c, 'Arrows or WASD: move    Space: talk    J: journal    M: sound', LQ.VW / 2, 491, '#c9cdea', F(24), 'center');
+      hud(130, 486, 700, 38);
+      ui.text(c, 'Arrows or WASD: move    Space: talk    E: use tool    J: journal    M: sound', LQ.VW / 2, 491, '#c9cdea', F(24), 'center');
     }
     // soft vignette
     const v = c.createRadialGradient(LQ.VW / 2, LQ.VH / 2, 260, LQ.VW / 2, LQ.VH / 2, 620); v.addColorStop(0, 'rgba(7,8,26,0)'); v.addColorStop(1, 'rgba(10,4,34,.3)');

@@ -102,5 +102,26 @@ Ledger Quest (`~/Desktop/Ledger Quest/`, plain HTML and JS, about 5,300 lines, n
 | Phase | State | Notes |
 |---|---|---|
 | 0 | Done | Branch `gameplay-depth`, this document |
-| 1 | In progress | Village slice |
+| 1 | Built, waiting on Chandler's playtest | Village slice. See the Phase 1 notes below. |
 | 2 to 5 | Not started | |
+
+## Phase 1 notes (Nov 11)
+What was built
+- `js/kit.js`: Use key (E or C), Q to switch, Truth Stamp, Standard Shield, Bracket Compass, Lantern, Tonic, hearts, fainting, the HUD, and the extra shop lines (tonic, lantern rental, rumors)
+- `js/rooms.js`: rooms as rows of characters, plus crates, plates, doors, braziers, seals, plaques, Notary Lamps, pages, bolt traps, and darkness
+- `js/foes.js`: Myth Wisp and Scrap Imp
+- `js/vaults1.js`: the Bracket Vault, the Lantern Cave, the hidden cache, four rune stones, street lamps, the west bridge, and pages 1 to 3
+- `tools/check.js`: village paths, the Compass gate, a crate solver for the vault for all three careers, the cave, and the free-route rule for tools
+
+Where the build differs from the plan
+- Checkpoints: a Notary Lamp stands outside each room door. Fainting puts you back outside that door, so no checkpoint field was added to the save. The only new save fields are `hp` and `tool`. Everything else is in `flags`.
+- Buyback: no pure tool is sold yet (the Charity Lantern is tax gear), so full-price buyback waits for Phase 3.
+- Hints: rumors are sold at the existing shops for now. The wandering merchant waits for Phase 3.
+- The Lantern must be in hand (Q) to light a wide area and repel wisps. Holding the Stamp instead leaves you in a small circle of light. That trade-off is on purpose.
+
+Page effects in the village
+- Page 1 (vault): the mountain fog thins
+- Page 2 (cave chest): the street lamps relight, and the Notary's Seal adds a fifth heart
+- Page 3 (after the Mythmonger): the west bridge rises, and the Fog Invoice is found
+
+Tested in the browser by setting state directly: vault from entry to page for the Nurse, cave puzzle wrong and right order, imp fight, bolt and shield, wisp toll with and without the lantern, compass reveal, tonic, fainting, old save loading, Altamira's recap. Not yet tested by hand: a real keyboard run of either room, the Mayor's new line, the lantern rental, the reset seal, the page 3 scene after the boss, and difficulty tuning.

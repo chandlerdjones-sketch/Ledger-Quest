@@ -10,6 +10,8 @@ Open the game link in a browser on a computer with a keyboard. There is nothing 
 |---|---|
 | Arrow keys or WASD | Move |
 | Space or Enter | Talk, confirm |
+| E or C | Use the tool in hand (hold it for the shield) |
+| Q | Switch tools |
 | J or Tab | Menu: quests, journal, items, map, broker |
 | Esc | Back |
 | M | Sound on or off |
