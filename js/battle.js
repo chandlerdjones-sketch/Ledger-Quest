@@ -52,7 +52,7 @@ const B = LQ.battle = {
     // hero
     const hx = 22 + (this.hurt > 0 ? Math.sin(t * 70) * 3 : 0);
     g.fillStyle = 'rgba(4,3,16,.5)'; g.fillRect(hx + 2, 113, 32, 5);
-    g.drawImage(LQ.charSprite(LQ.HERO.look, 'right', Math.floor(t * 1.5) % 2 ? 4 : 0), hx, 63, 36, 52);
+    g.drawImage(LQ.charSprite(LQ.HERO.look, 'right', Math.floor(t * 1.5) % 2 ? 4 : 0), hx + 2, 67, 32, 48);
     LQ.fx.end(g); LQ.fx.light(hx + 18, 92, 36, '#35f0e6', .4);
     if (this.scraps > 0) LQ.fx.light(226 - LQ.clamp(1 - this.scraps, 0, 1) * 185, 76, 14, K.bar[1], .6);
     LQ.fx.flush(g, t); LQ.fx.vignette(g);

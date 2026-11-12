@@ -37,7 +37,13 @@ ui.text = (c, s, x, y, color, font, align, maxWidth = VW) => {
   c.fillStyle = 'rgba(0,0,0,.6)'; c.fillText(s, x + 2, y + 2, maxWidth);
   c.fillStyle = color || '#fff'; c.fillText(s, x, y, maxWidth);
 };
-ui.toast = text => { ui.toasts.push({ text, t: 0 }); };
+const toastLimit = 4;
+const hasModal = () => ui.doc || ui.choice || ui.dlg || ui.okWait || ui.menu;
+const canShowToasts = () => !hasModal() && LQ.scene !== LQ.battle;
+ui.toast = text => {
+  ui.toasts.push({ text, t: 0 });
+  if (ui.toasts.length > toastLimit) ui.toasts.shift();
+};
 ui.showBanner = (title, sub) => { ui.banner = { title, sub, t: 0 }; };
 
 // ---- script-facing API
@@ -96,8 +102,10 @@ const menuEntries = [
 const scrollStart = (sel, length, rows) => Math.max(0, Math.min(sel - Math.floor(rows / 2), length - rows));
 ui.openMenu = () => { ui.menu = { tab: 0, sel: 0, selections: [0, 0, 0, 0, 0], reading: null }; sfx('ok'); };
 ui.update = dt => {
-  for (const t of ui.toasts) t.t += dt;
-  ui.toasts = ui.toasts.filter(t => t.t < 2.6);
+  if (canShowToasts()) {
+    for (const t of ui.toasts) t.t += dt;
+    ui.toasts = ui.toasts.filter(t => t.t < 2.6);
+  }
   if (ui.banner) { ui.banner.t += dt; if (ui.banner.t > 3.2) ui.banner = null; }
   if (ui.menu) {
     const m = ui.menu;
@@ -163,7 +171,7 @@ function portrait(c, who, x, y) {
   c.fillStyle = '#231f5c'; c.fillRect(x, y + 70, 104, 34);
   c.fillStyle = 'rgba(53,240,230,.10)'; c.fillRect(x + 12, y + 14, 80, 56); c.fillRect(x + 24, y + 6, 56, 72);
   c.imageSmoothingEnabled = false;
-  c.drawImage(LQ.charSprite(who.look, 'down', 0), 0, 0, 18, 20, x + 16, y + 8, 72, 80);
+  c.drawImage(LQ.charSprite(who.look, 'down', 0), x + 20, y + 4, 64, 96);
   c.strokeStyle = '#35f0e6'; c.lineWidth = 3; c.strokeRect(x - 1.5, y - 1.5, 107, 107);
 }
 function nameTab(c, who, x, y) {
@@ -187,17 +195,16 @@ function drawDialogue(c) {
     c.fillStyle = '#35f0e6'; c.beginPath(); c.moveTo(x + w - 34, y + h - 24); c.lineTo(x + w - 18, y + h - 24); c.lineTo(x + w - 26, y + h - 12); c.fill();
   }
 }
-ui.choiceTop = () => {
-  const ch = ui.choice; if (!ch) return ui.dlg ? 372 : VH;
-  const c = LQ.ctx; c.font = F(28);
+function choiceTop(c, ch) {
+  c.font = F(28);
   ch.lines = ui.wrap(c, ch.prompt || '', 848);
   ch.rh = ch.options.length > 8 ? 26 : 31;
   ch.rows = Math.min(10, ch.options.length);
   ch.h = 24 + (ch.prompt ? ch.lines.length * 29 + 10 : 0) + ch.rows * ch.rh + 10;
   return 520 - ch.h;
-};
+}
 function drawChoice(c) {
-  const ch = ui.choice, y = ui.choiceTop(), x = 30, w = 900;
+  const ch = ui.choice, y = choiceTop(c, ch), x = 30, w = 900;
   ui.panel(c, x, y, w, ch.h); nameTab(c, ch.who, x + 14, y - 30);
   let ty = y + 14;
   if (ch.prompt) { ch.lines.forEach((ln, i) => ui.text(c, ln, x + 26, ty + i * 29, '#eef4ff')); ty += ch.lines.length * 29 + 10; }
@@ -213,10 +220,10 @@ function drawChoice(c) {
   }
 }
 function drawToasts(c) {
-  ui.toasts.slice(-4).forEach((t, i) => {
+  ui.toasts.forEach((t, i) => {
     const a = Math.min(1, t.t * 6, (2.6 - t.t) * 3), slide = (1 - Math.min(1, t.t * 6)) * 40;
     c.globalAlpha = Math.max(0, a); c.font = F(26);
-    const w = c.measureText(t.text).width + 36, x = VW - w - 24 + slide, y = (ui.doc ? 300 : 70) + i * 44;
+    const w = c.measureText(t.text).width + 36, x = VW - w - 24 + slide, y = (ui.banner ? 258 : 118) + i * 44;
     c.fillStyle = '#05050f'; c.fillRect(x - 3, y - 3, w + 6, 40);
     c.fillStyle = '#0f2a3c'; c.fillRect(x, y, w, 34); c.fillStyle = '#35f0e6'; c.fillRect(x, y, 6, 34); c.fillStyle = 'rgba(53,240,230,.35)'; c.fillRect(x + 6, y + 32, w - 6, 2);
     ui.text(c, t.text, x + 20, y + 3, '#eafff6', F(26));
@@ -347,8 +354,8 @@ ui.draw = c => {
   }
   if (ui.choice) drawChoice(c); else if (ui.dlg) drawDialogue(c);
   else if (ui.okWait && Math.floor(LQ.time * 2) % 2) ui.text(c, 'Press Space', VW / 2, 500, '#35f0e6', F(26), 'center');
-  if (ui.banner) drawBanner(c);
-  drawToasts(c);
+  if (ui.banner && !hasModal()) drawBanner(c);
+  if (canShowToasts()) drawToasts(c);
   if (ui.menu) drawMenu(c);
 };
 })();

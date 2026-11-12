@@ -188,8 +188,8 @@ LQ.GEAR = [
 ];
 LQ.gearFor = () => LQ.GEAR.filter(g => (!g.only || g.only === LQ.career().kind) && (!g.coast || st().region === 'coast') && (!g.at || g.at === st().region));
 const shopDoc = { item: null, draw(c) {
-  const top = ui.choiceTop(), g = this.item; if (!g) return;
-  ui.panel(c, 30, 16, 900, Math.max(80, top - 36), '#1b2044');
+  const g = this.item; if (!g) return;
+  ui.panel(c, 30, 16, 900, 128, '#1b2044');
   ui.text(c, g.name, 52, 26, '#ffe98a', F(14, true), 'left', 682);
   ui.text(c, LQ.has(g.id) ? 'OWNED' : g.price + ' coins', 908, 24, LQ.has(g.id) ? '#7fd6a8' : '#fdf8e7', F(28), 'right');
   c.font = F(24); ui.wrap(c, g.desc, 850).slice(0, 3).forEach((ln, i) => ui.text(c, ln, 52, 54 + i * 25, '#c9cdea', F(24)));
@@ -324,12 +324,12 @@ LQ.sell = (id, n) => {
   return { sold, proceeds: sold * p, stG, ltG, net, used, tax };
 };
 const brokerDoc = { sel: 0, draw(c) {
-  const s = st(), top = ui.choiceTop();
-  ui.panel(c, 30, 16, 900, Math.max(120, top - 36), '#101a2e');
+  const s = st(), stocks = LQ.exchange(), rowHeight = 22;
+  ui.panel(c, 30, 16, 900, 40 + stocks.length * rowHeight, '#101a2e');
   ui.text(c, LQ.EXCHANGE_NAME[s.region], 50, 26, '#7fd6a8', F(11, true)); ui.text(c, 'Day ' + s.day + '    Cash ' + s.coins + '    Holdings ' + LQ.portfolio(), 910, 20, '#fdf8e7', F(24), 'right', 590);
-  LQ.exchange().forEach((x, i) => {
-    const y = 50 + i * 25, p = LQ.price(x.id), ch = (s.prices[x.id] / s.prev[x.id] - 1) * 100, n = LQ.shares(x.id);
-    if (i === this.sel) { c.fillStyle = 'rgba(53,240,230,.15)'; c.fillRect(42, y - 1, 876, 25); }
+  stocks.forEach((x, i) => {
+    const y = 48 + i * rowHeight, p = LQ.price(x.id), ch = (s.prices[x.id] / s.prev[x.id] - 1) * 100, n = LQ.shares(x.id);
+    if (i === this.sel) { c.fillStyle = 'rgba(53,240,230,.15)'; c.fillRect(42, y - 1, 876, rowHeight); }
     ui.text(c, x.id, 52, y, '#ffe98a', F(24), 'left', 62); ui.text(c, x.name, 122, y, '#fdf8e7', F(24), 'left', 330);
     ui.text(c, String(p), 560, y, '#fdf8e7', F(24), 'right', 98);
     ui.text(c, (ch >= 0 ? '+' : '') + ch.toFixed(1) + '%', 660, y, ch >= 0 ? '#7fd6a8' : '#ff8a80', F(24), 'right', 92);
