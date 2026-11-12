@@ -11,16 +11,22 @@ LQ.TOOLS = [
   { id: 'shield', name: 'Standard Shield', free: 'Story item from Armorer Thorn', have: s => s.items.includes('shield') },
   { id: 'compass', name: 'Bracket Compass', free: 'Story item from Sage Altamira', have: s => s.items.includes('compass') },
   { id: 'lantern', name: 'Lantern', free: 'Old Lantern in the hidden cache north-west of Paystub Village',
-    have: s => LQ.has('charity') || !!s.flags.lanternFound || !!s.flags.lanternRent || K.rentLit },
+    have: s => LQ.has('charity') || !!s.flags.lanternFound || !!s.flags.lanternRent },
   { id: 'tonic', name: 'Tonic', consumable: true, have: s => (s.flags.tonics || 0) > 0, label: s => 'Tonic x' + s.flags.tonics },
 ];
 LQ.pages = () => { let n = 0; for (let i = 1; i <= 12; i++) if (st().flags['page' + i]) n++; return n; };
 
 const K = LQ.kit = {
-  swing: 0, cool: 0, inv: 0, pulse: 0, blocking: false, rentLit: false,
+  swing: 0, cool: 0, inv: 0, pulse: 0, blocking: false,
   maxHp: () => 4 + (st().flags.heartUp ? 1 : 0),
   hp: () => Math.min(K.maxHp(), st().hp ?? K.maxHp()),
   owned: () => LQ.TOOLS.filter(t => t.have(st())),
+  supplies() {
+    const s = st(), items = [];
+    if (s.flags.tonics) items.push({ name: 'Tonic x' + s.flags.tonics, desc: 'Restores up to two hearts. Switch to it with Q, then press E to drink. A full heart meter leaves the tonic untouched.' });
+    if (s.flags.lanternRent) items.push({ name: 'Rented Lantern', desc: 'Lights dark rooms and repels Myth Wisps while held. Switch to it with Q. Your rental ends when you leave the Lantern Cave or faint inside it.' });
+    return items;
+  },
   cur() { const o = K.owned(); return o.find(t => t.id === st().tool) || o[0] || null; },
   holding: id => { const t = K.cur(); return !!t && t.id === id; },
   hasLantern: () => LQ.TOOLS[3].have(st()),
@@ -30,10 +36,9 @@ const K = LQ.kit = {
 
   update(dt, w) {
     K.swing = Math.max(0, K.swing - dt); K.pulse = Math.max(0, K.pulse - dt); K.cool -= dt; K.inv -= dt;
-    if (!w.room) K.rentLit = false;
+    if (LQ.hit('cycle')) K.cycle();
     const t = K.cur();
     K.blocking = !!t && t.id === 'shield' && !!LQ.input.down.use;
-    if (LQ.hit('cycle')) K.cycle();
     if (LQ.hit('use') && t && K.cool <= 0) K.use(t.id, w);
   },
   use(id, w) {
@@ -73,8 +78,8 @@ const K = LQ.kit = {
     const s = st(), home = w.room && w.room.def.home, lost = home ? 0 : Math.min(20, s.coins);   // `home` rooms cost nothing and wake you inside
     await LQ.fadeTo(1, .5); s.coins -= lost; s.hp = K.maxHp(); K.inv = 0;
     if (home) w.loadRoom(w.room.room, 'faint');
-    else if (w.room) { w.start(); w.p.dir = s.dir = 'down'; w.music(); }
-    await LQ.fadeTo(0, .5);
+    else if (w.room) { w.room.def.leave?.(s); w.start(); w.p.dir = s.dir = 'down'; w.music(); }
+    LQ.save(); await LQ.fadeTo(0, .5);
     await LQ.say(null, 'You wake beside the Notary Lamp, patched up and steady.' + (lost ? ' The fog made off with ' + lost + ' coins.' : ''));
   },
 
@@ -125,7 +130,7 @@ LQ.shopExtras = () => {
   if (!K.hasLantern()) out.push({ label: 'Rent a lantern  -  10', run: async who => {
     if (s.coins < 10) return LQ.say(who, 'Lantern rental is 10 coins. You are a little short.');
     s.coins -= 10; s.flags.lanternRent = true; sfx('coin'); LQ.save();
-    await LQ.say(who, 'One lantern, good for one trip into the dark. Bring it back in one piece.');
+    await LQ.say(who, 'One lantern for the Lantern Cave. Press Q until it is in hand. The rental ends when you leave the cave or wake at the Notary Lamp.');
   } });
   const r = (LQ.RUMORS[s.region] || []).find(x => !x.done(s));
   if (r) out.push({ label: s.flags['rumor_' + r.id] ? 'Hear the rumor again' : 'Buy a rumor  -  20', run: async who => {

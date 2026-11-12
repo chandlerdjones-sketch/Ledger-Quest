@@ -33,7 +33,7 @@ const POOL = [
 LQ.AUDIT_POOL = POOL;
 LQ.auditPool = () => POOL.filter(p => st().journal.includes(p.need) && (!p.career || p.career === st().career));
 LQ.audit = async () => {
-  const s = st(), w = LQ.world, p = w.p, pool = LQ.auditPool().sort(() => Math.random() - .5).slice(0, 3);
+  const s = st(), w = LQ.world, p = w.p, pool = LQ.shuffle(LQ.auditPool()).slice(0, 3);
   if (pool.length < 3) return;
   s.audits = (s.audits || 0) + 1;
   const who = { name: AGENTS[s.audits % AGENTS.length], look: LOOK };

@@ -27,15 +27,16 @@ const KEYMAP = { ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', 
   e: 'use', E: 'use', c: 'use', C: 'use', q: 'cycle', Q: 'cycle' };
 const input = LQ.input = { down: {}, pressed: {} };
 addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = KEYMAP[e.key]; if (!k) return;
   e.preventDefault();
-  if (!e.repeat || (LQ.ui?.menu && (k === 'up' || k === 'down'))) input.pressed[k] = true;
+  if (!e.repeat || ((LQ.ui?.menu || LQ.ui?.choice) && (k === 'up' || k === 'down'))) input.pressed[k] = true;
   if (k === 'ok' && !e.repeat && LQ.gesture) { const g = LQ.gesture; LQ.gesture = null; g(); }
   input.down[k] = true;
   if (LQ.audio) LQ.audio.unlock();
 });
 addEventListener('keyup', e => { const k = KEYMAP[e.key]; if (k) input.down[k] = false; });
-addEventListener('blur', () => { input.down = {}; });
+addEventListener('blur', () => { input.down = {}; input.pressed = {}; });
 addEventListener('pointerdown', () => { if (LQ.audio) LQ.audio.unlock(); });
 LQ.hit = k => { if (input.pressed[k]) { input.pressed[k] = false; return true; } return false; };
 
@@ -93,9 +94,17 @@ LQ.cleanSave = raw => {
     if (out[k] != null && (!Number.isInteger(out[k]) || out[k] < 0 || out[k] > max)) return null;
   }
   if (!['up', 'down', 'left', 'right'].includes(out.dir)) return null;
+  if (!['summer', 'winter'].includes(out.season)) return null;
+  for (const k of ['w4', 'w4b', 'est3', 'harv4', 'acct4']) {
+    if (out[k] != null && ![0, 1, 2].includes(out[k])) return null;
+  }
+  if (out.hold4 != null && ![0, 1].includes(out.hold4)) return null;
+  if (out.wh2 != null && (!Number.isFinite(out.wh2) || out.wh2 < 0)) return null;
+  if (out.news != null && (!record(out.news) || !Number.isFinite(out.news.pct) || typeof out.news.text !== 'string')) return null;
   out.hp = LQ.clamp(Math.round(out.hp) || 4, 1, 6);
   if (out.tool != null && typeof out.tool !== 'string') out.tool = null;
   if (out.gig != null && !(typeof out.gig === 'string' && Object.hasOwn(LQ.GIGS, out.gig))) return null;
+  if (out.q4 != null && (!out.gig || !out.inv)) return null;
   if (out.inv != null && (!record(out.inv) || ['st', 'lt', 'qd', 'int'].some(k => !Number.isFinite(out.inv[k])))) return null;
   if (out.prices != null) {
     if (![out.prices, out.prev, out.lots].every(record)) return null;
@@ -115,7 +124,13 @@ LQ.cleanSave = raw => {
   return out;
 };
 LQ.parseSave = text => { try { return LQ.cleanSave(JSON.parse(text)); } catch (e) { return null; } };
-LQ.save = () => { if (LQ.started) store.set(SLOT(LQ.slot), JSON.stringify(LQ.state)); };
+let saveWarning = false;
+LQ.save = () => {
+  if (!LQ.started) return;
+  const ok = store.set(SLOT(LQ.slot), JSON.stringify(LQ.state));
+  if (!ok && !saveWarning) LQ.ui.toast('Progress could not be saved. Check your browser storage settings.');
+  saveWarning = !ok;
+};
 addEventListener('pagehide', () => { if (LQ.scene === LQ.world && !LQ.busy) LQ.save(); });
 LQ.loadSlot = n => { const t = store.get(SLOT(n)); return t ? LQ.parseSave(t) : null; };
 LQ.deleteSlot = n => store.del(SLOT(n));

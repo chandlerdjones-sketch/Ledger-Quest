@@ -83,7 +83,6 @@ function addVillage(w, s) {
   w.ents.push({ type: 'cavedoor', tx: 40, ty: 8, solid: true, base: 9 * T - 1,
     use: () => LQ.script(async () => {
       if (!LQ.kit.hasLantern()) return say(null, 'A cave mouth, black as a closed ledger. You cannot see one step inside. You need a lantern. Merchant Saffron sells one and rents one, and they say an old one is hidden in the north-west woods.');
-      if (s.flags.lanternRent) { s.flags.lanternRent = false; LQ.kit.rentLit = true; }
       await w.enterRoom('cave1');
     }),
     draw(g, cx, cy, tm) {
@@ -161,7 +160,7 @@ LQ.ROOMS.vault1 = {
     const cr = '.........'.split(''); [4, 2, 6].slice(0, n).forEach(i => { cr[i] = 'B'; });
     rows.push(wrap('I........'), wrap(cr.join('')), wrap('........Z'), wrap('....S....'), wrap('####X####'), '####################');
     let next = 1; for (let i = 0; i < b.length; i++) if (f.taxable >= b[i][0]) next = i + 1;
-    L = V.L = { f, tiers, n, ch, next, rates: b.map(x => x[1]), sockets: {}, answers: {}, gates: {}, filled: {}, door: null, answered: false, wrong: false, onPlate: null };
+    L = V.L = { f, tiers, n, ch, next, rates: b.map(x => x[1]), sockets: {}, answers: {}, gates: {}, filled: {}, door: null, answered: false, onPlate: null };
     return rows;
   },
   kOf: ty => { for (const k in L.ch) if (ty >= L.ch[k] && ty <= L.ch[k] + 3) return +k; return 0; },
@@ -179,7 +178,7 @@ LQ.ROOMS.vault1 = {
     O: (w, tx, ty) => { L.sockets[LQ.ROOMS.vault1.kOf(ty)] = P.plate(w, tx, ty, COL.gold); },
     R: (w, tx, ty) => { L.answers[LQ.ROOMS.vault1.kOf(ty)] = P.plate(w, tx, ty, COL.cyan); },
     B: (w, tx, ty) => P.block(w, tx, ty),
-    I: (w, tx, ty) => P.plaque(w, tx, ty, () => `THE BRACKET VAULT. These crates hold your taxable income of ${M(L.f.taxable)}. Push one onto the gold socket of each ledge, lowest ledge first. Only what spills over climbs higher. Then stand on the cyan rune of the ledge where your NEXT dollar would land.`),
+    I: (w, tx, ty) => P.plaque(w, tx, ty, () => `THE BRACKET VAULT. These crates hold your taxable income of ${M(L.f.taxable)}. Push the crates onto gold sockets, starting at the lowest ledge. Use one crate per ledge and leave any higher ledges empty. Then stand on the cyan rune of the ledge where your NEXT dollar would land.`),
     Z: (w, tx, ty) => P.seal(w, tx, ty, () => LQ.script(async () => { sfx('stamp'); ui.toast('The seal flashes. The crates slide home.'); await w.enterRoom('vault1'); }),
       'A reset seal. If a crate gets stuck, strike this with the Truth Stamp (E) and every crate returns to its place.'),
   },
@@ -205,14 +204,16 @@ LQ.ROOMS.vault1 = {
     L.onPlate = on; if (!on || L.answered) return;
     if (!all) return ui.toast('The rune is dark. First fill every ledge your income reaches.');
     LQ.script(async () => {
+      const s = st(), first = !s.flags.vaultAttempted && !s.flags.vaultDone;
+      s.flags.vaultAttempted = true;
       const rate = pct(L.rates[L.next - 1]);
       if (on === L.next) {
-        L.answered = true; sfx('right'); if (!L.wrong) LQ.score(true);
+        L.answered = true; sfx('right'); if (first) LQ.score(true);
         await say(null, `The rune flares. Your next dollar lands on ledge ${L.next} and is taxed at ${rate}. Not one coin on the ledges below changes its rate.`);
         L.door.open();
       } else {
-        if (!L.wrong) LQ.score(false);
-        L.wrong = true; sfx('wrong'); LQ.shake(.2);
+        if (first) LQ.score(false);
+        sfx('wrong'); LQ.shake(.2);
         await say(null, on > L.next ? `The rune stays cold. Ledge ${on} is empty. Not one of your dollars has reached it.` : `The rune stays cold. Ledge ${on} is already full. Your next dollar spills higher.`);
       }
     });
@@ -254,6 +255,7 @@ const fire = col => (w, tx, ty, s) => {
 };
 LQ.ROOMS.cave1 = {
   title: 'THE LANTERN CAVE', sub: 'Four fires, one order', dark: true, music: 'mountain',
+  leave: s => { delete s.flags.lanternRent; },
   rows() {
     C = V.C = { seq: [], fires: [], door: null, solved: !!st().flags.cave1 };
     return [
@@ -277,7 +279,7 @@ LQ.ROOMS.cave1 = {
   },
   on: {
     1: fire('gold'), 2: fire('violet'), 3: fire('cyan'), 4: fire('magenta'),
-    m: (w, tx, ty, s) => { if (!s.flags.cave1) LQ.foes.imp(w, tx, ty); },
+    m: (w, tx, ty, s) => { if (!s.flags.cave1) LQ.foes.imp(w, tx, ty, 'caveImp_' + tx + '_' + ty); },
     D: (w, tx, ty, s) => { if (!s.flags.cave1) C.door = P.door(w, tx, ty, 'A door of black stone. Four cold fire bowls stand in the corners of the chamber.'); },
     T: (w, tx, ty) => P.spitter(w, tx, ty, -1, 0),
     I: (w, tx, ty) => P.plaque(w, tx, ty, 'FOUR FIRES. Light them the way a paycheck travels: earned, held back, kept, returned. The village remembers the colors.'),
