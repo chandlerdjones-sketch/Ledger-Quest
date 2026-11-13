@@ -28,6 +28,7 @@ In the J menu, use Left and Right to change tabs. Use Up and Down to select note
 - **Chapter 4, Summit of Gains.** Investing. Cost basis, inherited shares, short-term and long-term gains, dividends and interest, tax-loss harvesting, the wash sale rule, how gains stack on other income, and the main account types.
 - Three careers that change the numbers: Nurse, Small Business Owner, and Fast Food Worker. Three side gigs do the same in Chapter 3.
 - Surprise audits, a market that sells tax advantages, and a brokerage account with stocks from the game world.
+- In Paystub Village: shift work at your own job (the board by the Work Hall), a boss fight where you dodge myths and grab a truth shard before each answer, and three fooled villagers you can set right with your tools.
 - A new game can start at any chapter with a starter kit.
 
 ## Accuracy

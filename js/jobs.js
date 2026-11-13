@@ -7,7 +7,7 @@ const R = (g, x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x),
 const COLS = ['#ffcf4a', '#35f0e6', '#ff4fb0'], NAMES = ['griddle cake', 'fizz', 'fries'], XS = [70, 160, 250];
 const front = () => XS.map(x => ({ x, y: 150, task: null }));
 const KINDS = {
-  nurse: { hint: 'Answer the call lights: walk to the bed and press Space. Red lights are urgent. They fade fast and count double.', gap: 1.5, target: 12, floor: ['#0d1a36', '#16264e'],
+  nurse: { hint: 'Answer the call lights: walk to the bed and press Space. Red lights are urgent. They fade fast and count double.', gap: 1.5, target: 15, floor: ['#0d1a36', '#16264e'],
     spots: () => [70, 142].flatMap(y => XS.map(x => ({ x, y, task: null }))), sources: () => [],
     task: () => { const u = Math.random() < .3; return { max: u ? 3.8 : 6.5, pts: u ? 2 : 1, urgent: u }; } },
   food: { hint: 'Each customer wants one thing. Press Space at the back counter to pick it up, then Space at the customer. The wrong item earns nothing.', gap: 2.1, target: 7, floor: ['#231226', '#35193a'],
