@@ -224,9 +224,24 @@ async function talk(find, choose = () => 0) {
   await frame(); await drain(() => 0, untilIdle); assert(s().flags.vaultDone && s().flags.page1);
   LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle);
   await talk(e => e.npc?.id === 'altamira'); assert.equal(s().quest, 7);
+  // Phase 2: the three fooled villagers and one paid shift.
+  assert(w.ents.some(e => e.type === 'cart'), 'Rowan\'s cart blocks the footbridge');
+  s().tool = 'compass'; near(w.ents.find(e => e.npc?.id === 'rowan')); await frame(30); await press('e'); await drain(() => 0, untilIdle);
+  assert(s().flags.fixRowan && !w.ents.some(e => e.type === 'cart'), 'the compass sets Rowan straight');
+  s().tool = 'stamp'; near(w.ents.find(e => e.type === 'bstall')); await frame(30); await press('e'); await drain(() => 0, untilIdle);
+  assert(s().flags.basilSeal && s().items.includes('breturn'), 'the stamp opens Basil\'s stall');
+  await talk(e => e.npc?.id === 'juno'); assert(s().flags.fixBasil && !s().items.includes('breturn') && s().quest === 7, 'Juno files Basil\'s return');
+  const beforeBroth = s().coins, tonics = s().flags.tonics || 0; await talk(e => e.type === 'bstall');
+  assert.equal(s().coins, beforeBroth - 10); assert.equal(s().flags.tonics, tonics + 1);
+  s().flags.lanternRent = true; s().tool = 'lantern'; Object.assign(w.p, { x: 11 * 16 + 8, y: 34 * 16 + 13 }); await frame(40); await drain(() => 0, untilIdle);
+  assert(s().flags.fixMaple && LQ.bazaarOff(), 'the lantern clears Granny Maple\'s porch');
+  delete s().flags.lanternRent;
+  const beforeShift = s().coins; await talk(e => e.type === 'board'); assert.equal(LQ.scene, w);
+  assert.equal(s().flags.shiftN, 1); assert(s().coins >= beforeShift); assert.equal(LQ.jobs.left(), 1);
   assert(LQ.kit.owned().some(tool => tool.id === 'compass'));
   s().tool = 'compass'; near(w.ents.find(e => e.type === 'falsetree'));
   await frame(8); await press('e'); assert(s().flags.v1path);
+  LQ.kit.inv = 5; // the two wisps on patrol must not knock the player off the cache tile mid-test
   await talk(e => e.type === 'cache');
   assert(LQ.kit.hasLantern() && s().items.includes('oldlantern'));
   const cacheCoins = s().coins; await talk(e => e.type === 'cache'); assert.equal(s().coins, cacheCoins);
@@ -294,7 +309,9 @@ async function talk(find, choose = () => 0) {
     const names = available.flatMap(item => [`${item.name}  -  ${item.price}`, `Buy ${item.name}`]);
     await shop([...names, 'Leave']);
     for (const item of available) assert(LQ.has(item.id));
-    assert.equal(before - s().coins, available.reduce((sum, item) => sum + item.price, 0));
+    // Granny Maple's tenth applies at the Saffron Bazaar only.
+    assert.equal(LQ.bazaarOff(), region === 'village');
+    assert.equal(before - s().coins, available.reduce((sum, item) => sum + item.price - (LQ.bazaarOff() ? Math.round(item.price * .1) : 0), 0));
   }
   assert.equal(s().gear.length, LQ.GEAR.length);
   assert.equal(new Set(s().gear).size, LQ.GEAR.length);
