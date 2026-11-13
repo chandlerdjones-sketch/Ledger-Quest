@@ -60,7 +60,7 @@ Ledger Quest (`~/Desktop/Ledger Quest/`, plain HTML and JS, about 5,300 lines, n
 
 ### 6. The Torn Ledger (story spine)
 - The Great Ledger held the plain truth about money. Pages were torn out, and fog spreads where they are missing.
-- Twelve pages, three per region. Eight open the Back Office, so 100% is not required.
+- Twelve pages, three per region. All twelve open the Back Office (changed Nov 13: every page can be recovered on any save, so nobody is locked out).
 - Each boss drops an invoice from the same supplier. Found objects (flyers, an abandoned stall, a ledger stub) tell the story. No new long dialogue.
 - The supplier's identity is settled in a short story pass at the start of Phase 4.
 
@@ -105,7 +105,8 @@ Ledger Quest (`~/Desktop/Ledger Quest/`, plain HTML and JS, about 5,300 lines, n
 | 1 | Done, playtested Nov 12 | Village slice. Chandler: combat is fun, the vault and cave are good as they are. Combat stays. |
 | Opening | Done, playtested Nov 12 | The cottage and cellar prologue. Pace is right. See `INTRO_TUTORIAL_PLAN.md`. The cellar's great door is the Back Office entrance for Phase 4. |
 | 2 | Built, waiting on Chandler's second playtest | Shift work, the Mythmonger movement phase, three fooled villagers. See the Phase 2 notes below. |
-| 3 to 5 | Not started | |
+| 3 (activities) and 4 (finale) | Built Nov 13, waiting on a human playtest | Hands-on activities for Chapters 2 to 4, pages 4 to 12, the Back Office. See the Nov 13 notes below. The per-region vault, classic puzzle, new tool, and boss movement phase from the original Phase 3 are still not built. |
+| 5 | Not started | |
 
 ## Phase 1 notes (Nov 11)
 What was built
@@ -158,3 +159,33 @@ Questions for the second playtest
 - Do the three job games feel different enough, and is the full payout too easy or too hard to reach?
 - Is the east footbridge a useful shortcut, and are the three villagers easy to find without the rumor?
 
+
+## Hands-on pass and finale notes (Nov 13)
+What was built
+- `js/depth.js`: one shared activity board, three activities, and Ledger Pages 4 to 12.
+
+| Chapter | Activity | Replaces | Figures come from |
+|---|---|---|---|
+| 2, Assessor Tallow | Sort each receipt into ITEMIZE, CREDIT, or LEAVE OUT. The ITEMIZED shield updates on every move. Then pick the larger shield. | The one-shot "which do you carry" quiz and its correction fee | `LQ.fin2` |
+| 3, Tallyman Brick | Sort each slip into IN FULL, HALF, or LEAVE OUT, then fill a tax jar in $500 steps. Money earned, job costs, profit, other spending, tax jar, and cash left are separate lines. | The client lunch question, the net profit quiz, and its correction fee | `LQ.fin3`, `LQ.SLIPS` |
+| 4, Timekeeper Frost | Move the sale day along a clock to the first long-term day, then lower an example price until waiting comes out behind. The example is labeled EXAMPLE ONLY. The real choice and its outcome (the price held) are unchanged. | The "how long must you hold" question | `LQ.trial4` |
+
+- A wrong check marks the row red, explains it in one or two sentences, and the player moves that one row. Nothing is replayed and no coins are lost. Each activity scores once, like a first-try question.
+- Pages: 4, 7, 10 come from the activities. 5, 8, 11 come from the three later bosses, each with a fog invoice. 6, 9, 12 come from the three later filings.
+- Older saves: milestone pages arrive by themselves the first time the hero stands still in any region. Activity pages are earned by talking to Tallow, Brick, or Frost again. Chapter starters also receive the village's three pages (`flags.starter`).
+- Once the story is finished, the quest tracker names the next missing page with an action and a place, then points to the cellar.
+- `js/backoffice.js`: the room behind the tall cellar door. Three valves to stamp (a crate and rune, an imp, a lane of fog bolts), the inner gate, Clerk Vell, Head Clerk Murk, and the Standing Order on the Fog Press. Stamping it is the last action. Valve progress is saved in `flags.bo1` to `bo3`, so a faint or a reset never undoes a valve.
+- Story answers: Head Clerk Quillon Murk ordered the twelve plainest pages torn out and sold the confusion as fog. Vell tore them out, scattered them instead of burning them, and sealed himself in with the press. Invoices 2 to 4 reveal the cellar, the Ledger office seal, and Murk's signature in turn.
+- `js/jobs.js`: the first shift offers an untimed practice (three tasks, no clock, no pay, Esc to leave).
+- `js/ui.js`: a document may have its own `update`, which gets the keys while no dialogue is open.
+- Fog on Bracket Mountain clears fully once the Ledger is whole (`flags.ledgerDone`).
+
+Checks
+- `tools/check.js`: sorted receipts equal the return's itemized figure, sorted slips equal Schedule C, the tax jar can reach the bill, the example price drop can outweigh the saving for every career and gig, page recovery lists, and Back Office reachability before and after each lock.
+- `tools/play-check.js`: every activity phase is handed in wrong once and then right, an older finished save recovers its pages, the tall door opens, a faint keeps a shut valve, and the final stamp ends the story. Also the practice shift.
+
+Needs a human playtest
+- Feel and pacing of the three boards with a real keyboard, and whether the instructions read clearly to a first-time learner.
+- The Back Office with real movement: the bolt lane timing, the imp, and the crate push.
+- Reading size on a phone-width window. The whole screen scales down evenly, so nothing overlaps, but the text gets small.
+- The cellar's tall door sits near the top HUD. It works, but the view is tight.

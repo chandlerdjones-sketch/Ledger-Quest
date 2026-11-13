@@ -9,7 +9,7 @@ const q4 = () => st().q4 == null ? -1 : st().q4;
 const ZERO = TX.ltcgZeroMaxJoint;
 // The family's scripted positions. Dollar figures, the same scale as the rest of the return.
 const OPAL = { paid: 400, atDeath: 3600, sold: 4200, gain: 600 };
-const GL = { cost: 6000, worth: 10000, gain: 4000 };
+const GL = LQ.GLACIER = { cost: 6000, worth: 10000, gain: 4000 };
 const AV = { cost: 7000, worth: 4500, loss: 2500 };
 const DIV = 900, INT = 300, SAVE = 3000;
 
@@ -196,11 +196,10 @@ async function qFrost() {
   holdDoc.wait = Math.max(0, LQ.trial4(i => { i.lt += GL.gain; }).total - base.total);
   holdDoc.pick = -1;
   await say(N.frost, 'Tick, tick. Everyone who climbs up here wants to sell at once. I am the one who asks them what day it is.');
+  await say(N.frost, 'You bought Glacier Goldworks eleven months ago. More than one year, counted from the day after you bought, and a gain is long-term, taxed at 0%, 15%, or 20%. A year or less and it is short-term, taxed exactly like wages. Here is my clock. Try it.');
+  await LQ.depth.hold(N.frost);
   ui.doc = holdDoc;
-  await ask(N.frost, 'How long must you hold an investment for its gain to count as long-term?', ['More than one year', 'More than six months', 'Until the next January 1'],
-    { wrong: ['Longer than that. Think of a full turn of the calendar, and then a day.', 'The calendar year has nothing to do with it. Count from the day after you bought.'] });
-  await say(N.frost, 'More than one year, counted from the day after you bought. Hold a year or less and the gain is short-term, taxed exactly like wages. Hold a year and a day and it is long-term, taxed at 0%, 15%, or 20%.');
-  await say(N.frost, `You bought Glacier Goldworks eleven months ago. Sell today and the ${M(GL.gain)} gain adds about ${M(holdDoc.now)} to your tax. Wait one more month and it adds about ${M(holdDoc.wait)}.` + (holdDoc.wait < 50 ? ' Yes, next to nothing. Hermit Cirrus will show you why later.' : ''));
+  if (holdDoc.wait < 50) await say(N.frost, 'Yes, next to nothing on a long-term gain. Hermit Cirrus will show you why later.');
   await say(N.frost, 'I will be honest about the other side of it. Waiting is a risk. The price can fall in a month. The tax rule tells you what a month is worth. It does not tell you what the price will do.');
   const p = await choose(N.frost, 'What will you do with the Glacier Goldworks shares?', ['Wait the month, then sell', 'Sell today'], i => { holdDoc.pick = i; });
   s.hold4 = p === 0 ? 1 : 0;
@@ -215,6 +214,7 @@ async function qFrost() {
     LQ.gain(0, 80, 'Glacier shares sold');
   }
   LQ.learn('holding4'); LQ.give('hourglass');
+  await LQ.depth.activityPage(10, N.frost);
   await say(N.frost, 'Selling is not the only way investments make money. Some pay you just for holding them. Bursar Birch at the Summit Bank, across the main trail, has your year-end forms.');
   advance4();
 }

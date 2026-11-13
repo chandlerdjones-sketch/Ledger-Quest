@@ -9,7 +9,7 @@ global.LQ = { ui: { toast: noop, wrap: () => [], text: noop, panel: noop, choice
 const base = () => ({ quest: 9, w4: 0, savvy: 0, coins: 500, asked: 0, first: 0, journal: [], items: [], season: 'summer', chests: {}, coinsGot: {}, flags: { married: true }, career: 'nurse', streak: 0, gear: [], tips: {},
   lossBank: 0, region: 'canyon', q2: 8, rcpt: {}, w4b: 0, wh2: null, child: true, q3: 0, gig: null, est3: null, q4: null, inv: null, hold4: null, harv4: null, acct4: null });
 LQ.state = base();
-for (const f of ['taxdata', 'economy', 'household', 'chapter1', 'audit', 'battle', 'chapter2', 'chapter3', 'chapter4', 'world', 'coast', 'canyon', 'summit', 'kit', 'foes', 'rooms', 'vaults1', 'jobs', 'intro'])
+for (const f of ['taxdata', 'economy', 'household', 'chapter1', 'audit', 'battle', 'chapter2', 'chapter3', 'chapter4', 'world', 'coast', 'canyon', 'summit', 'kit', 'foes', 'rooms', 'vaults1', 'jobs', 'depth', 'intro', 'backoffice'])
   vm.runInThisContext(fs.readFileSync(dir + '/js/' + f + '.js', 'utf8'), { filename: f + '.js' });
 let bad = 0; let fail = m => { bad++; console.log('  FAIL: ' + m); };
 const M = LQ.money, TX = LQ.TAX;
@@ -207,6 +207,55 @@ for (const career of ['nurse', 'food', 'owner']) {
 for (const t of LQ.TOOLS) if (!t.consumable && !t.free) fail('tool ' + t.id + ' has no route that costs no coins');
 for (const id in LQ.ROOMS) { LQ.state = base(); LQ.state.flags = {}; const rows = LQ.ROOMS[id].rows(LQ.state); if (rows.some(r => r.length !== rows[0].length)) fail('room ' + id + ' has rows of different lengths'); }
 
+// ---- 2b. hands-on activities and the Back Office
+console.log('== Activities');
+{ const DP = LQ.depth, allOf = o => Object.fromEntries(Object.keys(o).map(k => [k, true]));
+  for (const career of Object.keys(LQ.CAREERS)) {
+    // Chapter 2: a correctly sorted table must show exactly the itemized figure the return uses.
+    LQ.state = base(); Object.assign(LQ.state, { career, rcpt: allOf(LQ.RECEIPTS) });
+    const f2 = LQ.fin2(), rows = DP.receiptRows(f2);
+    rows.forEach(r => { r.col = r.want; });
+    if (DP.pileOf(rows, f2) !== f2.itemized) fail(`${career}: sorted receipts show ${DP.pileOf(rows, f2)}, the return uses ${f2.itemized}`);
+    const raffle = rows.find(r => r.kind === 'none'); raffle.col = 0;
+    if (DP.pileOf(rows, f2) !== f2.itemized + raffle.amt) fail(career + ': a misplaced receipt does not change the itemized total');
+    if (rows.some(r => !r.why || !(r.why.any || (r.why[1] && r.why[2])))) fail(career + ': a receipt has no explanation for a wrong column');
+    for (const gig of Object.keys(LQ.GIGS)) {
+      // Chapter 3: sorted slips must rebuild Schedule C, and the tax jar must be able to cover the bill.
+      LQ.state = base(); Object.assign(LQ.state, { career, gig, q3: 5, est3: 0, rcpt: allOf(LQ.SLIPS) });
+      const f3 = LQ.fin3(), slips = DP.slipRows(), cnt = slips.reduce((a, r) => a + (r.want === 0 ? r.amt : r.want === 1 ? r.amt / 2 : 0), 0);
+      if (f3.gigBase + f3.tools + cnt !== f3.gigExp) fail(`${career}/${gig}: sorted slips give ${f3.gigBase + f3.tools + cnt}, Schedule C uses ${f3.gigExp}`);
+      const personal = slips.reduce((a, r) => a + r.amt, 0) - cnt, need = Math.ceil(f3.gigBill / DP.JAR_STEP) * DP.JAR_STEP;
+      if (need > Math.floor((f3.gigProfit - personal) / DP.JAR_STEP) * DP.JAR_STEP) fail(`${career}/${gig}: the tax jar cannot reach the bill of ${f3.gigBill}`);
+      if (slips.some(r => !r.why.any)) fail(gig + ': a slip has no explanation');
+      // Chapter 4: waiting must start ahead, and the example price drop must be able to put it behind.
+      Object.assign(LQ.state, { q3: 8, q4: 2, inv: { st: 0, lt: 0, qd: 900, int: 300 } });
+      const H = DP.holdFigures();
+      if (!(H.now > H.wait[0])) fail(`${career}/${gig}: selling early costs no extra tax (${H.now} vs ${H.wait[0]})`);
+      if (!(H.flip > 0)) fail(`${career}/${gig}: no example price drop outweighs the tax saving (flip ${H.flip})`);
+      const before = JSON.stringify(H); Object.assign(LQ.state, { hold4: 1 }); LQ.state.inv.lt += LQ.GLACIER.gain;
+      if (JSON.stringify(DP.holdFigures()) !== before) fail(`${career}/${gig}: the sale clock shows different figures on a replay`);
+    }
+  }
+  // Pages 4 to 12: an old finished save is owed the six milestone pages, and a chapter starter the village's three as well.
+  LQ.state = base(); Object.assign(LQ.state, { q3: 8, q4: 9, flags: { boss2: true, boss3: true, boss4: true } });
+  if (DP.owed(LQ.state).join() !== '5,6,8,9,11,12') fail('old save is owed pages ' + DP.owed(LQ.state).join());
+  LQ.state.flags.starter = true; if (DP.owed(LQ.state).join() !== '1,2,3,5,6,8,9,11,12') fail('starter is owed pages ' + DP.owed(LQ.state).join());
+  for (const n of [4, 7, 10]) if (DP.PAGES[n].done) fail('activity page ' + n + ' should only come from its activity');
+  // The Back Office: what can be reached before and after each lock opens.
+  LQ.state = base(); LQ.state.flags = {};
+  const rows = LQ.ROOMS.backoffice.rows(LQ.state), find = ch => { for (let y = 0; y < rows.length; y++) { const x = rows[y].indexOf(ch); if (x >= 0) return [x, y]; } };
+  const reach = solid => { const [sx, sy] = find('S'), seen = new Set([sx + ',' + sy]), q = [[sx, sy]];
+    while (q.length) { const [x, y] = q.pop(); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy, ch = rows[ny] && rows[ny][nx], k = nx + ',' + ny;
+      if (!ch || ch === '#' || solid.includes(ch) || seen.has(k)) continue; seen.add(k); q.push([nx, ny]); } } return seen; };
+  const by = (seen, ch) => { const [x, y] = find(ch); return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen.has((x + dx) + ',' + (y + dy))); };
+  const start = reach('123DGKRL>mvB');
+  for (const ch of '23RLGB') if (!by(start, ch)) fail('back office: cannot reach ' + ch + ' from the door');
+  for (const ch of '1Kmv') if (by(start, ch)) fail('back office: ' + ch + ' can be reached before its lock opens');
+  if (!by(reach('123GKRL>mvO'), '1')) fail('back office: valve 1 cannot be reached with the crate on the rune');
+  const open = reach('123KRL>mvB'); for (const ch of 'Kmv') if (!by(open, ch)) fail('back office: cannot reach ' + ch + ' once the gate opens');
+  const [bx, by0] = find('B'), [ox] = find('O'); if (rows[by0][bx + 1] !== '.' || ox >= bx || rows[by0].slice(ox, bx).includes('#')) fail('back office: the crate cannot be pushed onto the rune');
+  console.log('  receipt sort, gig budget, sale clock, page recovery and the Back Office checked'); }
+
 // ---- 3. content wiring
 console.log('== Wiring');
 for (const [name, Q, C] of [['ch3', LQ.QUESTS3, LQ.CH3], ['ch4', LQ.QUESTS4, LQ.CH4]]) {
@@ -214,7 +263,7 @@ for (const [name, Q, C] of [['ch3', LQ.QUESTS3, LQ.CH3], ['ch4', LQ.QUESTS4, LQ.
   Object.values(C.chests).forEach(ch => { if (!LQ.JOURNAL[ch.tip]) fail(name + ' chest tip missing journal ' + ch.tip); });
 }
 LQ.AUDIT_POOL.forEach(p => { if (!LQ.JOURNAL[p.need]) fail('audit question needs unknown journal entry ' + p.need); if (p.o.length !== 3) fail('audit options ' + p.q); });
-const src = ['chapter3', 'chapter4', 'vaults1', 'intro'].map(f => fs.readFileSync(dir + '/js/' + f + '.js', 'utf8')).join('\n');
+const src = ['chapter3', 'chapter4', 'vaults1', 'intro', 'depth', 'backoffice'].map(f => fs.readFileSync(dir + '/js/' + f + '.js', 'utf8')).join('\n');
 for (const m of src.matchAll(/LQ\.learn\('([^']+)'\)/g)) if (!LQ.JOURNAL[m[1]]) fail('learn of unknown journal id ' + m[1]);
 for (const m of src.matchAll(/LQ\.give\('([^']+)'\)/g)) if (!LQ.ITEMS[m[1]]) fail('give of unknown item id ' + m[1]);
 for (const m of src.matchAll(/j: '([^']+)'/g)) if (!LQ.JOURNAL[m[1]]) fail('tip with unknown journal id ' + m[1]);

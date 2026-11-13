@@ -124,7 +124,7 @@ LQ.REGIONS.village = {
   },
   overlay(g, w, st) {
     if (st.flags.bossDown) return;
-    const f = LQ.clamp((13.5 * T - w.p.y) / (8 * T), 0, 1) * (st.flags.page1 ? .55 : 1), tm = LQ.time; if (f <= 0) return;
+    const f = LQ.clamp((13.5 * T - w.p.y) / (8 * T), 0, 1) * (st.flags.ledgerDone ? 0 : st.flags.page1 ? .55 : 1), tm = LQ.time; if (f <= 0) return;
     g.fillStyle = `rgba(110,60,160,${f * .3})`; g.fillRect(0, 0, LQ.BW, LQ.BH);
     for (let i = 0; i < 7; i++) { g.fillStyle = `rgba(190,150,235,${f * .13})`; const fx = (LQ.hash(i, 5, 40) * 420 + tm * (6 + i * 2)) % 420 - 60, fy = LQ.hash(i, 6, 40) * LQ.BH; g.fillRect(fx, fy, 70, 9); g.fillRect(fx + 12, fy - 5, 44, 19); }
   },

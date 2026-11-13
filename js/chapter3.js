@@ -297,18 +297,12 @@ async function qBrick() {
     const a = await choose(N.brick, `I count ${n} of your ${HUNT.length} lost slips. Each real expense you find lowers your tax.`, ['Tally what I have', 'Keep hunting first']);
     if (a === 1) { ui.doc = null; return say(N.brick, 'Good. Watch for the sparkle. I will keep the counter clear.'); }
   }
-  const f = LQ.fin3(), bad = ['xLunch', 'xBoots', 'xFine'].filter(got);
-  await say(N.brick, f.slips ? `Here is how they sort. The slips that count add ${M(f.slips)} to your expenses.` : 'Here is how they sort. Nothing in this pile counts, I am sorry to say.');
-  if (got('xPhone')) await say(N.brick, `The phone: half business, half family, so half the bill. ${M(SL.xPhone.counts)}.`);
-  if (bad.length) await say(N.brick, 'Now the ones I am handing back. ' + (got('xLunch') ? 'Your own lunch is personal, working day or not. ' : '') + (got('xBoots') ? 'Boots you can wear anywhere are personal clothing. ' : '') + (got('xFine') ? 'And a fine paid to a government is never deductible. ' : '') + 'They felt like business costs. They are not.');
-  await ask(N.brick, `A lunch with a client costs ${M(SL.xMeal.amt)}, and you talk business over it. How much can the business deduct?`, [`Half: ${M(SL.xMeal.counts)}`, `All ${M(SL.xMeal.amt)}`, 'Nothing. Meals are personal'],
-    { wrong: ['Business meals are limited to 50%.', 'A real business meal with a client does count, at 50%.'] });
-  const ok = await LQ.quiz(N.brick, `So. ${M(f.gigGross)} came in. Your expenses, with the slips, come to ${M(f.gigExp)}. What goes on your return as income from the gig?`,
-    [`Net profit: ${M(f.gigProfit)}`, `Gross receipts: ${M(f.gigGross)}`, `Expenses: ${M(f.gigExp)}`], 'Schedule C ends in net profit: what came in, minus what it cost.');
-  if (!ok) LQ.gain(0, -Math.min(s.coins, 40), 'Correction fee');
+  await say(N.brick, 'Here is your year on one page: what came in, what the job cost, and what is left. Some of these slips are job costs, some are half, and some are not job costs at all. You sort them.');
+  const f = await LQ.depth.budget(N.brick);
   const left = HUNT.length - HUNT.filter(got).length;
   await say(N.brick, `Net profit: ${M(f.gigProfit)}. A business expense can lower both your income tax and your self-employment tax. Your tax savings are only part of what you spent.` + (left ? ' Whatever else you find before you file still counts.' : ''));
   ui.doc = null; LQ.learn('schedC'); LQ.learn('meals3'); LQ.give('schedc');
+  await LQ.depth.activityPage(7, N.brick);
   await say(N.brick, 'Now, a favor. Across Rattle Creek, in Off-the-Books Gulch, a fellow called Sidewinder Slick is telling gig workers that none of this applies to them. People are believing him. The rockfall on the Gulch trail has just been cleared.');
   await LQ.world.clear('gate', '#a8523a', 'South of the creek, the last boulders are hauled off the Gulch trail.');
   advance3();
