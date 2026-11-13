@@ -20,8 +20,17 @@ const valve = n => (w, tx, ty, s) => {
   if (s.flags['bo' + n]) return P.plaque(w, tx, ty, 'A brass valve, shut tight and stamped with an honest mark.', '#7fd6a8');
   const e = P.seal(w, tx, ty, () => {
     if (s.flags['bo' + n]) return;
+    if (n === 2 && w.ents.some(e => e.type === 'imp')) {
+      ui.toast('Defeat the Scrap Imp to shut this valve.');
+      return;
+    }
     s.flags['bo' + n] = true; sfx('stamp'); LQ.shake(.3); w.burst(tx * T + 8, ty * T + 8, '#7fd6a8', 18, 50);
     e.use = () => LQ.script(() => say(null, 'A brass valve, shut tight and stamped with an honest mark.'));
+    if (n === 3 && B.spit) {
+      w.remove(B.spit);
+      B.spit = null;
+      w.ents.filter(e => e.type === 'bolt').forEach(e => w.remove(e));
+    }
     const k = shut();
     ui.toast(k < 3 ? `Valve ${k} of 3 shut. The fog thins.` : 'The last valve is shut. The inner gate grinds open.');
     if (k === 3 && B.gate) B.gate.open();
@@ -32,10 +41,9 @@ async function vellTalk() {
   const s = st();
   if (s.flags.ledgerDone) return say(VELL, 'Twelve pages, twelve truths, and a reader in the house. The cottage is yours. Keep the stamp close.');
   if (!s.flags.vellFree) {
-    await say(VELL, 'A Truth Stamp. Mine, I think. Then you are the tenant, and you have read my coat, my desk, and my door. I am Osric Vell.');
+    await say(VELL, 'My Truth Stamp. You must be the new tenant. I am Osric Vell.');
     await say(VELL, 'The Head Clerk found that confused people pay for answers. He ordered the twelve plainest pages torn out of the Great Ledger and fed to this press, and he sold the fog it made by the crate.');
     await say(VELL, 'I tore them out, as ordered. Then I threw them to the wind instead of the fire, and I shut that door from the inside. It stays sealed until all twelve come home. So did I.');
-    await say(VELL, 'Every page you found was a truth somebody needed. You brought all twelve back. Nobody had, before.');
     s.flags.vellFree = true;
   }
   await say(VELL, 'One thing is left. His Standing Order is nailed to the press. While it stands, the fog is still for sale. Face it and press E. An honest mark will void it.');
@@ -49,8 +57,9 @@ async function murkTalk() {
 }
 async function finale(w) {
   const s = st(); if (s.flags.ledgerDone) return;
+  if (!s.flags.vellFree) return say(null, 'Talk to Clerk Vell before you stamp the Standing Order.');
   sfx('stamp'); LQ.shake(.5); w.burst(B.press.tx * T + 8, B.press.ty * T + 8, '#ffcf4a', 30, 70);
-  await say(null, 'VOID. The Standing Order curls under the mark. On every invoice in your pack, the scratched-out name burns back in: "Q. MURK, HEAD CLERK."');
+  await say(null, 'VOID. The Standing Order curls under the mark. The supplier’s name comes into focus on the invoices: "Q. MURK, HEAD CLERK."');
   sfx('rumble'); LQ.shake(.4);
   await say(null, 'The Fog Press shudders and stops. The twelve pages lift out of your pack and settle, one by one, into the Great Ledger.');
   s.flags.ledgerDone = true; s.flags.vellFree = true; if (B.murk) { w.burst(B.murk.tx * T + 8, B.murk.ty * T, '#9b6bff', 20, 50); }
@@ -59,14 +68,13 @@ async function finale(w) {
   if (B.murk) { w.remove(B.murk); B.murk = null; w.refresh(); }
   LQ.give('greatledger'); LQ.gain(100, 300, 'The Great Ledger restored'); sfx('fanfare');
   await say(VELL, 'The fog was never magic. It was missing pages. Now anyone can read what you learned the hard way: how pay is taxed, what counts, and what a promise of easy money is worth.');
-  await say(VELL, 'The cottage is yours, tenant. So is the stamp. I only ever borrowed it from whoever came next.');
   ui.showBanner('THE GREAT LEDGER IS WHOLE', 'Twelve pages. Twelve truths.');
   LQ.save();
 }
 
 LQ.ROOMS.backoffice = {
   title: 'THE BACK OFFICE', sub: 'Behind the tall door', music: 'mountain', home: true, exitTo: 'cellar1',
-  from: { cellar1: [10, 12, 'up'], faint: [10, 12, 'up'] },
+  from: { cellar1: [10, 12, 'up'], faint: [2, 12, 'up'] },
   rows() {
     B = { gate: null, murk: null };
     // Spare wall rows above and below let the camera scroll, so the HUD never sits on top of the press or the valves.
@@ -89,7 +97,6 @@ LQ.ROOMS.backoffice = {
       '####################',
       '####################'];
   },
-  hud: () => st().flags.ledgerDone ? '' : 'Fog valves shut ' + shut() + '/3',
   on: {
     1: valve(1), 2: valve(2), 3: valve(3),
     D: (w, tx, ty, s) => { if (!s.flags.bo1) B.wing = P.door(w, tx, ty, 'A grille across the valve. A cord runs from it to the rune on the floor. Something heavy on the rune would lift it.'); },
@@ -110,7 +117,7 @@ LQ.ROOMS.backoffice = {
         else LQ.fx.light(x + 8, y, 44, '#35f0e6', .45);
       } });
       const e = P.seal(w, tx, ty, () => LQ.script(() => finale(w)), 'The Standing Order: "Tear out what is plain. Sell what is left. By order of the Head Clerk." Face it and press E with the Truth Stamp.');
-      B.press = e; const use0 = e.use; e.use = () => s.flags.ledgerDone ? LQ.script(() => say(null, 'The Great Ledger, whole again, lies open on the silent press. The first line reads: "Tax is counted ledge by ledge, never all at once."')) : use0();
+      e.qid = 'fogpress'; B.press = e; const use0 = e.use; e.use = () => s.flags.ledgerDone ? LQ.script(() => say(null, 'The Great Ledger, whole again, lies open on the silent press. The first line reads: "Tax is counted ledge by ledge, never all at once."')) : use0();
     },
     v: (w, tx, ty) => person(w, VELL, tx, ty, vellTalk),
     m: (w, tx, ty, s) => { if (!s.flags.ledgerDone) B.murk = person(w, MURK, tx, ty, murkTalk); },
@@ -135,10 +142,11 @@ LQ.backoffice = {
   async door(w) {
     const s = st();
     if (!s.flags.doorOpen) {
-      s.flags.doorOpen = true; sfx('fanfare');
+      sfx('fanfare');
       await say(null, 'The twelve pages lift out of your pack. One by one they slide into the slots, and each slot lights.');
       sfx('rumble'); LQ.shake(.5);
       await say(null, '"Twelve pages. Twelve truths." The tall door swings inward. Cold fog rolls out across the cellar floor.');
+      s.flags.doorOpen = true;
     }
     await w.enterRoom('backoffice', 'cellar1');
   },
@@ -149,9 +157,9 @@ const pageQuest0 = LQ.pageQuest;
 LQ.pageQuest = () => {
   const s = st(), q = pageQuest0(), inside = LQ.world.room && LQ.world.room.room === 'backoffice';
   if (s.flags.ledgerDone || !inside) return q;
-  if (shut() < 3) return { short: 'Shut the fog valves', text: `Shut the 3 fog valves with the Truth Stamp (E): ${shut()} of 3`, target: null };
+  if (shut() < 3) return { short: 'Shut the fog valves', text: `Stamp the fog valves (E): ${shut()} of 3 shut`, target: null };
   if (!s.flags.vellFree) return { short: 'Find Clerk Vell', text: 'Talk to Clerk Vell behind the inner gate', target: null };
-  return q;
+  return { short: 'End the fog', text: 'Stamp the Standing Order on the Fog Press (E)', target: 'fogpress' };
 };
 const tip0 = LQ.tip;
 LQ.tip = w => {

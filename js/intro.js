@@ -75,7 +75,7 @@ LQ.ROOMS.cottage1 = {
       (g, cx, cy) => { const x = tx * T - cx, y = ty * T - cy; R(g, x, y + 2, 16, 3, '#7a5a3a'); R(g, x + 1, y + 5, 2, 10, '#3d2f24'); R(g, x + 13, y + 5, 2, 10, '#3d2f24'); if (stage() === 1) { R(g, x + 5, y - 4, 6, 6, '#c98a3c'); R(g, x + 6, y - 5, 4, 1, '#3d2f24'); R(g, x + 7, y - 2, 2, 2, '#ffcf4a'); } }),
     N: (w, tx, ty) => { if (stage() < 9) P.door(w, tx, ty, 'It is the middle of the night. And something is moving under your floor.'); },
     H: (w, tx, ty) => {
-      w.ents.push({ type: 'trapdoor', tx, ty, base: ty * T - 40, draw(g, cx, cy) {
+      w.ents.push({ type: 'trapdoor', qid: 'ledgertrap', tx, ty, base: ty * T - 40, draw(g, cx, cy) {
         const x = tx * T - cx, y = ty * T - cy; R(g, x + 1, y + 1, 14, 14, '#0b0c24'); R(g, x + 1, y + 1, 14, 1, '#5a4630'); R(g, x + 1, y + 14, 14, 1, '#5a4630'); R(g, x + 1, y + 1, 1, 14, '#5a4630'); R(g, x + 14, y + 1, 1, 14, '#5a4630');
         for (let i = 0; i < 3; i++) R(g, x + 4, y + 4 + i * 4, 8, 1, '#42458a');
         LQ.fx.light(x + 8, y + 8, 12, '#35f0e6', .3);
@@ -141,7 +141,7 @@ LQ.ROOMS.cellar1 = {
       '####################'];
   },
   on: {
-    Q: (w, tx, ty) => prop(w, 'greatdoor', tx, ty, async () => {
+    Q: (w, tx, ty) => Object.assign(prop(w, 'greatdoor', tx, ty, async () => {
       const n = LQ.pages(); st().flags.sawDoor = true;
       if (n === 12 && LQ.backoffice) return LQ.backoffice.door(w);
       await say(null, 'A door far too tall for this cellar. Set into it are twelve empty slots, each the shape of a page.' + (n ? ` ${n} of them ${n === 1 ? 'glows' : 'glow'}.` : ''));
@@ -152,7 +152,7 @@ LQ.ROOMS.cellar1 = {
       R(g, x - 2, y, 36, 30, '#0b0c24'); R(g, x - 2, y, 36, 1, '#9b6bff'); R(g, x - 2, y, 1, 30, '#9b6bff'); R(g, x + 33, y, 1, 30, '#9b6bff'); R(g, x + 15, y + 2, 2, 28, '#1c1d44');
       for (let i = 0; i < 12; i++) { const sx = x + 2 + (i % 6) * 5 + (i % 6 > 2 ? 3 : 0), sy = y + 5 + Math.floor(i / 6) * 11, on = i < n; R(g, sx, sy, 4, 7, on ? '#35f0e6' : '#1c1d44'); if (on) LQ.fx.light(sx + 2, sy + 3, 7, '#35f0e6', .5); }
       LQ.fx.light(x + 16, y + 14, 34, '#9b6bff', .25 + .08 * Math.sin(tm * 1.3));
-    }, ty * T + 15),
+    }, ty * T + 15), { qid: 'ledgerdoor' }),
     V: (w, tx, ty) => prop(w, 'desk', tx, ty, () => say(null, 'A clerk\'s desk under a sheet of dust. The last entry in the open book reads: "Pages 1 through 12 removed tonight, by order of the" and there the line stops, mid-word. The ink is smeared, as if the pen was pulled away.'),
       (g, cx, cy) => { const x = tx * T - cx, y = ty * T - cy; R(g, x, y + 3, 16, 9, '#3d2f24'); R(g, x, y + 3, 16, 2, '#5a4630'); R(g, x + 1, y + 12, 2, 4, '#231a36'); R(g, x + 13, y + 12, 2, 4, '#231a36'); R(g, x + 4, y + 4, 8, 5, '#c9cdea'); R(g, x + 8, y + 4, 1, 5, '#8a84b0'); R(g, x + 5, y + 6, 2, 1, '#35f0e6'); }),
     o: (w, tx, ty, s) => { const key = 'cellar' + tx + '_' + ty; if (!s.coinsGot[key]) w.ents.push({ type: 'coin', i: tx + ty, key, tx, ty, base: ty * T + 12 }); },
@@ -226,6 +226,8 @@ LQ.tip = w => {
     if (n === 4) return s.flags.sawDoor ? 'J: see your items. Wisps cannot be struck, so slip past or leave those coins' : 'A tall door glows beyond the gate. Go and read it';
     if (n === 9) return 'Go back up the stairs';
   }
+  if (id === 'cellar1' && LQ.pages() === 12) return s.flags.cellarGate
+    ? 'Face the tall door and press Space to open it' : 'Face the gold seal by the gate and press E with the Truth Stamp';
   return null;
 };
 })();

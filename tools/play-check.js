@@ -281,6 +281,11 @@ async function talk(find, choose = () => 0) {
   await drain(() => 0, () => jobs.G?.live);
   assert(jobs.G.practice, 'the first shift starts with practice');
   const clock = jobs.G.t; await frame(40); assert.equal(jobs.G.t, clock, 'practice has no timer');
+  await press('Escape'); await drain(() => 1, untilIdle);
+  assert.equal(LQ.scene, w); assert.equal(jobs.left(), 2, 'leaving practice keeps the paid attempts');
+  near(w.ents.find(e => e.type === 'board')); await press('Enter');
+  await drain(() => 0, () => jobs.G?.live);
+  assert(jobs.G.practice, 'players who leave early can practice again');
   for (let i = 0; i < 3; i++) {
     const g = jobs.G, spot = g.spots[0];
     spot.task = { left: 1, max: 1, pts: 1, want: 0 }; await frame(30); assert(spot.task, 'practice tasks never expire');
@@ -389,8 +394,12 @@ async function talk(find, choose = () => 0) {
   const oldSave = LQ.cleanSave(JSON.parse(JSON.stringify(s()))); assert(oldSave, 'an older finished save still loads');
   await frame(12); await drain(() => 0, untilIdle);
   assert.equal(LQ.pages(), 9, 'milestone pages come back without a restart');
-  assert.match(LQ.curQuest().text, /Page 4 of 12: Sort receipts with Assessor Tallow/);
+  assert.match(LQ.curQuest().text, /Page 4 of 12: Sort receipts with Tallow/);
   const record = JSON.stringify(s().inv);
+  const replay = JSON.stringify(LQ.depth.holdFigures());
+  const saleChoice = s().hold4; delete s().hold4;
+  assert.equal(JSON.stringify(LQ.depth.holdFigures()), replay, 'a filed sale is no longer in the investment ledger');
+  s().hold4 = saleChoice;
   for (const [region, id, n] of [['coast', 'tallow', 4], ['canyon', 'brick', 7], ['summit', 'frost', 10]]) {
     await travel(region); await talk(e => e.npc?.id === id); assert(s().flags['page' + n], 'page ' + n + ' replayed');
   }
@@ -405,17 +414,34 @@ async function talk(find, choose = () => 0) {
   const stampAt = async find => { s().tool = 'stamp'; near(w.ents.find(find)); await frame(12); await press('e'); await frame(4); await drain(() => 0, untilIdle); };
   assert(w.ents.some(e => e.type === 'door' && e.tx === 9), 'the inner gate is shut');
   s().hp = LQ.kit.maxHp(); await stampAt(e => e.type === 'seal' && e.tx === 16); assert(s().flags.bo3, 'valve 3');
+  assert(!w.ents.some(e => e.type === 'spitter' || e.type === 'bolt'), 'valve 3 stops fog bolts immediately');
   // A fall inside the room: wake at the lamp with the valve still shut.
   LQ.script(() => LQ.kit.faint(w)); await drain(() => 0, untilIdle);
   assert.equal(w.room.room, 'backoffice'); assert(s().flags.bo3 && !w.ents.some(e => e.type === 'spitter'), 'a shut valve survives a faint');
-  w.ents.filter(e => e.type === 'imp').forEach(e => w.remove(e));
+  await stampAt(e => e.type === 'seal' && e.tx === 18);
+  assert(!s().flags.bo2, 'the guarded valve stays open while the imp lives');
+  const imp = w.ents.find(e => e.type === 'imp');
+  for (let i = 0; i < 2; i++) {
+    await frame(8);
+    const fromLeft = w.canStand(imp.x - 12, imp.y + 6);
+    Object.assign(w.p, { x: imp.x + (fromLeft ? -12 : 12), y: imp.y + 6, dir: fromLeft ? 'right' : 'left' });
+    await press('e');
+  }
+  assert(!w.ents.includes(imp), 'the Truth Stamp defeats the imp');
   await stampAt(e => e.type === 'seal' && e.tx === 18); assert(s().flags.bo2, 'valve 2');
   assert(w.ents.some(e => e.type === 'door' && e.tx === 2), 'the grille guards valve 1');
-  const crate = w.ents.find(e => e.type === 'block'); crate.tx = 4; w.refresh(); await frame(3);
+  const crate = w.ents.find(e => e.type === 'block');
+  Object.assign(w.p, { x: 7 * 16 + 8, y: 9 * 16 + 12 });
+  dispatch('keydown', 'ArrowLeft'); await frame(28); dispatch('keyup', 'ArrowLeft');
+  assert.equal(crate.tx, 4, 'walking into the crate pushes it onto the rune');
   assert(!w.ents.some(e => e.type === 'door' && e.tx === 2), 'the crate on the rune lifts the grille');
   await stampAt(e => e.type === 'seal' && e.tx === 1); assert(s().flags.bo1, 'valve 1');
   assert(!w.ents.some(e => e.type === 'door'), 'three valves open the inner gate');
+  await stampAt(e => e.qid === 'fogpress'); assert(!s().flags.ledgerDone, 'the finale waits for Vell’s reveal');
   await talk(e => e.who?.name === 'Clerk Vell'); assert(s().flags.vellFree);
+  LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle);
+  assert.match(LQ.curQuest().text, /tall door/i, 'the cellar points back to the office after Vell’s reveal');
+  await talk(e => e.type === 'greatdoor');
   assert.match(LQ.curQuest().text, /Standing Order/);
   await talk(e => e.who?.name === 'Head Clerk Murk', () => 1);
   await stampAt(e => e.type === 'seal' && e.tx === 9);

@@ -30,7 +30,10 @@ addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = KEYMAP[e.key]; if (!k) return;
   e.preventDefault();
-  if (!e.repeat || ((LQ.ui?.menu || LQ.ui?.choice) && (k === 'up' || k === 'down'))) input.pressed[k] = true;
+  const modal = LQ.ui;
+  const repeats = modal?.doc?.update && !modal.choice && !modal.dlg && ['left', 'right', 'up', 'down'].includes(k)
+    || (modal?.menu || modal?.choice) && (k === 'up' || k === 'down');
+  if (!e.repeat || repeats) input.pressed[k] = true;
   if (k === 'ok' && !e.repeat && LQ.gesture) { const g = LQ.gesture; LQ.gesture = null; g(); }
   input.down[k] = true;
   if (LQ.audio) LQ.audio.unlock();

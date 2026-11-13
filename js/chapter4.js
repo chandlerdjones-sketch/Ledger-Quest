@@ -199,8 +199,6 @@ async function qFrost() {
   await say(N.frost, 'You bought Glacier Goldworks eleven months ago. More than one year, counted from the day after you bought, and a gain is long-term, taxed at 0%, 15%, or 20%. A year or less and it is short-term, taxed exactly like wages. Here is my clock. Try it.');
   await LQ.depth.hold(N.frost);
   ui.doc = holdDoc;
-  if (holdDoc.wait < 50) await say(N.frost, 'Yes, next to nothing on a long-term gain. Hermit Cirrus will show you why later.');
-  await say(N.frost, 'I will be honest about the other side of it. Waiting is a risk. The price can fall in a month. The tax rule tells you what a month is worth. It does not tell you what the price will do.');
   const p = await choose(N.frost, 'What will you do with the Glacier Goldworks shares?', ['Wait the month, then sell', 'Sell today'], i => { holdDoc.pick = i; });
   s.hold4 = p === 0 ? 1 : 0;
   if (p === 0) {
@@ -210,7 +208,7 @@ async function qFrost() {
     LQ.gain(10, 80, 'Glacier shares sold');
   } else {
     s.inv.st += GL.gain; LQ.audio.sfx('coin'); ui.doc = null;
-    await say(N.frost, `Sold. ${M(GL.gain)} of short-term gain is in your record, and it will be taxed like wages. Thirty more days would have saved you about ${M(Math.max(0, holdDoc.now - holdDoc.wait))}. Sometimes selling early is the right call. Just know the price of it.`);
+    await say(N.frost, `Sold. ${M(GL.gain)} of short-term gain is in your record, and it will be taxed like wages. Waiting until the gain qualified as long-term would have saved you about ${M(Math.max(0, holdDoc.now - holdDoc.wait))}. Sometimes selling early is the right call. Just know the price of it.`);
     LQ.gain(0, 80, 'Glacier shares sold');
   }
   LQ.learn('holding4'); LQ.give('hourglass');
@@ -395,7 +393,7 @@ async function ending4(f) {
   ui.doc = { draw(c) { LQ.drawWorldMap(c, 110, 40, 740, 420); } };
   await LQ.pressOk();
   ui.doc = { draw(c) {
-    D.paper(c, 130, 40, 700, 420, 'LEDGER QUEST', 'The end, and the beginning');
+    D.paper(c, 130, 40, 700, 420, 'LEDGER QUEST', 'Four returns filed');
     c.textAlign = 'center'; c.textBaseline = 'top'; c.font = F(26); c.fillStyle = '#15122e';
     ['You came to Paystub Village with an empty coin purse', 'and no idea how taxes worked.', '', 'You leave the Summit able to read a paystub, file a return,',
       'claim a child, run a business, and invest with your eyes open.', '', 'This game models selected US federal tax rules', 'using simplified examples for tax year ' + TX.year + '.',
@@ -406,7 +404,7 @@ async function ending4(f) {
   await LQ.fadeTo(1, 0.3); ui.doc = null; LQ.world.music(); await LQ.fadeTo(0, 0.9);
   await say(N.marlowe, 'Four years ago you could not read your own paystub. Coral wants to know if you will do her taxes when she is grown.');
   await say(N.coral, 'I have forty-one rocks. Is that a gain?');
-  await say(null, 'Ledger Quest is complete. Every town stays open for trading, shopping, and audits, and sales are taxed at the counter again from here on. Press J to reread your Tax Journal.');
+  await say(null, 'Your last return is filed. The towns are still open. Follow the quest tracker to bring the Torn Ledger pages home.');
 }
 
 // ---------- the peak
