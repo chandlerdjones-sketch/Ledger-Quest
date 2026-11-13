@@ -55,6 +55,12 @@ async function drain(select, end = () => !LQ.busy && !LQ.title.locked, limit = 2
       if (index == null) throw new Error('Unanswered: ' + ui.choice.prompt + '\n' + ui.choice.options.join(' | '));
       while (ui.choice.sel !== index) await press('ArrowDown');
       await press('Enter');
+    } else if (LQ.battle && LQ.battle.dodge) {
+      // The boss movement phase: walk straight to the truth shard.
+      const d = LQ.battle.dodge, at = LQ.battle.pos, k = LQ.input.down;
+      k.right = at.x < d.sx - 3; k.left = at.x > d.sx + 3; k.down = at.y < d.sy - 3; k.up = at.y > d.sy + 3;
+      await frame();
+      if (!LQ.battle.dodge) k.right = k.left = k.down = k.up = false;
     } else if (end()) return;
     else if (LQ.scene !== LQ.world && LQ.scene !== LQ.title && !LQ.scene.cfg && LQ.scene.update) await press('Enter');
     else await frame();

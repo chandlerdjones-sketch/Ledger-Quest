@@ -27,7 +27,8 @@ const MYTHS = [
     truth: 'Status follows the facts of your life on December 31.' },
 ];
 const B = LQ.battle = {
-  cfg: null, bossHP: 7, maxHP: 7, hearts: 4, flash: 0, hurt: 0, slash: 0, scraps: 0, dead: 0, bubble: '',
+  cfg: null, bossHP: 7, maxHP: 7, hearts: 4, flash: 0, hurt: 0, slash: 0, scraps: 0, dead: 0, bubble: '', dodge: null, pos: { x: 38, y: 115 },
+  update(dt) { if (this.dodge) stepDodge(this, this.dodge, dt); },
   draw(g) {
     const t = LQ.time, W = LQ.BW, H = LQ.BH;
     const K = this.cfg, sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, K.sky[0]); sky.addColorStop(1, K.sky[1]); g.fillStyle = sky; g.fillRect(0, 0, W, H);
@@ -50,10 +51,20 @@ const B = LQ.battle = {
     // myth scraps flying at the hero
     if (this.scraps > 0) for (let i = 0; i < 5; i++) { const k = LQ.clamp(1 - this.scraps + i * .08, 0, 1); g.fillStyle = K.bar[1]; g.fillRect(226 - k * 185 + Math.sin(k * 9 + i) * 8, 62 + k * 28 + i * 3, 6, 6); }
     // hero
-    const hx = 22 + (this.hurt > 0 ? Math.sin(t * 70) * 3 : 0);
-    g.fillStyle = 'rgba(4,3,16,.5)'; g.fillRect(hx + 2, 113, 32, 5);
-    g.drawImage(LQ.charSprite(LQ.HERO.look, 'right', Math.floor(t * 1.5) % 2 ? 4 : 0), hx + 2, 67, 32, 48);
-    LQ.fx.end(g); LQ.fx.light(hx + 18, 92, 36, '#35f0e6', .4);
+    const D = this.dodge, P = this.pos, hx = Math.round(P.x) - 16 + (this.hurt > 0 ? Math.sin(t * 70) * 3 : 0), hy = Math.round(P.y);
+    if (D) {
+      // the truth shard, then the myth bolts behind the hero
+      const sy = D.sy - 16 + Math.round(Math.sin(t * 5) * 2);
+      g.fillStyle = 'rgba(4,3,16,.5)'; g.fillRect(D.sx - 5, D.sy - 1, 10, 3);
+      g.fillStyle = '#ffcf4a'; g.fillRect(D.sx - 2, sy - 6, 4, 12); g.fillRect(D.sx - 4, sy - 3, 8, 6); g.fillStyle = '#fff3b0'; g.fillRect(D.sx - 1, sy - 4, 2, 5);
+      for (const b of D.bolts) { g.fillStyle = 'rgba(4,3,16,.4)'; g.fillRect(b.x - 3, b.y, 6, 2); g.fillStyle = '#ff4fb0'; g.fillRect(b.x - 4, b.y - 15, 8, 5); g.fillStyle = '#ffffff'; g.fillRect(b.x - 2, b.y - 14, 3, 2); }
+    }
+    g.fillStyle = 'rgba(4,3,16,.5)'; g.fillRect(hx, hy - 2, 32, 5);
+    const walk = D && D.moving ? Math.floor(t * 8) % 2 : Math.floor(t * 1.5) % 2;
+    if (!(D && D.inv > 0 && Math.floor(t * 14) % 2)) g.drawImage(LQ.charSprite(LQ.HERO.look, 'right', walk ? 4 : 0), hx, hy - 48, 32, 48);
+    if (D && D.block) { g.fillStyle = '#35f0e6'; g.fillRect(hx + 29, hy - 34, 3, 24); g.fillStyle = '#eef4ff'; g.fillRect(hx + 30, hy - 30, 1, 16); }
+    LQ.fx.end(g); LQ.fx.light(hx + 16, hy - 23, 36, '#35f0e6', .4);
+    if (D) { LQ.fx.light(D.sx, D.sy - 16, 20, '#ffcf4a', .7); for (const b of D.bolts) LQ.fx.light(b.x, b.y - 12, 10, '#ff4fb0', .5); }
     if (this.scraps > 0) LQ.fx.light(226 - LQ.clamp(1 - this.scraps, 0, 1) * 185, 76, 14, K.bar[1], .6);
     LQ.fx.flush(g, t); LQ.fx.vignette(g);
     if (this.slash > 0) { g.strokeStyle = '#fff3b0'; g.lineWidth = 3; g.globalAlpha = this.slash; g.beginPath(); g.moveTo(206, 100); g.lineTo(290, 30); g.moveTo(216, 108); g.lineTo(296, 44); g.stroke(); g.globalAlpha = 1; }
@@ -64,6 +75,11 @@ const B = LQ.battle = {
     c.fillStyle = '#231a36'; c.fillRect(576, 56, 338, 18); c.fillStyle = K.bar[0]; c.fillRect(578, 58, 334 * this.bossHP / this.maxHP, 14); c.fillStyle = K.bar[1]; c.fillRect(578, 58, 334 * this.bossHP / this.maxHP, 4);
     ui.panel(c, 30, 24, 250, 62); ui.text(c, 'CONFIDENCE', 46, 34, '#ffe98a', F(11, true));
     for (let i = 0; i < 4; i++) { c.fillStyle = i < this.hearts ? '#ff4fb0' : '#2a2550'; const x = 48 + i * 40, y = 54; c.fillRect(x, y + 4, 28, 12); c.fillRect(x + 4, y, 8, 4); c.fillRect(x + 16, y, 8, 4); c.fillRect(x + 4, y + 16, 20, 4); c.fillRect(x + 8, y + 20, 12, 4); }
+    if (this.dodge && !ui.dlg) {
+      const D = this.dodge, shield = LQ.state.items.includes('shield');
+      ui.text(c, 'Dodge the myths and grab the truth shard.   Arrows: move' + (shield ? '   Hold E: shield' : ''), 480, 500, '#ffe98a', F(22), 'center');
+      if (D.lost) ui.text(c, '-' + D.lost + ' coins', 480, 470, '#ff4fb0', F(22), 'center');
+    }
     if (this.bubble && !ui.dlg) {
       c.font = F(28); const lines = ui.wrap(c, this.bubble, 312), h = lines.length * 29 + 26, y = 104;
       c.fillStyle = '#090b18'; c.fillRect(192, y - 4, 356, h + 8); c.fillStyle = '#e6eaff'; c.fillRect(196, y, 348, h);
@@ -72,6 +88,46 @@ const B = LQ.battle = {
     }
   },
 };
+// The movement phase: cross the field, dodge the myth bolts, and grab the truth shard to earn your answer.
+// A bolt costs coins, never hearts. After three hits the shard comes to you, so nobody gets stuck.
+const FIELD = { x0: 18, x1: 196, y0: 122, y1: 174 };
+function stepDodge(B, D, dt) {
+  const inp = LQ.input.down, P = B.pos, st = LQ.state;
+  D.block = !!inp.use && st.items.includes('shield');
+  const sp = 74 * (D.block ? .45 : 1), mx = (inp.right ? 1 : 0) - (inp.left ? 1 : 0), my = (inp.down ? 1 : 0) - (inp.up ? 1 : 0), k = mx && my ? .707 : 1;
+  D.moving = !!(mx || my);
+  P.x = LQ.clamp(P.x + mx * sp * k * dt, FIELD.x0, FIELD.x1); P.y = LQ.clamp(P.y + my * sp * k * dt, FIELD.y0, FIELD.y1);
+  D.inv -= dt; D.next -= dt;
+  if (D.next <= 0) {
+    D.next = D.gap; D.n++;
+    // every other bolt is aimed at where you stand; the rest sweep a random lane
+    const y = D.n % 2 ? P.y : FIELD.y0 + Math.random() * (FIELD.y1 - FIELD.y0);
+    D.bolts.push({ x: 222, y: LQ.clamp(y, FIELD.y0, FIELD.y1), v: D.speed }); LQ.audio.sfx('move');
+  }
+  for (const b of D.bolts) {
+    b.x -= b.v * dt;
+    if (Math.abs(b.x - P.x) < 9 && Math.abs(b.y - P.y) < 8) {
+      b.x = -99;
+      if (D.block) LQ.audio.sfx('ok');
+      else if (D.inv <= 0) {
+        const cost = Math.min(8, st.coins); st.coins -= cost; D.lost += cost; D.hits++; D.inv = 1;
+        P.x = Math.max(FIELD.x0, P.x - 14); LQ.audio.sfx('hit'); LQ.shake(0.2); B.hurt = 1; LQ.wait(0.3).then(() => { B.hurt = 0; });
+      }
+    }
+  }
+  D.bolts = D.bolts.filter(b => b.x > -8);
+  if (D.hits >= 3) { const dx = P.x - D.sx, dy = P.y - D.sy, d = Math.hypot(dx, dy) || 1; D.sx += dx / d * 60 * dt; D.sy += dy / d * 60 * dt; }
+  if (Math.abs(P.x - D.sx) < 12 && Math.abs(P.y - D.sy) < 10) { B.dodge = null; LQ.audio.sfx('learn'); D.done(D.lost); }
+}
+async function dodgePhase(round) {
+  const P = B.pos, fx = P.x, fy = P.y;
+  await LQ.tween(0.25, k => { P.x = fx + (38 - fx) * k; P.y = fy + (148 - fy) * k; });
+  const lost = await new Promise(done => {
+    B.dodge = { sx: 176, sy: FIELD.y0 + 6 + Math.random() * (FIELD.y1 - FIELD.y0 - 12), bolts: [], next: 0.5, n: 0, hits: 0, inv: 0, lost: 0,
+      gap: Math.max(0.36, 0.62 - round * 0.035), speed: Math.min(150, 92 + round * 8), done };
+  });
+  if (lost) ui.toast('The myths cost you ' + lost + ' coins');
+}
 async function strike(text) {
   LQ.audio.sfx('slash'); B.slash = 1; LQ.tween(0.35, k => { B.slash = 1 - k; });
   await LQ.wait(0.15); LQ.audio.sfx('hit'); LQ.shake(0.25); B.flash = 1; B.bossHP--; await LQ.wait(0.45); B.flash = 0;
@@ -80,7 +136,7 @@ async function strike(text) {
 // Every boss is data: its look, its lines, its myths, a final question, and what winning does.
 LQ.BOSSES = {
   baron: {
-    who: BARON, label: 'BARON BEFUDDLE', kind: 'baron', sky: ['#06051a', '#2a1458'], hill: '#150f30', ground: ['#1d1b40', '#3d3c80'], fog: '170,120,220', bar: ['#b06be0', '#d8b4ff'], ink: '#5a2a86',
+    who: BARON, label: 'BARON BEFUDDLE', kind: 'baron', move: true, sky: ['#06051a', '#2a1458'], hill: '#150f30', ground: ['#1d1b40', '#3d3c80'], fog: '170,120,220', bar: ['#b06be0', '#d8b4ff'], ink: '#5a2a86',
     approach: 'The fog thickens. Something vast and smug turns to face you.',
     intro: ['Ahh, a fresh little taxpayer! I am Baron Befuddle, the Mythmonger. Everything this village believes about taxes, I whispered first.', 'Let us see how long YOUR head stays clear. Every myth you swallow will cost you.'],
     taunt: 'Ha ha ha! Delicious. Believe it harder!', fogLine: 'The fog clouds your thoughts.',
@@ -104,13 +160,14 @@ LQ.BOSSES = {
 LQ.startBattle = async (id = 'baron') => {
   const st = LQ.state, K = LQ.BOSSES[id];
   await LQ.say(null, K.approach);
-  await LQ.fadeTo(1, 0.35); Object.assign(B, { cfg: K, bossHP: 7, hearts: 4, flash: 0, hurt: 0, slash: 0, scraps: 0, dead: 0, bubble: '' });
-  const queue = K.myths().slice(), attempted = new Set(); B.maxHP = B.bossHP = queue.length + 1;
+  await LQ.fadeTo(1, 0.35); Object.assign(B, { cfg: K, bossHP: 7, hearts: 4, flash: 0, hurt: 0, slash: 0, scraps: 0, dead: 0, bubble: '', dodge: null, pos: { x: 38, y: 115 } });
+  const queue = K.myths().slice(), attempted = new Set(); let round = 0; B.maxHP = B.bossHP = queue.length + 1;
   ui.banner = null; LQ.setScene(B); LQ.audio.play('battle'); await LQ.fadeTo(0, 0.5);
   for (const ln of K.intro) await LQ.say(K.who, ln);
   while (queue.length) {
     const m = queue.shift();
     B.bubble = m.myth; LQ.audio.sfx('wrong'); B.scraps = 1; await LQ.tween(0.5, k => { B.scraps = 1 - k; }); B.scraps = 0;
+    if (K.move) await dodgePhase(round++);
     const first = !attempted.has(m);
     attempted.add(m);
     if (first) st.asked++;
