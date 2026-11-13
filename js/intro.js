@@ -119,6 +119,7 @@ const spawnImp = w => {
 };
 LQ.ROOMS.cellar1 = {
   title: 'THE OLD RECORDS CELLAR', sub: 'Under your cottage', music: 'mountain', home: true, exitTo: 'cottage1',
+  from: { backoffice: [9, 2, 'down'] },
   rows() {
     C = { gate: null, imp: null, purse: null };
     return [
@@ -142,6 +143,7 @@ LQ.ROOMS.cellar1 = {
   on: {
     Q: (w, tx, ty) => prop(w, 'greatdoor', tx, ty, async () => {
       const n = LQ.pages(); st().flags.sawDoor = true;
+      if (n === 12 && LQ.backoffice) return LQ.backoffice.door(w);
       await say(null, 'A door far too tall for this cellar. Set into it are twelve empty slots, each the shape of a page.' + (n ? ` ${n} of them ${n === 1 ? 'glows' : 'glow'}.` : ''));
       await say(null, 'Cut into the stone above: "Twelve pages. Twelve truths. Sealed until they come home."');
     }, (g, cx, cy, tm) => {

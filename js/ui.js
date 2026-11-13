@@ -168,6 +168,8 @@ ui.update = dt => {
     }
     return;
   }
+  // A document with its own controls (the hands-on activities) gets the keys while no dialogue is open.
+  if (ui.doc && ui.doc.update && !ui.okWait) return ui.doc.update(dt);
   if (ui.okWait && LQ.hit('ok')) { const r = ui.okWait; ui.okWait = null; sfx('ok'); r(); }
 };
 

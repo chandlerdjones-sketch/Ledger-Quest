@@ -5,7 +5,7 @@ const LQ = window.LQ, ui = LQ.ui, F = LQ.F, T = 16;
 const st = () => LQ.state, sfx = n => LQ.audio.sfx(n);
 const R = (g, x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
 const COLS = ['#ffcf4a', '#35f0e6', '#ff4fb0'], NAMES = ['griddle cake', 'fizz', 'fries'], XS = [70, 160, 250];
-const SHIFT_SECONDS = 30;
+const SHIFT_SECONDS = 30, PRACTICE_GOAL = 3;
 const front = () => XS.map(x => ({ x, y: 142, task: null }));
 function foodIcon(g, x, y, item) {
   if (item === 0) R(g, x - 6, y - 2, 12, 5, COLS[item]);
@@ -43,15 +43,16 @@ const J = LQ.jobs = {
     const inp = LQ.input.down, p = G.p, mx = (inp.right ? 1 : 0) - (inp.left ? 1 : 0), my = (inp.down ? 1 : 0) - (inp.up ? 1 : 0), k = mx && my ? .707 : 1;
     p.moving = !!(mx || my); if (p.moving) { p.dir = my > 0 ? 'down' : my < 0 ? 'up' : mx > 0 ? 'right' : 'left'; p.anim += dt * 9; }
     p.x = LQ.clamp(p.x + mx * 96 * k * dt, 20, 300); p.y = LQ.clamp(p.y + my * 96 * k * dt, 62, 162);
-    G.t = Math.max(0, G.t - dt); G.next -= dt; G.msgT -= dt;
-    for (const s of G.spots) if (s.task && (s.task.left -= dt) <= 0) { s.task = null; sfx('wrong'); }
+    if (!G.practice) G.t = Math.max(0, G.t - dt);
+    G.next -= dt; G.msgT -= dt;
+    if (!G.practice) for (const s of G.spots) if (s.task && (s.task.left -= dt) <= 0) { s.task = null; sfx('wrong'); }
     if (G.next <= 0) {
       G.next = G.K.gap * (.8 + Math.random() * .4);
       const free = G.spots.filter(s => !s.task);
       if (free.length && G.spots.length - free.length < 3) { const s = free[Math.floor(Math.random() * free.length)], t = G.K.task(); t.left = t.max; s.task = t; sfx('move'); }
     }
     if (LQ.hit('ok') && G.t > 0) this.act(G);
-    if (G.t <= 0) { G.t = 0; G.live = false; G.done(G.score); }
+    if (G.practice ? G.score >= PRACTICE_GOAL || LQ.hit('back') : G.t <= 0) { if (!G.practice) G.t = 0; G.live = false; G.done(G.score); }
   },
   act(G) {
     const p = G.p, near = o => Math.hypot(o.x - p.x, o.y - p.y) < 24, say = m => { G.msg = m; G.msgT = 1.6; };
@@ -110,17 +111,28 @@ const J = LQ.jobs = {
     if (ui.doc || !G.live) return;
     ui.panel(c, 30, 14, 900, 72);
     ui.text(c, LQ.career().work.toUpperCase(), 48, 26, '#ffe98a', F(11, true));
-    ui.text(c, 'Score: ' + G.score + ' / ' + G.K.target, 48, 56, '#eef4ff', F(28));
+    ui.text(c, G.practice ? 'Practice: ' + G.score + ' / ' + PRACTICE_GOAL : 'Score: ' + G.score + ' / ' + G.K.target, 48, 56, '#eef4ff', F(28));
     if (G.id === 'owner') ui.text(c, 'Candles: ' + G.stock, 300, 56, G.stock ? '#eef4ff' : '#ff4fb0', F(28));
     if (G.id === 'food') ui.text(c, 'Carrying: ' + (G.carry == null ? 'nothing' : NAMES[G.carry]), 300, 56, G.carry == null ? '#c9cdea' : COLS[G.carry], F(28));
-    ui.text(c, Math.ceil(G.t) + 's', 912, 26, '#35f0e6', F(11, true), 'right');
-    c.fillStyle = '#231a36'; c.fillRect(620, 60, 292, 16); c.fillStyle = '#35f0e6'; c.fillRect(622, 62, 288 * G.t / SHIFT_SECONDS, 12);
+    if (G.practice) ui.text(c, 'NO TIMER. Esc: end practice', 912, 58, '#7fd6a8', F(24), 'right', 300);
+    else { ui.text(c, Math.ceil(G.t) + 's', 912, 26, '#35f0e6', F(11, true), 'right');
+      c.fillStyle = '#231a36'; c.fillRect(620, 60, 292, 16); c.fillStyle = '#35f0e6'; c.fillRect(622, 62, 288 * G.t / SHIFT_SECONDS, 12); }
     ui.panel(c, 180, 501, 600, 29);
     ui.text(c, G.msgT > 0 ? G.msg : 'Arrows or WASD: move    Space: interact', 480, 502, '#eef4ff', F(24), 'center', 570);
   },
   async run() {
-    const s = st(), c = LQ.career(), paid = J.left(s) > 0, G = J.G = J.newGame(c.id);
+    const s = st(), c = LQ.career(), paid = J.left(s) > 0;
+    let G = J.G = J.newGame(c.id);
     await LQ.fadeTo(1, 0.3); ui.banner = null; LQ.setScene(J); await LQ.fadeTo(0, 0.3);
+    // Before the first paid shift: the same floor with no clock, and lights that never go out.
+    if (paid && !s.flags.shiftPractice && await LQ.choose(null, 'This is your first shift. Want a short practice first? It has no timer and no pay.', ['Practice first', 'Start the paid shift']) === 0) {
+      G.practice = true;
+      await LQ.say(null, G.K.hint + ` Finish ${PRACTICE_GOAL} tasks at your own pace. Nothing here is timed.`);
+      await new Promise(done => { G.done = done; G.live = true; });
+      sfx('learn'); await LQ.say(null, 'That is the whole job. In a paid shift you have 30 seconds, and a task that waits too long is lost.');
+      G = J.G = J.newGame(c.id);
+    }
+    s.flags.shiftPractice = true;
     await LQ.say(null, G.K.hint + ' Use the arrow keys or WASD to move. Your 30 seconds start when this message closes.');
     const score = await new Promise(done => { G.done = done; G.live = true; });
     sfx('fanfare'); await LQ.wait(0.4);

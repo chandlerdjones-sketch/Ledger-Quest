@@ -282,22 +282,18 @@ async function qTallow() {
   }
   const f = LQ.fin2();
   await say(N.tallow, `Two shields, and you may carry only one. The standard deduction for a joint return is ${M(STD.mfj)}. Or you itemize: add up your mortgage interest, your state and local taxes, and your gifts to charity.`);
-  await say(N.tallow, 'Set the nursery statement aside for the care credit. ' + (got('rMedical') ? `Your healer's bills: medical costs count only above 7.5% of your income, which for you is ${M(f.medFloor)}. So, nothing. ` : '')
-    + (got('rRaffle') ? 'The raffle ticket bought a chance at a prize, so it does not count as a gift.' : ''));
   await say(N.tallow, `Your state and local taxes come to ${M(f.saltRaw)}. That is under the ${M(TX.saltCap)} cap, so all of it counts.`);
   await say(N.tallow, f.gifts ? `Your cash gifts come to ${M(f.gifts)}, and here the law keeps two rulebooks. Carry the standard shield, and up to ${M(TX.charityJoint)} of cash gifts counts on top of it. Itemize, and only the part above 0.5% of your income counts: ${M(f.gifts)} minus ${M(f.giftFloor)} leaves ${M(f.giftItem)}.`
     : `You brought no gift receipts. For the record, the law keeps two rulebooks. With the standard shield, up to ${M(TX.charityJoint)} of cash gifts counts on top of it. Itemized, only the part above 0.5% of your income counts.`);
-  const item = f.better === 'item';
-  const equal = f.itemized === f.stdTotal;
-  const ok = equal || await LQ.quiz(N.tallow, `So. Itemized, your pile comes to ${M(f.itemized)}. The standard shield${f.giftStd ? ' plus your gifts' : ''} comes to ${M(f.stdTotal)}. Which do you carry?`,
-    item ? [`Itemized: ${M(f.itemized)}`, `Standard: ${M(f.stdTotal)}`] : [`Standard: ${M(f.stdTotal)}`, `Itemized: ${M(f.itemized)}`], 'Always carry the larger one.');
-  if (!ok) LQ.gain(0, -Math.min(s.coins, 40), 'Correction fee');
-  rcDoc.lit = f.better;
+  const item = f.better === 'item', equal = f.itemized === f.stdTotal;
+  await say(N.tallow, 'Now sort them yourself. Some of this paper belongs in the itemized pile, some earns a credit instead, and some counts for nothing.');
+  await LQ.depth.receipts(N.tallow);
   const gap = Math.abs(f.itemized - f.stdTotal), left = HUNT.length - HUNT.filter(got).length;
   await say(N.tallow, equal ? 'Both deductions are the same with the receipts you have. We will use the standard deduction for now.' : item ? `Itemizing wins by ${M(gap)}, worth about ${M(gap * f.top)} of tax at your ${pct(f.top)} rate. See how close it was. ` + (got('rPoints') ? 'Without the points from your closing papers, the standard shield would have won.' : 'Every receipt mattered.')
     : `The standard shield wins by ${M(gap)}. You own a home, you pay ${M(H.interest)} of interest a year, and you still should not itemize. That is true for a great many homeowners.` + (left ? ' A few more receipts might yet tip it. Whatever you find before you file still counts.' : ''));
   await say(N.tallow, `And remember what a deduction is worth: its amount times your tax rate. A ${M(1000)} deduction at ${pct(f.top)} saves ${M(1000 * f.top)}. Never spend a coin just to deduct it.`);
   ui.doc = null; LQ.learn('itemize2'); LQ.learn('charity2'); LQ.learn('writeoff'); LQ.give('folder');
+  await LQ.depth.activityPage(4, N.tallow);
   await say(N.tallow, 'Speaking of which. Have you heard the bell at the Old Lighthouse? Someone out there is selling "secret write-offs" to my neighbors, and they are buying. The tide is going out. Go and see.');
   await LQ.world.clear('tide', '#bfe6fa', 'Out past the beach, the tide draws back. A sandbar rises from the water, leading to the Old Lighthouse.');
   advance2();

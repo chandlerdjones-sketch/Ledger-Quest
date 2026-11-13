@@ -48,6 +48,34 @@ async function frame(count = 1) {
 const dispatch = (type, key) => emit(type, { key, preventDefault: noop, repeat: false });
 async function press(key) { dispatch('keydown', key); await frame(); dispatch('keyup', key); }
 const shieldFallback = new WeakSet();
+// The hands-on activities. Each phase is first handed in wrong, to prove the explanation and the retry, then played right.
+const tried = new Set(), recovered = [];
+async function playDoc(d) {
+  const first = !tried.has(d.phase + (d.title || 'hold')); tried.add(d.phase + (d.title || 'hold'));
+  if (first) recovered.push(d.phase);
+  if (d.phase === 'sort') {
+    for (let i = 0; i < d.rows.length; i++) {
+      const r = d.rows[i], want = first && i === 0 ? (r.want + 1) % 3 : r.want;
+      while (d.cur !== i) await press('ArrowDown');
+      while (r.col !== want) await press(r.col < want ? 'ArrowRight' : 'ArrowLeft');
+    }
+    while (d.cur !== d.rows.length) await press('ArrowDown');
+    await press('Enter');
+    if (first && d.rows.length) assert.equal(d.bad, 0, 'a wrong row is marked for another try');
+  } else if (d.phase === 'pick') {
+    const item = LQ.fin2().better === 'item';
+    await press(first === item ? 'ArrowUp' : 'ArrowDown'); await press('Enter');
+  } else if (d.phase === 'dial') {
+    if (!first) while (d.jar < LQ.fin3().gigBill) await press('ArrowRight');
+    await press('Enter');
+  } else if (d.phase === 'day') {
+    if (!first) while (d.day !== 2) await press('ArrowRight');
+    await press('Enter');
+  } else if (d.phase === 'drop') {
+    if (!first) while (d.H.keepWait(d.k) >= d.H.keepNow) await press('ArrowLeft');
+    await press('Enter');
+  } else await frame();
+}
 async function drain(select, end = () => !LQ.busy && !LQ.title.locked, limit = 2500) {
   for (let i = 0; i < limit; i++) {
     if (ui.dlg || ui.okWait) await press('Enter');
@@ -69,11 +97,12 @@ async function drain(select, end = () => !LQ.busy && !LQ.title.locked, limit = 2
         if (idle) { assert(d.elapsed >= 6); assert.equal(d.hits, 0); }
         k.right = k.left = k.down = k.up = k.use = false;
       }
-    } else if (end()) return;
+    } else if (ui.doc && ui.doc.play && ui.doc.wait) await playDoc(ui.doc);
+    else if (end()) return;
     else if (LQ.scene !== LQ.world && LQ.scene !== LQ.title && !LQ.scene.cfg && LQ.scene.update) await press('Enter');
     else await frame();
   }
-  throw Error(`Timed out in ${LQ.state.region} at ${LQ.curQuest()?.short}.`);
+  throw Error(`Timed out in ${LQ.state.region} at ${LQ.curQuest()?.short}. busy=${LQ.busy} dlg=${!!ui.dlg} choice=${ui.choice?.prompt} doc=${!!ui.doc} fade=${LQ.fadeA} scene=${LQ.scene === LQ.world ? "world" : LQ.scene === LQ.title ? "title" : "other"}`);
 }
 const untilIdle = () => !LQ.busy && !ui.dlg && !ui.choice && !ui.okWait && LQ.fadeA === 0;
 async function boot() {
@@ -93,6 +122,7 @@ async function talk(find, choose = () => 0) {
   const e = LQ.world.ents.find(find);
   assert(e, 'interaction exists'); near(e); await press('Enter');
   await drain(choose, untilIdle);
+  await frame(12); await drain(choose, untilIdle);   // a Ledger Page found at a milestone speaks up once the hero stands still
 }
 (async () => {
   await boot();
@@ -246,7 +276,17 @@ async function talk(find, choose = () => 0) {
   delete s().flags.lanternRent;
   const jobs = LQ.jobs;
   const beforeShift = s().coins;
-  await talk(e => e.type === 'board'); assert.equal(LQ.scene, w);
+  // The first shift offers an untimed practice: no clock, three tasks, no pay.
+  near(w.ents.find(e => e.type === 'board')); await press('Enter');
+  await drain(() => 0, () => jobs.G?.live);
+  assert(jobs.G.practice, 'the first shift starts with practice');
+  const clock = jobs.G.t; await frame(40); assert.equal(jobs.G.t, clock, 'practice has no timer');
+  for (let i = 0; i < 3; i++) {
+    const g = jobs.G, spot = g.spots[0];
+    spot.task = { left: 1, max: 1, pts: 1, want: 0 }; await frame(30); assert(spot.task, 'practice tasks never expire');
+    g.carry = career === 'food' ? 0 : null; Object.assign(g.p, { x: spot.x, y: spot.y }); await press('Enter');
+  }
+  await drain(() => 0, untilIdle); assert.equal(LQ.scene, w); assert(s().flags.shiftPractice);
   assert.equal(s().coins, beforeShift); assert.equal(jobs.left(), 2, 'zero-score shifts preserve paid attempts');
   for (const remaining of [1, 0, 0]) {
     const board = w.ents.find(e => e.type === 'board');
@@ -338,6 +378,54 @@ async function talk(find, choose = () => 0) {
   assert.equal(LQ.loadSlot(1).q4, 9);
   console.log('Coast, Canyon and Summit quest chains, three more boss fights and returns, finale and return travel passed');
 
+  // The Torn Ledger. Every activity was handed in wrong once and recovered, and all twelve pages are home.
+  for (const phase of ['sort', 'pick', 'dial', 'day', 'drop']) assert(recovered.includes(phase), phase + ' was failed once and retried');
+  assert.equal(LQ.pages(), 12);
+  for (const id of ['invoice1', 'invoice2', 'invoice3', 'invoice4']) assert(s().items.includes(id), id);
+  assert.match(LQ.curQuest().text, /cottage cellar/);
+  // An older finished save has none of pages 4 to 12. Milestone pages return on their own; activity pages are replayed.
+  for (let n = 4; n <= 12; n++) delete s().flags['page' + n];
+  s().items = s().items.filter(id => !/^invoice[234]$/.test(id));
+  const oldSave = LQ.cleanSave(JSON.parse(JSON.stringify(s()))); assert(oldSave, 'an older finished save still loads');
+  await frame(12); await drain(() => 0, untilIdle);
+  assert.equal(LQ.pages(), 9, 'milestone pages come back without a restart');
+  assert.match(LQ.curQuest().text, /Page 4 of 12: Sort receipts with Assessor Tallow/);
+  const record = JSON.stringify(s().inv);
+  for (const [region, id, n] of [['coast', 'tallow', 4], ['canyon', 'brick', 7], ['summit', 'frost', 10]]) {
+    await travel(region); await talk(e => e.npc?.id === id); assert(s().flags['page' + n], 'page ' + n + ' replayed');
+  }
+  assert.equal(JSON.stringify(s().inv), record, 'replaying the sale clock leaves the real sale alone');
+  await travel('canyon'); await travel('coast'); await travel('village');
+  assert.equal(LQ.pages(), 12);
+  // Down to the cellar, through the tall door, and into the Back Office.
+  await talk(e => e.type === 'homedoor'); assert.equal(w.room.room, 'cottage1');
+  Object.assign(w.p, { x: 8 * 16 + 8, y: 5 * 16 + 12 }); await frame(3); await drain(() => 0, untilIdle);
+  assert.equal(w.room.room, 'cellar1');
+  await talk(e => e.type === 'greatdoor'); assert.equal(w.room.room, 'backoffice'); assert(s().flags.doorOpen);
+  const stampAt = async find => { s().tool = 'stamp'; near(w.ents.find(find)); await frame(12); await press('e'); await frame(4); await drain(() => 0, untilIdle); };
+  assert(w.ents.some(e => e.type === 'door' && e.tx === 9), 'the inner gate is shut');
+  s().hp = LQ.kit.maxHp(); await stampAt(e => e.type === 'seal' && e.tx === 16); assert(s().flags.bo3, 'valve 3');
+  // A fall inside the room: wake at the lamp with the valve still shut.
+  LQ.script(() => LQ.kit.faint(w)); await drain(() => 0, untilIdle);
+  assert.equal(w.room.room, 'backoffice'); assert(s().flags.bo3 && !w.ents.some(e => e.type === 'spitter'), 'a shut valve survives a faint');
+  w.ents.filter(e => e.type === 'imp').forEach(e => w.remove(e));
+  await stampAt(e => e.type === 'seal' && e.tx === 18); assert(s().flags.bo2, 'valve 2');
+  assert(w.ents.some(e => e.type === 'door' && e.tx === 2), 'the grille guards valve 1');
+  const crate = w.ents.find(e => e.type === 'block'); crate.tx = 4; w.refresh(); await frame(3);
+  assert(!w.ents.some(e => e.type === 'door' && e.tx === 2), 'the crate on the rune lifts the grille');
+  await stampAt(e => e.type === 'seal' && e.tx === 1); assert(s().flags.bo1, 'valve 1');
+  assert(!w.ents.some(e => e.type === 'door'), 'three valves open the inner gate');
+  await talk(e => e.who?.name === 'Clerk Vell'); assert(s().flags.vellFree);
+  assert.match(LQ.curQuest().text, /Standing Order/);
+  await talk(e => e.who?.name === 'Head Clerk Murk', () => 1);
+  await stampAt(e => e.type === 'seal' && e.tx === 9);
+  assert(s().flags.ledgerDone && s().items.includes('greatledger')); assert(!w.ents.some(e => e.who?.name === 'Head Clerk Murk'));
+  assert.match(LQ.curQuest().text, /whole/); assert.equal(LQ.loadSlot(1).flags.ledgerDone, true);
+  LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle); assert.equal(w.room.room, 'cellar1');
+  LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle); LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle);
+  assert.equal(w.room, null);
+  console.log('Wrong attempts and retries, an older save recovering its pages, the tall door, the Back Office and the final stamp passed');
+
   // Exercise the normal purchase prompts for each item, including both owner-only items.
   s().career = 'owner'; s().coins = 100_000;
   for (const region of ['village', 'coast', 'canyon', 'summit']) {
@@ -372,10 +460,11 @@ async function talk(find, choose = () => 0) {
     await press('Enter');
     await drain(ch => ch.prompt === 'Where do you want to start?' ? chapter - 1 : 0,
       () => LQ.scene === w && untilIdle());
-    await frame(); await drain(() => 0, untilIdle);
+    for (let i = 0; i < 2; i++) { await frame(12); await drain(() => 0, untilIdle); }
     const region = ['coast', 'canyon', 'summit'][chapter - 2];
     assert.equal(s().region, region); assert.equal(s()['q' + chapter], 0);
     assert.equal(LQ.loadSlot(3)['q' + chapter], 0);
+    assert.equal(Object.keys(s().flags).filter(k => /^page/.test(k)).sort().join(), ['page1,page2,page3', 'page1,page2,page3,page5,page6', 'page1,page2,page3,page5,page6,page8,page9'][chapter - 2], 'a chapter starter is handed the pages it skipped');
   }
   console.log(`Title starter kits for Chapters 2–4 passed (${career} run)`);
 
