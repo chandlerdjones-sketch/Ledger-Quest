@@ -198,9 +198,8 @@ function drawDialogue(c) {
     const s = ln.slice(0, Math.max(0, left)); left -= ln.length + 1;
     ui.text(c, s, tx, y + 16 + i * 29, '#eef4ff');
   });
-  if (d.chars >= d.pages[d.page].join('\n').length && Math.floor(LQ.time * 3) % 2) {
-    c.fillStyle = '#35f0e6'; c.beginPath(); c.moveTo(x + w - 34, y + h - 24); c.lineTo(x + w - 18, y + h - 24); c.lineTo(x + w - 26, y + h - 12); c.fill();
-  }
+  const complete = d.chars >= d.pages[d.page].join('\n').length;
+  ui.text(c, complete ? 'Space: continue' : 'Space: show text', x + w - 18, y + h - 20, '#a8fff6', F(18), 'right');
 }
 function choiceTop(c, ch) {
   c.font = F(28);
@@ -208,7 +207,7 @@ function choiceTop(c, ch) {
   ch.rh = ch.options.length > 8 ? 26 : 31;
   ch.rows = Math.min(ui.doc?.choiceRows ?? 10, ch.options.length);
   ch.h = 24 + (ch.prompt ? ch.lines.length * 29 + 10 : 0) + ch.rows * ch.rh + 10;
-  ch.y = 520 - ch.h;
+  ch.y = LQ.scene === LQ.title ? Math.round((VH - ch.h) / 2) : 520 - ch.h;
 }
 ui.choiceTop = () => ui.choice?.y ?? (ui.dlg ? 378 : 520);
 function drawChoice(c) {
@@ -223,6 +222,7 @@ function drawChoice(c) {
     if (on) ui.text(c, '>', x + 26 + Math.sin(LQ.time * 8) * 3, ty + i * ch.rh, '#35f0e6', F(ch.rh > 30 ? 28 : 24));
     ui.text(c, o, x + 52, ty + i * ch.rh, on ? '#a8fff6' : '#c9cdea', F(ch.rh > 30 ? 28 : 24), 'left', 810);
   });
+  if (LQ.scene === LQ.title) ui.text(c, 'Up / Down: choose    Space: select', VW / 2, y + ch.h + 18, '#eef4ff', F(24), 'center');
   if (ch.rows < ch.options.length) {
     ui.text(c, (ch.sel + 1) + ' / ' + ch.options.length + '   Up / Down', x + w - 22, y - 26, '#c9cdea', F(20), 'right');
   }
@@ -359,9 +359,9 @@ function drawMenu(c) {
 }
 ui.draw = c => {
   if (ui.choice) choiceTop(c, ui.choice);
-  if (ui.doc) {
+  if (ui.doc || LQ.scene === LQ.title && (ui.choice || ui.dlg)) {
     c.fillStyle = 'rgba(7,8,26,.66)'; c.fillRect(0, 0, VW, VH);
-    ui.doc.draw(c);
+    ui.doc?.draw(c);
   }
   if (ui.choice) drawChoice(c); else if (ui.dlg) drawDialogue(c);
   else if (ui.okWait) ui.text(c, 'Space: continue', VW / 2, 500, '#35f0e6', F(26), 'center');

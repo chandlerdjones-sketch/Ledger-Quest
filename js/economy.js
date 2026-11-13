@@ -193,11 +193,12 @@ LQ.GEAR = [
   { id: 'stepup', at: 'summit', save: 1, needs: 'anchor', name: '401(k) Step-Up Crampons', price: 900, desc: "Raise Marlowe's 401(k) contribution by another $3,000. Those wages never reach the joint return." },
 ];
 LQ.gearFor = () => LQ.GEAR.filter(g => (!g.only || g.only === LQ.career().kind) && (!g.coast || st().region === 'coast') && (!g.at || g.at === st().region));
+LQ.shopPrice = price => LQ.bazaarOff?.() ? price - Math.round(price / 10) : price;
 const shopDoc = { item: null, choiceRows: 8, draw(c) {
   const g = this.item; if (!g) return;
   ui.panel(c, 30, 16, 900, 148, '#1b2044');
   ui.text(c, g.name, 52, 26, '#ffe98a', F(14, true), 'left', 682);
-  ui.text(c, LQ.has(g.id) ? 'OWNED' : g.price + ' coins', 908, 24, LQ.has(g.id) ? '#7fd6a8' : '#fdf8e7', F(28), 'right');
+  ui.text(c, LQ.has(g.id) ? 'OWNED' : LQ.shopPrice(g.price) + ' coins', 908, 24, LQ.has(g.id) ? '#7fd6a8' : '#fdf8e7', F(28), 'right');
   c.font = F(24); ui.wrap(c, g.desc, 850).forEach((ln, i) => ui.text(c, ln, 52, 54 + i * 25, '#c9cdea', F(24)));
 } };
 const SHOP_HELLO = {
@@ -211,25 +212,25 @@ LQ.shop = async who => {
   st().flags[seen] = true;
   for (;;) {
     const items = LQ.gearFor(), extras = LQ.shopExtras ? LQ.shopExtras() : []; shopDoc.item = items[0]; ui.doc = shopDoc;
-    const i = await LQ.choose(who, 'You have ' + st().coins + ' coins.', items.map(g => (LQ.has(g.id) ? '[owned] ' : '') + g.name + '  -  ' + g.price).concat(extras.map(x => x.label), 'Leave'), s => { shopDoc.item = items[s] || null; });
+    const i = await LQ.choose(who, 'You have ' + st().coins + ' coins.' + (LQ.bazaarOff?.() ? ' Maple’s discount is applied.' : ''), items.map(g => (LQ.has(g.id) ? '[owned] ' : '') + g.name + '  -  ' + LQ.shopPrice(g.price)).concat(extras.map(x => x.label), 'Leave'), s => { shopDoc.item = items[s] || null; });
     ui.doc = null;
     if (i >= items.length && i < items.length + extras.length) { await extras[i - items.length].run(who); continue; }
     const g = items[i]; if (!g) break;
     if (LQ.has(g.id)) { await LQ.say(who, 'You already own that one.'); continue; }
     if (g.needs && !LQ.has(g.needs)) { await LQ.say(who, 'That one only works with the ' + LQ.GEAR.find(x => x.id === g.needs).name + '. Buy that first.'); continue; }
-    if (st().coins < g.price) { await LQ.say(who, 'You are ' + (g.price - st().coins) + ' coins short. Answer well, pass audits, and invest wisely. Come back richer.'); continue; }
+    const price = LQ.shopPrice(g.price);
+    if (st().coins < price) { await LQ.say(who, 'You need ' + (price - st().coins) + ' more coins.'); continue; }
     ui.doc = shopDoc;
-    const confirm = await LQ.choose(who, `${g.name} costs ${g.price} coins. You will have ${st().coins - g.price} left.`, ['Back', 'Buy ' + g.name]);
+    const confirm = await LQ.choose(who, `${g.name} costs ${price} coins. You will have ${st().coins - price} left.`, ['Back', 'Buy ' + g.name]);
     ui.doc = null;
     if (confirm === 0) continue;
     const before = LQ.cur().total;
-    const back = LQ.bazaarOff && LQ.bazaarOff() ? Math.round(g.price * .1) : 0;
-    st().coins -= g.price - back; st().gear.push(g.id); LQ.audio.sfx('fanfare');
+    st().coins -= price; st().gear.push(g.id); LQ.audio.sfx('fanfare');
     const saved = before - LQ.cur().total;
     if (!st().journal.includes('gearTiming')) LQ.learn('gearTiming');
     LQ.save();
     const effect = saved === 0 ? '' : ` Your ${st().q4 === 9 ? 'modeled' : 'projected'} federal tax ${saved > 0 ? 'fell' : 'rose'} by ${M(Math.abs(saved))}.`;
-    await LQ.say(who, 'Sold! ' + g.name + ' is yours.' + effect + (g.save ? ' The price you paid now counts toward your in-game savings.' : '') + (back ? ` Granny Maple's tenth: ${back} coins back.` : ''));
+    await LQ.say(who, 'Sold! ' + g.name + ' is yours.' + effect + (g.save ? ' This item counts toward your in-game savings.' : ''));
   }
   await LQ.say(who, 'Safe travels.');
 };

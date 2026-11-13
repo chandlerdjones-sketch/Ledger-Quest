@@ -147,9 +147,9 @@ What was built
 Decisions and simplifications
 - Shift pay is capped at half a payday and limited to two paid shifts per quest step. More shifts are practice with no pay.
 - The shift stub holds back tax by the player's own W-4 or estimate choice. Shift coins never enter `LQ.fin`, so the tax return does not change. Shift pay is pocket money, not part of the year's wages.
-- The Bazaar discount is paid as a tenth back on gear, so listed prices and the tax math do not move. Tonics, rentals, and rumors show the lower price.
+- The Bazaar shows the discounted price on gear and supplies once Maple is helped. Gear retains its original value in the tax and savings model.
 - Granny Maple's porch wisp tolls nobody, which keeps the rule that enemies stay out of town.
-- Score targets for a full shift payout are 15 (Nurse), 7 (Fast Food Worker), and 11 (Owner). They were set from an automated player and need a human check.
+- A shift with zero points leaves both pay and paid attempts unchanged. Score targets for a full shift payout are 15 (Nurse), 7 (Fast Food Worker), and 11 (Owner). They were set from an automated player and need a human check.
 
 Tested in the browser by setting state directly: the boss phase (a hit costs coins and no hearts, the shield blocks, the shard opens the answers), the whole Mythmonger fight through the page 3 scene and the west bridge, each villager fix and its reward, the footbridge crossing, one shift for each career, the stub against the tax choice, and the third shift paying nothing. Not tested: a person playing by hand for feel, and how the job game and stub look at full size.
 

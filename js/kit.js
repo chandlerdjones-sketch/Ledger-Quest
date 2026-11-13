@@ -52,7 +52,7 @@ const K = LQ.kit = {
     } else if (id === 'compass') {
       K.cool = 1.2; K.pulse = 1; sfx('ok');
       let found = 0;
-      for (const e of w.ents.slice()) if (e.hidden && Math.hypot(e.tx * T + 8 - p.x, e.ty * T + 8 - p.y) < 6 * T) { found++; e.reveal(w); }
+      for (const e of w.ents.slice()) if (e.hidden && Math.hypot(e.tx * T + 8 - p.x, e.ty * T + 8 - p.y) < (e.revealRange ?? 6) * T) { found++; e.reveal(w); }
       if (!found) ui.toast('The compass needle holds still. Nothing hidden nearby.');
     } else if (id === 'lantern') {
       K.cool = 1; ui.toast('Your lantern glows. It lights dark places, and Myth Wisps keep away from it.');
@@ -120,10 +120,10 @@ const K = LQ.kit = {
 
 // Extra lines every shop offers after its gear: a tonic, a lantern for one trip, and a rumor about a secret.
 LQ.RUMORS = {};
-// Granny Maple's thanks: a tenth off at the Saffron Bazaar. Gear keeps its listed price and pays the tenth back, so the tax math never moves.
+// Granny Maple's thanks applies only at the Saffron Bazaar.
 LQ.bazaarOff = () => !!st().flags.fixMaple && st().region === 'village';
 LQ.shopExtras = () => {
-  const s = st(), out = [], off = n => LQ.bazaarOff() ? Math.round(n * .9) : n, tonic = off(15), rent = off(10), rumor = off(20);
+  const s = st(), out = [], tonic = LQ.shopPrice(15), rent = LQ.shopPrice(10), rumor = LQ.shopPrice(20);
   out.push({ label: 'Tonic  -  ' + tonic, run: async who => {
     if (s.coins < tonic) return LQ.say(who, 'A tonic is ' + tonic + ' coins. You are a little short.');
     s.coins -= tonic; s.flags.tonics = (s.flags.tonics || 0) + 1; sfx('coin'); LQ.save();

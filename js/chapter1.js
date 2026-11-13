@@ -100,8 +100,15 @@ function paper(c, x, y, w, h, title, sub) {
   c.fillStyle = '#e6eaff'; c.fillRect(x, y, w, h);
   c.fillStyle = '#cdd4f8'; c.fillRect(x, y, w, 34);
   c.strokeStyle = '#7a74b8'; c.lineWidth = 2; c.strokeRect(x + 1, y + 1, w - 2, h - 2);
-  c.font = F(13, true); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#1a1640'; c.fillText(title, x + 16, y + 11);
-  if (sub) { c.font = F(22); c.textAlign = 'right'; c.fillStyle = '#5a5490'; c.fillText(sub, x + w - 16, y + 6); }
+  const inner = w - 32;
+  c.font = F(13, true);
+  const titleWidth = Math.min(c.measureText(title).width, inner * (sub ? .64 : 1));
+  c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#1a1640';
+  c.fillText(title, x + 16, y + 11, titleWidth);
+  if (sub) {
+    c.font = F(22); c.textAlign = 'right'; c.fillStyle = '#5a5490';
+    c.fillText(sub, x + w - 16, y + 6, inner - titleWidth - 12);
+  }
 }
 function line(c, x, y, w, label, value, o = {}) {
   const fs = o.size || 26;
