@@ -68,7 +68,7 @@ function addVillage(w, s) {
   V.syncBridge(w);
   if (s.quest >= 1 && !s.items.includes('stamp')) s.items.push('stamp');
   // your own front door. Home has a bed that mends hearts, and a cellar.
-  w.ents.push({ type: 'homedoor', tx: 16, ty: 33, solid: true, base: -9999, use: () => LQ.script(() => w.enterRoom('cottage1')), draw() {} });
+  w.ents.push({ type: 'homedoor', qid: 'ledgerhome', tx: 16, ty: 33, solid: true, base: -9999, use: () => LQ.script(() => w.enterRoom('cottage1')), draw() {} });
   // the Bracket Vault door, in the rock east of Sage Altamira
   w.ents.push({ type: 'vaultdoor', qid: 'vault1', tx: 27, ty: 11, solid: true, base: 12 * T - 1,
     use: () => LQ.script(async () => {

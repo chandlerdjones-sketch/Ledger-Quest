@@ -104,17 +104,17 @@ const K = LQ.kit = {
     }
   },
   // Drawn on the full-size canvas: hearts and the tool in hand.
-  drawHUD(c, hud) {
+  drawHUD(c, hud, top) {
     const s = st(), t = K.cur(); if (!t) return;
     const max = K.maxHp(), hp = K.hp();
     const label = 'E: ' + (t.label ? t.label(s) : t.name) + (K.owned().length > 1 ? '    Q: switch' : '');
     c.font = F(24); const w = max * 30 + 34 + c.measureText(label).width;
-    hud(16, 82, w, 34);
+    hud(16, top, w, 34);
     for (let i = 0; i < max; i++) {
-      c.fillStyle = i < hp ? '#ff4fb0' : '#2a2550'; const x = 28 + i * 30, y = 89;
+      c.fillStyle = i < hp ? '#ff4fb0' : '#2a2550'; const x = 28 + i * 30, y = top + 7;
       c.fillRect(x, y + 3, 22, 9); c.fillRect(x + 2, y, 7, 3); c.fillRect(x + 13, y, 7, 3); c.fillRect(x + 3, y + 12, 16, 4); c.fillRect(x + 7, y + 16, 8, 3);
     }
-    ui.text(c, label, 28 + max * 30 + 6, 86, '#c9cdea', F(24), 'left');
+    ui.text(c, label, 28 + max * 30 + 6, top + 4, '#c9cdea', F(24), 'left');
   },
 };
 

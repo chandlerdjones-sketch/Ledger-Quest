@@ -289,8 +289,9 @@ async function qTallow() {
   await say(N.tallow, 'Now sort them yourself. Some of this paper belongs in the itemized pile, some earns a credit instead, and some counts for nothing.');
   await LQ.depth.receipts(N.tallow);
   const gap = Math.abs(f.itemized - f.stdTotal), left = HUNT.length - HUNT.filter(got).length;
-  await say(N.tallow, equal ? 'Both deductions are the same with the receipts you have. We will use the standard deduction for now.' : item ? `Itemizing wins by ${M(gap)}, worth about ${M(gap * f.top)} of tax at your ${pct(f.top)} rate. See how close it was. ` + (got('rPoints') ? 'Without the points from your closing papers, the standard shield would have won.' : 'Every receipt mattered.')
-    : `The standard shield wins by ${M(gap)}. You own a home, you pay ${M(H.interest)} of interest a year, and you still should not itemize. That is true for a great many homeowners.` + (left ? ' A few more receipts might yet tip it. Whatever you find before you file still counts.' : ''));
+  await say(N.tallow, (equal ? 'Both options deduct the same amount. We will use the standard deduction for now.'
+    : `${item ? 'Itemizing' : 'Taking the standard deduction'} lowers your taxable income by ${M(gap)} more.`)
+    + (left ? ' Receipts you find before filing could change the comparison.' : ''));
   await say(N.tallow, `And remember what a deduction is worth: its amount times your tax rate. A ${M(1000)} deduction at ${pct(f.top)} saves ${M(1000 * f.top)}. Never spend a coin just to deduct it.`);
   ui.doc = null; LQ.learn('itemize2'); LQ.learn('charity2'); LQ.learn('writeoff'); LQ.give('folder');
   await LQ.depth.activityPage(4, N.tallow);

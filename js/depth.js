@@ -12,9 +12,11 @@ const npc = (ch, id) => LQ[ch].npcs.find(n => n.id === id);
 function helpBox(c, d) {
   if (ui.dlg || ui.choice) return;
   ui.panel(c, 30, 392, 900, 124);
-  ui.text(c, d.goal || '', 52, 402, '#ffe98a', F(27), 'left', 856);
-  ui.text(c, d.msg || d.note || '', 52, 436, d.msg ? '#ff9ad0' : '#c9cdea', F(24), 'left', 856);
-  ui.text(c, d.keys || '', 52, 476, '#35f0e6', F(23), 'left', 856);
+  ui.text(c, d.goal || '', 52, 398, '#ffe98a', F(26), 'left', 856);
+  c.font = F(24);
+  ui.wrap(c, d.msg || d.note || '', 856).forEach((line, i) =>
+    ui.text(c, line, 52, 429 + i * 24, d.msg ? '#ff9ad0' : '#c9cdea', F(24)));
+  ui.text(c, d.keys || '', 52, 484, '#35f0e6', F(23), 'left', 856);
 }
 // A change in the headline number, shown for a moment beside it.
 function delta(c, d, x, y) {
@@ -36,8 +38,9 @@ function sortDoc(o) {
       if (lr || ud) { const was = d.jar; d.jar = LQ.clamp(d.jar + (lr - ud) * d.step, 0, d.jarMax); if (d.jar !== was) { sfx('move'); d.msg = ''; } }
       if (ok) done(); return;
     }
-    const n = d.rows.length, r = d.rows[d.cur];
+    const n = d.rows.length;
     if (ud) { d.cur = (d.cur + ud + n + 1) % (n + 1); sfx('move'); }
+    const r = d.rows[d.cur];
     if (lr && r) {
       const was = r.col, before = d.value();
       r.col = was < 0 ? (lr > 0 ? 0 : d.cols.length - 1) : LQ.clamp(was + lr, 0, d.cols.length - 1);
@@ -76,11 +79,11 @@ function sortDoc(o) {
 // Runs the sorting loop until every row sits in its column. Returns true if the first check was clean.
 async function sortLoop(d, who, changed) {
   let clean = true;
-  d.keys = 'Up / Down: choose a row    Left / Right: move it    Enter on CHECK when every row is sorted';
+  d.keys = 'Up / Down: row    Left / Right: sort    Enter: next row or check';
   for (;;) {
     await wait(d);
     const un = d.rows.findIndex(r => r.col < 0);
-    if (un >= 0) { d.cur = un; d.msg = 'This row is not sorted yet. Press Left or Right to place it.'; sfx('wrong'); continue; }
+    if (un >= 0) { clean = false; d.cur = un; d.msg = 'This row is not sorted yet. Press Left or Right to place it.'; sfx('wrong'); continue; }
     const bad = d.rows.findIndex(r => r.col !== r.want);
     if (bad < 0) break;
     clean = false; d.bad = d.cur = bad; sfx('wrong'); LQ.shake(.15);
@@ -179,7 +182,7 @@ async function budget(who) {
       const L = (y, a, b, o) => D.line(c, 700, y, 222, a, b, Object.assign({ size: 24 }, o));
       L(46, 'Money earned', M(f.gigGross)); L(76, 'Job costs', '-' + M(cst), D.RED);
       D.rule(c, 700, 106, 222); L(112, 'Profit', M(profit), Object.assign({ hl: !dial }, D.GREEN));
-      L(150, 'Other spending', '-' + M(per), D.RED);
+      L(150, 'Costs you can’t deduct', '-' + M(per), D.RED);
       L(180, 'Tax jar', dial ? '-' + M(d.jar) : '?', Object.assign({ hl: dial && d.phase === 'dial' }, D.RED));
       D.rule(c, 700, 210, 222); L(216, 'Cash left', dial ? M(profit - per - d.jar) : '?', D.GREEN);
       c.font = F(19); c.fillStyle = '#5a5490'; c.textAlign = 'left';
@@ -193,17 +196,17 @@ async function budget(who) {
   d.phase = 'dial'; d.jarMax = Math.max(JAR_STEP, Math.floor((f.gigProfit - personal()) / JAR_STEP) * JAR_STEP);
   await say(who, `${M(f.gigGross)} came in and ${M(f.gigExp)} went out on the job, so your profit is ${M(f.gigProfit)}. Not all of it is yours to spend. Nobody holds tax back from gig money, so you set it aside yourself.`);
   for (;;) {
-    d.goal = 'Fill the tax jar until it covers the tax on your profit.'; d.note = 'The jar is money you keep back for tax. What is left after it is yours to spend.'; d.keys = `Left / Right: move ${M(JAR_STEP)} in or out of the jar    Enter: done`;
+    d.goal = 'Fill the tax jar until it covers the tax on your profit.'; d.note = 'The jar is money you keep back for tax. Cash left is what you have after costs and the tax set-aside.'; d.keys = `Left / Right: move ${M(JAR_STEP)} in or out of the jar    Enter: done`;
     await wait(d);
     if (d.jar >= bill) break;
     clean = false; sfx('wrong'); LQ.shake(.15);
-    await say(who, `The tax on this profit is about ${M(bill)}. Your jar holds ${M(d.jar)}. The missing ${M(bill - d.jar)} would still come due, and it would have to come out of cash you already spent.`);
+    await say(who, `The tax on this profit is about ${M(bill)}. Your jar holds ${M(d.jar)}. Set aside another ${M(bill - d.jar)} to cover the difference.`);
     d.msg = 'Add to the jar and watch Cash left shrink. That smaller number is the honest one.';
   }
   sfx('right'); d.msg = '';
   const over = d.jar - bill;
-  await say(who, over >= 3 * JAR_STEP ? `Covered, with ${M(over)} to spare. The extra comes back as a refund, but you could not use it all year. Close to the bill is the aim.`
-    : `Covered. The jar holds ${M(d.jar)} against a bill of about ${M(bill)}, and ${M(f.gigProfit - personal() - d.jar)} is truly yours.`);
+  await say(who, over >= 3 * JAR_STEP ? `Covered, with ${M(over)} to spare. You can keep the extra in savings or return it to your spending money.`
+    : `Covered. The jar holds ${M(d.jar)} against a bill of about ${M(bill)}, leaving ${M(f.gigProfit - personal() - d.jar)} available in this example.`);
   d.phase = 'end'; d.goal = d.note = d.keys = ''; scoreOnce(clean);
   return f;
 }
@@ -214,8 +217,8 @@ const DROP_STEP = 0.02, DROP_MAX = 10;
 // Extra tax on the Glacier gain: sold today, sold after the year, and sold after the year at each example price.
 function holdFigures() {
   const s = st(), GL = LQ.GLACIER;
-  // On a replay the real sale is already in the record, so take it back out before comparing.
-  const undo = i => { if (s.hold4 === 1) i.lt -= GL.gain; else if (s.hold4 === 0) i.st -= GL.gain; };
+  // Undo the recorded sale during a replay, unless filing already cleared the investment ledger.
+  const undo = i => { if (s.q4 >= 9) return; if (s.hold4 === 1) i.lt -= GL.gain; else if (s.hold4 === 0) i.st -= GL.gain; };
   const base = LQ.trial4(undo).total, extra = fn => Math.max(0, LQ.trial4(i => { undo(i); fn(i); }).total - base);
   const H = { GL, now: extra(i => { i.st += GL.gain; }), wait: [] };
   for (let k = 0; k <= DROP_MAX; k++) H.wait.push(extra(i => { i.lt += GL.gain - Math.round(GL.worth * DROP_STEP * k); }));
@@ -240,7 +243,7 @@ function holdDoc(H) {
     c.textBaseline = 'top';
     // the clock: red while the gain is short-term, green once it is long-term
     c.fillStyle = '#b0332e'; c.fillRect(X(0), 92, X(1) - X(0) + 40, 10); c.fillStyle = '#1f6f5c'; c.fillRect(X(1) + 40, 92, X(3) - X(1) - 40 + 30, 10);
-    c.font = F(19); c.textAlign = 'left'; c.fillStyle = '#b0332e'; c.fillText('SHORT-TERM', X(0), 68); c.fillStyle = '#1f6f5c'; c.fillText('LONG-TERM', X(1) + 44, 68);
+    c.font = F(19); c.textAlign = 'left'; c.fillStyle = '#b0332e'; c.fillText('SHORT-TERM', X(0), 50); c.fillStyle = '#1f6f5c'; c.fillText('LONG-TERM', X(1) + 44, 50);
     DAYS.forEach((t, i) => {
       const on = d.day === i;
       c.fillStyle = '#15122e'; c.fillRect(X(i) - 1, 88, 3, 18);
@@ -250,7 +253,7 @@ function holdDoc(H) {
     c.fillStyle = '#f4f6ff'; c.fillRect(650, 46, 264, 112); c.strokeStyle = '#7a74b8'; c.lineWidth = 2; c.strokeRect(651, 47, 262, 110);
     const L = (y, a, b, o) => D.line(c, 664, y, 236, a, b, Object.assign({ size: 23 }, o));
     L(54, 'Sold on this day', long ? 'long-term' : 'short-term', long ? D.GREEN : D.RED);
-    L(80, 'Taxed', long ? 'at 0% or 15%' : 'like wages', long ? D.GREEN : D.RED);
+    L(80, 'Taxed', long ? 'capital gain rates' : 'like wages', long ? D.GREEN : D.RED);
     L(106, 'Tax on the gain', M(tax), long ? D.GREEN : D.RED); L(130, 'You keep', M(GL.worth - tax));
     D.rule(c, 50, 166, 860);
     if (d.phase === 'drop' || d.phase === 'end') {
@@ -307,22 +310,29 @@ Object.assign(LQ.ITEMS, {
   invoice4: { name: 'Fog Invoice, Summit', desc: '"100 crates of Sure-Thing Fog. Deliver to: Glint, the Peak." This one is signed: "Q. Murk, Head Clerk of the Great Ledger."' },
 });
 const PAGES = {
-  4: { truth: 'Carry the larger deduction, and only one.', todo: 'Sort receipts with Assessor Tallow on Shelter Coast' },
+  4: { truth: 'Carry the larger deduction, and only one.', target: 'tallow', todo: 'Sort receipts with Tallow in Shelter Coast' },
   5: { truth: 'A write-off is a real cost you can prove. It is never a secret.', done: s => !!s.flags.boss2, from: 'Captain Loophole\'s charts', inv: 'invoice2', todo: 'Defeat Captain Loophole on Shelter Coast' },
   6: { truth: 'A credit comes straight off the tax. A deduction only lowers the income that is taxed.', done: s => s.q2 >= 8, from: 'your stamped joint return', todo: 'File your joint return on Shelter Coast' },
-  7: { truth: 'Profit is what came in minus what the work cost, and part of it is owed as tax.', todo: 'Work the gig budget with Tallyman Brick in Hustle Canyon' },
+  7: { truth: 'Profit is what came in minus what the work cost, and part of it is owed as tax.', target: 'brick', todo: 'Work the gig budget with Brick in Hustle Canyon' },
   8: { truth: 'All income counts, with or without a form.', done: s => !!s.flags.boss3, from: 'Sidewinder Slick\'s saddlebag', inv: 'invoice3', todo: 'Defeat Sidewinder Slick in Hustle Canyon' },
   9: { truth: 'Pay as you earn, and April holds no surprise.', done: s => s.q3 >= 8, from: 'your stamped Schedule C', todo: 'File with Schedule C in Hustle Canyon' },
-  10: { truth: 'Time changes the tax on a gain. It never promises the price.', todo: 'Try the sale clock with Timekeeper Frost on the Summit' },
+  10: { truth: 'Time changes the tax on a gain. It never promises the price.', target: 'frost', todo: 'Try Frost’s sale clock on the Summit' },
   11: { truth: 'Nobody can promise a gain. Whoever does is selling something.', done: s => !!s.flags.boss4, from: 'the Dragon\'s hoard', inv: 'invoice4', todo: 'Defeat Glint the Dragon on the Summit' },
   12: { truth: 'The plain truth about money belongs to everyone who has to pay.', done: s => s.q4 >= 9, from: 'your stamped Schedule D', todo: 'File with Schedule D on the Summit' },
 };
 const pageGot = n => { st().flags['page' + n] = true; LQ.give('pages'); sfx('fanfare'); ui.toast('Ledger Page recovered: ' + LQ.pages() + ' of 12'); };
+async function allPagesHint() {
+  const s = st();
+  if (LQ.pages() !== 12 || s.flags.told12) return;
+  s.flags.told12 = true;
+  await say(null, 'That makes twelve. The tall door under your cottage in Paystub Village is ready to open.');
+}
 // The page an activity earns, handed over by the person who ran it.
 async function activityPage(n, who) {
   if (st().flags['page' + n]) return;
   pageGot(n);
   await say(who, `Hm. This was pressed between my papers, and it is not mine. A torn page of the Great Ledger. It reads: "${PAGES[n].truth}"`);
+  await allPagesHint();
 }
 // Pages owed for milestones already reached. Old saves and chapter starters collect theirs the first time they stand still.
 const owed = s => Object.keys(PAGES).map(Number).filter(n => PAGES[n].done && !s.flags['page' + n] && PAGES[n].done(s))
@@ -341,7 +351,7 @@ async function collect() {
     await say(null, `You go through everything you carried home from your travels. Tucked among the papers are ${list.length} torn pages of the Great Ledger, and the fog invoices that came with them.`);
     ui.toast('Ledger Pages recovered: ' + LQ.pages() + ' of 12');
   }
-  if (LQ.pages() === 12 && !s.flags.told12) { s.flags.told12 = true; await say(null, 'That makes twelve. Somewhere under your cottage in Paystub Village, a very tall door is waiting for them.'); }
+  await allPagesHint();
 }
 for (const id of ['village', 'coast', 'canyon', 'summit']) {
   const R = LQ.REGIONS[id], spawn0 = R.spawn;
@@ -350,7 +360,8 @@ for (const id of ['village', 'coast', 'canyon', 'summit']) {
     // Wait for a quiet moment, so a page never talks over an arrival scene.
     let quiet = 0;
     w.ents.push({ type: 'logic', tx: 0, base: -9999, step(dt) {
-      quiet = !LQ.busy && !ui.menu && !ui.dlg && !ui.choice && !ui.doc && LQ.scene === LQ.world && LQ.fadeA === 0 ? quiet + dt : 0;
+      const keys = LQ.input.down;
+      quiet = !(keys.left || keys.right || keys.up || keys.down) && !LQ.input.pressed.ok && !LQ.busy && !ui.okWait && !ui.menu && !ui.dlg && !ui.choice && !ui.doc && LQ.scene === LQ.world && LQ.fadeA === 0 ? quiet + dt : 0;
       if (quiet > .4 && owed(st()).length) { quiet = 0; LQ.script(collect); }
     } });
   };
@@ -380,10 +391,13 @@ const curQuest0 = LQ.curQuest;
 LQ.pageQuest = () => {
   const s = st(), n = LQ.pages();
   if (s.flags.ledgerDone) return { short: 'The Great Ledger is whole', text: 'The Great Ledger is whole. Every region is open', target: null };
-  if (s.flags.vellFree) return { short: 'End the fog', text: 'Strike the Standing Order on the Fog Press with the Truth Stamp (E)', target: null };
-  if (n === 12) return { short: 'Return the pages', text: 'Bring the 12 pages to the tall door in your cottage cellar, Paystub Village', target: null };
+  if (n === 12) {
+    if (LQ.world.room?.room === 'cellar1') return { short: 'Return the pages', text: 'Open the tall door at the far end of the cellar', target: 'ledgerdoor' };
+    if (LQ.world.room?.room === 'cottage1') return { short: 'Return the pages', text: 'Go down the trapdoor to the cellar', target: 'ledgertrap' };
+    return { short: 'Return the pages', text: 'Take all 12 pages to your cottage cellar in Paystub Village', target: 'ledgerhome' };
+  }
   const next = Object.keys(PAGES).map(Number).find(k => !s.flags['page' + k]);
-  if (next) return { short: 'Recover the Ledger Pages', text: `Page ${next} of 12: ${PAGES[next].todo}`, target: null };
+  if (next) return { short: 'Recover the Ledger Pages', text: `Page ${next} of 12: ${PAGES[next].todo}`, target: PAGES[next].target };
   const v = [1, 2, 3].find(k => !s.flags['page' + k]);
   return { short: 'Recover the Ledger Pages', text: `Page ${v} of 12: ` + ['Solve the Bracket Vault east of Sage Altamira, Paystub Village', 'Light the Lantern Cave east of Bracket Mountain, Paystub Village', 'Search the Mythmonger\'s ground on Bracket Mountain, Paystub Village'][v - 1], target: null };
 };

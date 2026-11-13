@@ -341,27 +341,31 @@ const world = LQ.world = {
   drawUI(c) {
     const st = LQ.state, q = LQ.curQuest(), R = this.R;
     if (ui.doc) return;
+    // Clear the north wall when the player approaches the tall cellar door.
+    const dock = this.room?.room === 'cellar1' && this.p.y < 5 * T;
+    if (dock && (ui.dlg || ui.choice || ui.menu)) return;
+    const top = dock ? 346 : 14;
     // HUD plates: dark glass with a thin neon edge
     const hud = (x, y, w, h) => { c.fillStyle = 'rgba(6,5,22,.84)'; c.fillRect(x, y, w, h); c.fillStyle = 'rgba(155,107,255,.55)'; c.fillRect(x, y + h - 2, w, 2); c.fillStyle = 'rgba(53,240,230,.5)'; c.fillRect(x, y, w, 1); };
     // quest tracker
     const s = `Coins ${st.coins}    Savvy ${st.savvy}`;
     const finder = R.finder && LQ.finderStatus(R, this);
-    const extra = [st.streak >= 3 ? 'Streak x' + st.streak : '', finder ? finder.count : R.hud?.(this, st)].filter(Boolean).join('    ');
+    const extra = [st.streak >= 3 ? 'Streak x' + st.streak : '', finder?.count, R.hud?.(this, st)].filter(Boolean).join('    ');
     const lines = [extra, finder?.count && LQ.has(R.finder.gear) ? finder.hint : ''].filter(Boolean);
     c.font = F(24);
     const ew = lines.length ? Math.min(470, Math.max(...lines.map(line => c.measureText(line).width)) + 28) : 0;
     c.font = F(26); const sw = Math.min(470, c.measureText(s).width + 32);
     const tw = Math.min(LQ.VW - 44 - Math.max(sw, ew), Math.max(250, c.measureText(q.text).width + 44));
-    hud(16, 14, tw, 62); c.fillStyle = '#ffcf4a'; c.fillRect(16, 14, 5, 62);
-    c.font = F(10, true); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#ffcf4a'; c.fillText('QUEST', 32, 23);
-    ui.text(c, q.text, 32, 40, '#eef4ff', F(26), 'left', tw - 36);
+    hud(16, top, tw, 62); c.fillStyle = '#ffcf4a'; c.fillRect(16, top, 5, 62);
+    c.font = F(10, true); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#ffcf4a'; c.fillText('QUEST', 32, top + 9);
+    ui.text(c, q.text, 32, top + 26, '#eef4ff', F(26), 'left', tw - 36);
     // coins and savvy
-    hud(LQ.VW - sw - 16, 14, sw, 38); ui.text(c, s, LQ.VW - 32, 18, '#ffe98a', F(26), 'right', sw - 32);
+    hud(LQ.VW - sw - 16, top, sw, 38); ui.text(c, s, LQ.VW - 32, top + 4, '#ffe98a', F(26), 'right', sw - 32);
     if (lines.length) {
-      hud(LQ.VW - ew - 16, 56, ew, 8 + lines.length * 24);
-      lines.forEach((line, i) => ui.text(c, line, LQ.VW - 30, 58 + i * 24, i ? '#ffe98a' : '#c9cdea', F(24), 'right', ew - 28));
+      hud(LQ.VW - ew - 16, top + 42, ew, 8 + lines.length * 24);
+      lines.forEach((line, i) => ui.text(c, line, LQ.VW - 30, top + 44 + i * 24, i ? '#ffe98a' : '#c9cdea', F(24), 'right', ew - 28));
     }
-    if (LQ.kit) LQ.kit.drawHUD(c, hud);
+    if (LQ.kit) LQ.kit.drawHUD(c, hud, top + 68);
     // pointer toward an off-screen quest target
     const tgt = this.questTarget(), fb = R.fallbackTarget ? R.fallbackTarget(st) : null;
     const e = this.ents.find(x => (x.type === 'npc' && x.npc.id === tgt) || (tgt && x.qid === tgt)) || (fb && this.ents.find(x => x.qid === fb));

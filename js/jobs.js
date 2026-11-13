@@ -124,12 +124,17 @@ const J = LQ.jobs = {
     const s = st(), c = LQ.career(), paid = J.left(s) > 0;
     let G = J.G = J.newGame(c.id);
     await LQ.fadeTo(1, 0.3); ui.banner = null; LQ.setScene(J); await LQ.fadeTo(0, 0.3);
+    const leave = async () => {
+      await LQ.fadeTo(1, 0.3); J.G = null; LQ.setScene(LQ.world); await LQ.fadeTo(0, 0.4);
+    };
     // Before the first paid shift: the same floor with no clock, and lights that never go out.
     if (paid && !s.flags.shiftPractice && await LQ.choose(null, 'This is your first shift. Want a short practice first? It has no timer and no pay.', ['Practice first', 'Start the paid shift']) === 0) {
       G.practice = true;
       await LQ.say(null, G.K.hint + ` Finish ${PRACTICE_GOAL} tasks at your own pace. Nothing here is timed.`);
       await new Promise(done => { G.done = done; G.live = true; });
-      sfx('learn'); await LQ.say(null, 'That is the whole job. In a paid shift you have 30 seconds, and a task that waits too long is lost.');
+      if (G.score >= PRACTICE_GOAL) { s.flags.shiftPractice = true; sfx('learn'); }
+      const next = await LQ.choose(null, 'A paid shift lasts 30 seconds. Tasks disappear if you wait too long.', ['Start the paid shift', 'Return to the village']);
+      if (next === 1) return leave();
       G = J.G = J.newGame(c.id);
     }
     s.flags.shiftPractice = true;
@@ -156,7 +161,7 @@ const J = LQ.jobs = {
         : 'Gross pay is what you earned. Take-home pay is what is left after taxes come out. Your W-4 affects the federal income tax line.');
     } else if (paid) await LQ.say(null, 'No pay this time. You still have your paid shift. Try again when you’re ready.');
     else await LQ.say(null, `Practice score: ${score}. Paid shifts return after your next quest step.`);
-    await LQ.fadeTo(1, 0.3); J.G = null; LQ.setScene(LQ.world); await LQ.fadeTo(0, 0.4);
+    await leave();
   },
   // the shift board by the Work Hall
   addBoard(w, s) {
