@@ -102,9 +102,10 @@ Ledger Quest (`~/Desktop/Ledger Quest/`, plain HTML and JS, about 5,300 lines, n
 | Phase | State | Notes |
 |---|---|---|
 | 0 | Done | Branch `gameplay-depth`, this document |
-| 1 | Built, waiting on Chandler's playtest | Village slice. See the Phase 1 notes below. |
-| Opening | Built, waiting on Chandler's playtest | The cottage and cellar prologue. See `INTRO_TUTORIAL_PLAN.md`. The cellar's great door is the Back Office entrance for Phase 4. |
-| 2 to 5 | Not started | |
+| 1 | Done, playtested Nov 12 | Village slice. Chandler: combat is fun, the vault and cave are good as they are. Combat stays. |
+| Opening | Done, playtested Nov 12 | The cottage and cellar prologue. Pace is right. See `INTRO_TUTORIAL_PLAN.md`. The cellar's great door is the Back Office entrance for Phase 4. |
+| 2 | Built, waiting on Chandler's second playtest | Shift work, the Mythmonger movement phase, three fooled villagers. See the Phase 2 notes below. |
+| 3 to 5 | Not started | |
 
 ## Phase 1 notes (Nov 11)
 What was built
@@ -126,3 +127,34 @@ Page effects in the village
 - Page 3 (after the Mythmonger): the west bridge rises, and the Fog Invoice is found
 
 Tested in the browser by setting state directly: vault from entry to page for the Nurse, cave puzzle wrong and right order, imp fight, bolt and shield, wisp toll with and without the lantern, compass reveal, tonic, fainting, old save loading, Altamira's recap. Not yet tested by hand: a real keyboard run of either room, the Mayor's new line, the lantern rental, the reset seal, the page 3 scene after the boss, and difficulty tuning.
+
+## Phase 2 notes (Nov 12)
+Playtest result: no tuning changes. Chandler gave no notes on the hidden cache or on anything broken.
+
+What was built
+- `js/battle.js`: a movement phase before every answer in the Mythmonger fight (`move: true` on the boss). Cross the field, dodge myth bolts, and grab the truth shard. A hit costs up to 8 coins and never a heart. Holding E with the Standard Shield blocks. After three hits the shard comes to the player. Bosses 2 to 4 are unchanged until Phase 3.
+- `js/vaults1.js`: three fooled villagers, each fixed by an action and stored in `flags`.
+
+| Villager | Action | Result | Flags |
+|---|---|---|---|
+| Rowan | Bracket Compass (E) while standing beside him | His cart leaves the east footbridge at (38, 14 to 15), a shortcut to the caves | `fixRowan` |
+| Cook Basil | Truth Stamp on his shuttered stall west of the Work Hall, then carry the return to Registrar Juno | The stall reopens and sells tonics for 10 coins | `basilSeal`, `fixBasil` |
+| Granny Maple | Hold a Lantern by the wisp on her porch | 10% off at the Saffron Bazaar | `fixMaple` |
+
+- `js/jobs.js`: shift work at the board beside the Work Hall, open from quest 2. One 30-second game with a twist per career: call lights with urgent ones for the Nurse, matching orders for the Fast Food Worker, and a shelf to restock for the Small Business Owner.
+- `tools/check.js` and `tools/play-check.js`: the footbridge is shut by the cart and open without it, shift pay stays inside its cap for every career and tax choice, and the headless run fixes all three villagers, works a shift, and steers through the boss movement phase.
+
+Decisions and simplifications
+- Shift pay is capped at half a payday and limited to two paid shifts per quest step. More shifts are practice with no pay.
+- The shift stub holds back tax by the player's own W-4 or estimate choice. Shift coins never enter `LQ.fin`, so the tax return does not change. Shift pay is pocket money, not part of the year's wages.
+- The Bazaar discount is paid as a tenth back on gear, so listed prices and the tax math do not move. Tonics, rentals, and rumors show the lower price.
+- Granny Maple's porch wisp tolls nobody, which keeps the rule that enemies stay out of town.
+- Score targets for a full shift payout are 15 (Nurse), 7 (Fast Food Worker), and 11 (Owner). They were set from an automated player and need a human check.
+
+Tested in the browser by setting state directly: the boss phase (a hit costs coins and no hearts, the shield blocks, the shard opens the answers), the whole Mythmonger fight through the page 3 scene and the west bridge, each villager fix and its reward, the footbridge crossing, one shift for each career, the stub against the tax choice, and the third shift paying nothing. Not tested: a person playing by hand for feel, and how the job game and stub look at full size.
+
+Questions for the second playtest
+- Does the movement phase drag? It runs before every answer, seven or eight times. The fix is to shorten it or run it on every other myth.
+- Do the three job games feel different enough, and is the full payout too easy or too hard to reach?
+- Is the east footbridge a useful shortcut, and are the three villagers easy to find without the rumor?
+

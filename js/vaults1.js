@@ -11,6 +11,7 @@ Object.assign(LQ.ITEMS, {
   pages: { name: 'Torn Ledger Pages', desc: 'Pages torn from the Great Ledger, which once held the plain truth about money. The fog retreats wherever a page is recovered. There are twelve.' },
   invoice1: { name: 'Fog Invoice', desc: '"40 crates of Premium Fog. Paid in full. Deliver to: B. Befuddle, Bracket Mountain." The supplier\'s name has been scratched out.' },
   stub1: { name: 'Ledger Stub', desc: 'The stub left where pages were torn out. "Pages 1 through 12 removed by order of..." The rest is missing.' },
+  breturn: { name: "Basil's Unfiled Return", desc: 'Finished, signed, and never sent. Registrar Juno at Town Hall takes returns.' },
   oldlantern: { name: 'Old Lantern', desc: 'A dented miner\'s lantern that still burns. It lights dark places and keeps Myth Wisps away.' },
 });
 LQ.ITEMS.shield.desc += ' In the field: hold E while facing a fog bolt to block it.';
@@ -28,6 +29,7 @@ const STONES = [
 const POSTS = [[22, 18], [25, 18], [22, 34], [25, 33]];
 const V = LQ.V1 = {
   STONES, DOOR: { vault: [27, 11], cave: [40, 8], cache: [6, 7], falsetree: [6, 11] }, LAMPS: [[28, 12], [42, 9]],
+  FIX: { cart: [38, 15], stall: [[2, 25], [3, 25]], porch: [11, 33], board: [6, 24] },
   // Called while the village map is built, before trees are planted.
   carve(m) {
     const keep = (x0, y0, x1, y1) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) m.keep[y][x] = true; };
@@ -40,6 +42,8 @@ const V = LQ.V1 = {
     for (let y = 6; y <= 8; y++) for (let x = 39; x <= 41; x++) { m.g[y][x] = '#'; m.solid[y][x] = true; }   // rock outcrop for the cave mouth
     keep(38, 9, 42, 11);
     keep(7, 13, 8, 14); keep(7, 17, 8, 18);                 // landings for the west bridge
+    for (const y of [14, 15]) { m.g[y][38] = 'b'; m.solid[y][38] = false; }                                  // the east footbridge, blocked by Rowan's cart
+    keep(38, 13, 38, 13); keep(38, 16, 38, 16); keep(2, 25, 3, 26); keep(9, 33, 13, 33); keep(6, 24, 6, 24);
     STONES.forEach(s => keep(s.tx, s.ty, s.tx, s.ty)); POSTS.forEach(p => keep(p[0], p[1], p[0], p[1]));
   },
   // The west bridge rises when the third page is recovered. The map is shared between save slots, so keep it in step.
@@ -131,8 +135,103 @@ function addVillage(w, s) {
     });
   } });
 }
+// ---------- three fooled villagers. Each one is put right by an action, not a quiz.
+function addFooled(w, s) {
+  const N = LQ.NPCS;
+  // Rowan refused a raise. His cart blocks the east footbridge until the Bracket Compass shows him the truth.
+  if (!s.flags.fixRowan) {
+    const cart = { type: 'cart', tx: 38, ty: 15, solid: true, base: 15 * T + 14,
+      use: () => LQ.script(() => say(null, 'A loaded handcart, wedged across the footbridge. A tag reads: "Rowan. Packed to leave if they make me take that raise."')),
+      draw(g, cx, cy) {
+        const x = 38 * T - cx, y = 15 * T - cy;
+        R(g, x + 1, y + 4, 14, 8, '#6a4526'); R(g, x + 1, y + 4, 14, 1, '#a8703c'); R(g, x + 3, y - 2, 10, 6, '#4a3a6a'); R(g, x + 4, y - 3, 8, 1, '#9b6bff');
+        R(g, x + 2, y + 11, 4, 4, '#15163a'); R(g, x + 10, y + 11, 4, 4, '#15163a'); R(g, x + 3, y + 12, 2, 2, '#6d7299'); R(g, x + 11, y + 12, 2, 2, '#6d7299');
+      } };
+    w.ents.push(cart);
+    w.ents.push({ type: 'logic', hidden: true, tx: 20, ty: 29, base: -9999,
+      reveal() {
+        if (LQ.busy) return;
+        if (Math.hypot(20 * T + 8 - w.p.x, 29 * T + 8 - w.p.y) > 2.6 * T) return ui.toast('The compass needle swings toward Rowan. Stand beside him.');
+        const me = this;
+        LQ.script(async () => {
+          await say(N.rowan, 'Is that a Bracket Compass? Hold it still. The needle only moves for the dollars above the line.');
+          await say(N.rowan, 'So a raise is taxed at the higher rate only on the part over the line. I would have come out ahead. I turned down money for nothing!');
+          s.flags.fixRowan = true; w.remove(me); w.remove(cart); sfx('fanfare'); LQ.gain(10, 0, 'Rowan set straight');
+          await say(N.rowan, 'I am taking that raise. And I will haul my cart off the east footbridge. It is the quick way to the caves.');
+          ui.toast('Shortcut open: the east footbridge');
+        });
+      } });
+  }
+  // Cook Basil sealed his finished return inside his stall. Break the seal with the Stamp and carry the return to Juno.
+  w.ents.push({ type: 'bstall', tx: 2, tx2: 3, ty: 25, solid: true, base: 26 * T - 1,
+    use: () => LQ.script(async () => {
+      if (!s.flags.basilSeal) return say(null, 'Cook Basil\'s lunch stall, shuttered. A wax seal holds the shutter down: "Closed until the tax office forgets me." An honest mark would break it.');
+      if (!s.flags.fixBasil) return say(null, 'Basil\'s stall stands open and cold. He will not light the griddle until his return is filed.');
+      if (await LQ.choose(LQ.HERO, 'Basil\'s stall is open again. Tonic broth, 10 coins. You have ' + s.coins + ' coins.', ['Buy a tonic', 'Leave']) !== 0) return;
+      if (s.coins < 10) return say(null, 'A tonic is 10 coins here. You are a little short.');
+      s.coins -= 10; s.flags.tonics = (s.flags.tonics || 0) + 1; sfx('coin'); ui.toast('Got: Tonic'); LQ.save();
+    }),
+    stamp() {
+      if (s.flags.basilSeal || LQ.busy) return;
+      LQ.script(async () => {
+        s.flags.basilSeal = true; sfx('rumble'); w.burst(3 * T, 25 * T + 6, '#ffcf4a', 18, 50); LQ.give('breturn');
+        await say(null, 'The seal cracks and the shutter rattles up. On the cold griddle lies a finished tax return with Basil\'s name on it, never sent.');
+        await say(null, 'Registrar Juno at Town Hall takes returns.');
+      });
+    },
+    draw(g, cx, cy, tm) {
+      const x = 2 * T - 1 - cx, y = 26 * T - 31 - cy;
+      g.drawImage(LQ.prop('stall', w.season), x, y);
+      if (!s.flags.basilSeal) {
+        R(g, x + 3, y + 13, 28, 13, '#15163a'); for (let i = 0; i < 4; i++) R(g, x + 3, y + 15 + i * 3, 28, 1, '#2c2e5c');
+        R(g, x + 15, y + 17, 5, 5, '#ffcf4a'); R(g, x + 16, y + 18, 3, 3, '#fff3b0'); LQ.fx.light(x + 17, y + 19, 10, '#ffcf4a', .35 + .1 * Math.sin(tm * 3));
+      } else if (s.flags.fixBasil) LQ.fx.light(x + 17, y + 18, 26, '#ffcf4a', .5 + .06 * Math.sin(tm * 2));
+    } });
+  // A porch wisp keeps Granny Maple believing a refund is free money. It tolls nobody. Lantern light sends it off.
+  if (!s.flags.fixMaple) {
+    const wx = 11 * T + 8, wy = 33 * T + 4;
+    w.ents.push({ type: 'porchwisp', tx: 11, base: wy + 8, t: 0, x: wx, y: wy,
+      step(dt) {
+        const p = w.p, me = this;
+        me.x = wx + Math.cos(LQ.time * 1.3) * 14; me.y = wy + Math.sin(LQ.time * 2.6) * 4;
+        if (s.flags.fixMaple || LQ.busy) return;
+        me.t = LQ.kit.holding('lantern') && Math.hypot(p.x - me.x, p.y - 8 - me.y) < 44 ? me.t + dt : 0;
+        if (me.t < 1.1) return;
+        s.flags.fixMaple = true; w.remove(me); w.burst(me.x, me.y, '#ff4fb0', 24, 60); sfx('learn');
+        LQ.script(async () => {
+          await say(null, 'The wisp shrinks from the lantern light, thins to a thread, and is gone.');
+          await say(N.maple, 'Oh! It has stopped whispering. A refund is only my own money coming home late, is it not? I will have less held back and buy lamp oil with the difference.');
+          LQ.gain(10, 0, 'Granny Maple set straight');
+          await say(N.maple, 'I will tell Saffron you are to have a tenth off at the Bazaar, dear. She listens to me.');
+          ui.toast('Saffron Bazaar: 10% off');
+        });
+      },
+      draw(g, cx, cy, tm) {
+        const x = this.x - cx, y = this.y - cy, f = Math.floor(tm * 8) % 3, k = this.t > 0 ? .45 : 1;
+        g.globalAlpha = k; R(g, x - 3, y - 3, 6, 7, '#ff4fb0'); R(g, x - 2, y - 5 - f, 4, 3, '#ff4fb0'); R(g, x - 1, y - 7 - f, 2, 2, '#ff9bd0'); R(g, x - 1, y - 1, 2, 3, '#ffffff');
+        g.globalAlpha = 1; LQ.fx.light(x, y, 18, '#ff4fb0', .55 * k);
+      } });
+  }
+}
+// The fooled villagers say what is wrong before their usual talk. Juno takes Basil's return.
+const talk0 = LQ.CH1.talk;
+LQ.CH1.talk = async id => {
+  const s = st(), N = LQ.NPCS;
+  if (id === 'juno' && s.flags.basilSeal && !s.flags.fixBasil) {
+    await say(N.juno, 'Cook Basil\'s return? Finished weeks ago and never sent. Let me guess. He could not pay, so he hid.');
+    await say(N.juno, 'Not filing is the costly mistake. The penalty for filing late is about ten times the penalty for paying late. There. Filed, and I will set him up with a payment plan.');
+    s.flags.fixBasil = true; s.items = s.items.filter(i => i !== 'breturn'); sfx('fanfare'); LQ.gain(10, 0, 'Cook Basil set straight');
+    ui.toast('Basil\'s stall reopens: tonics for 10 coins'); return;
+  }
+  if (id === 'rowan' && !s.flags.fixRowan) await say(N.rowan, "I turned down a raise last spring. Didn't want a higher bracket eating my whole paycheck. That's how it works... right? I would have to see it with my own eyes to believe otherwise.");
+  if (id === 'basil' && !s.flags.fixBasil) await say(N.basil, s.flags.basilSeal ? 'You broke the seal? Then take it to Registrar Juno at Town Hall. I cannot look.'
+    : 'My stall is shut. I owe tax I cannot pay, so I sealed my return inside and never sent it. No return, no bill. Right? I cannot bring myself to break that seal.');
+  if (id === 'maple' && !s.flags.fixMaple) await say(N.maple, 'That pink light on my porch whispers that a big refund is free money, dear. I have so much held back now that I cannot afford lamp oil. If only someone would bring a light.');
+  return talk0(id);
+};
+
 const VR = LQ.REGIONS.village, spawn0 = VR.spawn;
-VR.spawn = (w, s) => { spawn0(w, s); addVillage(w, s); };
+VR.spawn = (w, s) => { spawn0(w, s); addVillage(w, s); addFooled(w, s); if (LQ.jobs) LQ.jobs.addBoard(w, s); };
 VR.hud = () => LQ.pages() ? 'Ledger Pages ' + LQ.pages() + '/12' : '';
 
 // While the vault is the job at hand, the quest tracker points at it.
@@ -145,6 +244,7 @@ LQ.curQuest = () => {
 
 LQ.RUMORS.village = [
   { id: 'v1stones', done: s => !!s.flags.cave1, text: 'Four old rune stones stand in this village: by the Work Hall, by the Paymaster, by your cottage, and by Town Hall. Count the notches. They say a cave east of Bracket Mountain wants its fires lit in that order. Bring a light.' },
+  { id: 'v1fooled', done: s => !!(s.flags.fixRowan && s.flags.fixBasil && s.flags.fixMaple), text: 'Three villagers still believe the Baron. Rowan will not take a raise, Cook Basil has sealed his stall west of the Work Hall, and a pink light haunts Granny Maple\'s porch by your cottage. A compass, a stamp, and a lantern would set them right.' },
   { id: 'v1cache', done: s => !!s.flags.cache1, text: 'Wren swears one pine in the north-west woods, across the river, is no tree at all. Its needles never move. A compass that points at the truth would know.' },
 ];
 

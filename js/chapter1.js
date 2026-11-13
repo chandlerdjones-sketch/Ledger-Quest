@@ -655,7 +655,6 @@ const TIPS = {
 async function tip(id) {
   const t = TIPS[id], who = N[id], s = st();
   if (s.tips[id]) return say(who, LQ.JOURNAL[t.j].text);
-  if (id === 'rowan' && !s.flags.bossDown) await say(who, "I turned down a raise last spring. Didn't want a higher bracket eating my whole paycheck. That's how it works... right?");
   for (const ln of t.lines) await say(who, ln);
   if (await LQ.quiz(who, t.q[0], t.q[1], 'Talk to me again and we will go over it once more.')) {
     s.tips[id] = true; LQ.gain(15, 30, 'Expert tip'); LQ.learn(t.j); LQ.tick();

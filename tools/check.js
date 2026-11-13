@@ -9,7 +9,7 @@ global.LQ = { ui: { toast: noop, wrap: () => [], text: noop, panel: noop, choice
 const base = () => ({ quest: 9, w4: 0, savvy: 0, coins: 500, asked: 0, first: 0, journal: [], items: [], season: 'summer', chests: {}, coinsGot: {}, flags: { married: true }, career: 'nurse', streak: 0, gear: [], tips: {},
   lossBank: 0, region: 'canyon', q2: 8, rcpt: {}, w4b: 0, wh2: null, child: true, q3: 0, gig: null, est3: null, q4: null, inv: null, hold4: null, harv4: null, acct4: null });
 LQ.state = base();
-for (const f of ['taxdata', 'economy', 'household', 'chapter1', 'audit', 'battle', 'chapter2', 'chapter3', 'chapter4', 'world', 'coast', 'canyon', 'summit', 'kit', 'foes', 'rooms', 'vaults1', 'intro'])
+for (const f of ['taxdata', 'economy', 'household', 'chapter1', 'audit', 'battle', 'chapter2', 'chapter3', 'chapter4', 'world', 'coast', 'canyon', 'summit', 'kit', 'foes', 'rooms', 'vaults1', 'jobs', 'intro'])
   vm.runInThisContext(fs.readFileSync(dir + '/js/' + f + '.js', 'utf8'), { filename: f + '.js' });
 let bad = 0; let fail = m => { bad++; console.log('  FAIL: ' + m); };
 const M = LQ.money, TX = LQ.TAX;
@@ -99,7 +99,7 @@ LQ.state = base();
 // ---- 2b. Paystub Village adventure content: carved paths, rooms, and puzzles
 console.log('== Adventure');
 { LQ.state = base(); Object.assign(LQ.state, { region: 'village', flags: {} });
-  const V = LQ.V1, D = V.DOOR, extra = V.STONES.map(s => [s.tx, s.ty]).concat(V.LAMPS, [D.cache]);
+  const V = LQ.V1, D = V.DOOR, extra = V.STONES.map(s => [s.tx, s.ty]).concat(V.LAMPS, [D.cache], V.FIX.stall, [V.FIX.board]);
   const r = reach(LQ.REGIONS.village, LQ.CH1, [24, 37], extra);
   const front = (p, name) => { if (!r.seen[p[1] + 1][p[0]]) fail('village: cannot stand in front of ' + name); };
   front(D.vault, 'the vault door'); front(D.cave, 'the cave mouth'); front(D.cache, 'the cache'); V.LAMPS.forEach(p => { if (![[1, 0], [-1, 0], [0, 1]].some(([dx, dy]) => r.seen[p[1] + dy][p[0] + dx])) fail('village: lamp unreachable ' + p); });
@@ -108,6 +108,23 @@ console.log('== Adventure');
   if (shut.seen[D.cache[1] + 1][D.cache[0]]) fail('village: the cache can be reached without the Bracket Compass');
   for (const x of [7, 8]) { const off = Math.round(Math.sin(x / 4)); if (!r.seen[13 + off][x] || !r.seen[16 + off][x]) fail('village: west bridge landing unreachable at x=' + x); }
   console.log('  village paths checked, trees ' + r.m.trees.length); }
+// Phase 2: the fooled villagers. Rowan's cart must close the east footbridge, and the bridge must work once it is gone.
+{ LQ.state = base(); Object.assign(LQ.state, { region: 'village', flags: {} });
+  const F = LQ.V1.FIX, mid = [[23, 14], [24, 14]];
+  if (reach(LQ.REGIONS.village, LQ.CH1, [24, 37], mid.concat([F.cart])).seen[12][30]) fail('village: the east footbridge can be crossed around Rowan\'s cart');
+  const open = reach(LQ.REGIONS.village, LQ.CH1, [24, 37], mid);
+  if (!open.seen[12][30]) fail('village: the east footbridge does not reach the north bank');
+  if (!open.seen[F.porch[1] + 1][F.porch[0]]) fail('village: cannot stand by Granny Maple\'s porch');
+  // Shift pay: capped at half a payday, never more out than in, for every career and every tax choice.
+  if (String(LQ.jobs.BOARD) !== String(F.board)) fail('jobs: the shift board is not where the village keeps a tile clear');
+  for (const career of ['nurse', 'food', 'owner']) for (const w4 of [0, 1, 2]) for (const score of [0, 3, 8, 40]) {
+    Object.assign(LQ.state, { career, w4, gear: [] }); const p = LQ.jobs.pay(score), cap = Math.round(LQ.CAREERS[career].pay / 2);
+    if (p.gross > cap || p.gross < 0 || p.net > p.gross || p.net < 0 || p.fed < 0 || p.gross - p.fed - p.fica !== p.net && p.net !== 0) fail(`jobs: bad shift pay for ${career} w4 ${w4} score ${score}: ${JSON.stringify(p)}`);
+    if (score === 40 && p.gross !== cap) fail(`jobs: a full shift should pay the cap for ${career}`);
+  }
+  LQ.state.flags = {}; if (LQ.jobs.left() !== 2) fail('jobs: a new quest step should offer two paid shifts');
+  console.log('  fooled villagers and shift pay checked');
+}
 // Flood fill inside a room. `open` lists part characters to treat as walkable.
 function roomFill(m, start, blocked) {
   const seen = new Set([start.join(',')]), q = [start];
