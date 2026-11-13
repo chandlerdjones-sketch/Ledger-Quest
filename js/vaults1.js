@@ -148,10 +148,10 @@ function addFooled(w, s) {
         R(g, x + 2, y + 11, 4, 4, '#15163a'); R(g, x + 10, y + 11, 4, 4, '#15163a'); R(g, x + 3, y + 12, 2, 2, '#6d7299'); R(g, x + 11, y + 12, 2, 2, '#6d7299');
       } };
     w.ents.push(cart);
-    w.ents.push({ type: 'logic', hidden: true, tx: 20, ty: 29, base: -9999,
+    w.ents.push({ type: 'logic', hidden: true, tx: 20, ty: 29, revealRange: 2.6, base: -9999,
       reveal() {
         if (LQ.busy) return;
-        if (Math.hypot(20 * T + 8 - w.p.x, 29 * T + 8 - w.p.y) > 2.6 * T) return ui.toast('The compass needle swings toward Rowan. Stand beside him.');
+        if (Math.hypot(20 * T + 8 - w.p.x, 29 * T + 8 - w.p.y) > 2.6 * T) return;
         const me = this;
         LQ.script(async () => {
           await say(N.rowan, 'Is that a Bracket Compass? Hold it still. The needle only moves for the dollars above the line.');
@@ -223,10 +223,10 @@ LQ.CH1.talk = async id => {
     s.flags.fixBasil = true; s.items = s.items.filter(i => i !== 'breturn'); sfx('fanfare'); LQ.gain(10, 0, 'Cook Basil set straight');
     ui.toast('Basil\'s stall reopens: tonics for 10 coins'); return;
   }
-  if (id === 'rowan' && !s.flags.fixRowan) await say(N.rowan, "I turned down a raise last spring. Didn't want a higher bracket eating my whole paycheck. That's how it works... right? I would have to see it with my own eyes to believe otherwise.");
-  if (id === 'basil' && !s.flags.fixBasil) await say(N.basil, s.flags.basilSeal ? 'You broke the seal? Then take it to Registrar Juno at Town Hall. I cannot look.'
-    : 'My stall is shut. I owe tax I cannot pay, so I sealed my return inside and never sent it. No return, no bill. Right? I cannot bring myself to break that seal.');
-  if (id === 'maple' && !s.flags.fixMaple) await say(N.maple, 'That pink light on my porch whispers that a big refund is free money, dear. I have so much held back now that I cannot afford lamp oil. If only someone would bring a light.');
+  if (id === 'rowan' && !s.flags.fixRowan) return say(N.rowan, "I turned down a raise last spring. Didn't want a higher bracket eating my whole paycheck. Could you use the Bracket Compass beside me to show me?");
+  if (id === 'basil' && !s.flags.fixBasil) return say(N.basil, s.flags.basilSeal ? 'You broke the seal? Then take it to Registrar Juno at Town Hall. I cannot look.'
+    : 'I sealed my return inside my stall, west of the Work Hall. I was afraid to file because I owe money. Could your Truth Stamp open the shutter?');
+  if (id === 'maple' && !s.flags.fixMaple) return say(N.maple, 'A pink wisp on my porch keeps calling my refund free money. Could you hold a Lantern near it?');
   return talk0(id);
 };
 

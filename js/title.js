@@ -94,13 +94,11 @@ const T = LQ.title = {
     LQ.started = true;
     if (!saved) {
       LQ.setScene({ draw(g) { g.fillStyle = '#07081a'; g.fillRect(0, 0, LQ.BW, LQ.BH); } }); LQ.fadeA = 0; LQ.busy++;
-      await LQ.say(null, 'The Ledgerlands. A realm where every coin has a story, and where every spring, without fail, Tax Season arrives.');
       if (skip) await LQ.say(null, ['', 'You are skipping ahead. Your hero has already finished Chapter 1 in Paystub Village: the Mythmonger is beaten, the first return is filed, and there are 500 coins in the purse.',
         'You are skipping ahead. Your hero has already finished Chapters 1 and 2: two returns filed, a cottage by the sea, a marriage to Marlowe, a stepdaughter called Coral, and 900 coins in the purse.',
         'You are skipping ahead. Your hero has already finished Chapters 1 to 3: three returns filed, a family in Shelter Coast, a side gig in Hustle Canyon, and 1,400 coins in the purse.'][skip]);
-      else await LQ.say(null, 'You have just come to Paystub Village with a new job, twenty coins, and no idea how taxes work. Your cottage rents for almost nothing. Nobody would say why.');
       // The playable opening picks the career from a letter in the cottage. Skipping it picks the career here, as before.
-      const play = !skip && await LQ.choose(null, 'How do you want to begin?', ['Play the opening', 'Skip the opening (I know how to play)']) === 0;
+      const play = !skip && await LQ.choose(null, 'How do you want to begin?', ['Play the tutorial', 'Skip the tutorial']) === 0;
       if (play) Object.assign(LQ.state, { px: 16 * 16 + 8, py: 34 * 16 + 14, dir: 'down' }).flags.intro = 1;
       else {
         LQ.state.flags.intro = 9;
@@ -151,6 +149,7 @@ const T = LQ.title = {
   },
   drawUI(c) {
     const t = LQ.time, cx = LQ.VW / 2;
+    if (ui.choice || ui.dlg) return;
     c.textAlign = 'center'; c.textBaseline = 'top';
     c.font = F(58, true); const y = 92 + Math.sin(t * 1.6) * 5;
     c.fillStyle = 'rgba(53,240,230,.16)'; for (const [ox, oy] of [[-4, 0], [4, 0], [0, -4], [0, 4]]) c.fillText('LEDGER QUEST', cx + ox, y + oy);

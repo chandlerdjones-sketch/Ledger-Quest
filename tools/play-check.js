@@ -47,6 +47,7 @@ async function frame(count = 1) {
 }
 const dispatch = (type, key) => emit(type, { key, preventDefault: noop, repeat: false });
 async function press(key) { dispatch('keydown', key); await frame(); dispatch('keyup', key); }
+const shieldFallback = new WeakSet();
 async function drain(select, end = () => !LQ.busy && !LQ.title.locked, limit = 2500) {
   for (let i = 0; i < limit; i++) {
     if (ui.dlg || ui.okWait) await press('Enter');
@@ -58,9 +59,16 @@ async function drain(select, end = () => !LQ.busy && !LQ.title.locked, limit = 2
     } else if (LQ.battle && LQ.battle.dodge) {
       // The boss movement phase: walk straight to the truth shard.
       const d = LQ.battle.dodge, at = LQ.battle.pos, k = LQ.input.down;
-      k.right = at.x < d.sx - 3; k.left = at.x > d.sx + 3; k.down = at.y < d.sy - 3; k.up = at.y > d.sy + 3;
+      if (LQ.battle.bossHP === LQ.battle.maxHP) shieldFallback.add(d);
+      const idle = shieldFallback.has(d);
+      k.right = !idle && at.x < d.sx - 3; k.left = !idle && at.x > d.sx + 3;
+      k.down = !idle && at.y < d.sy - 3; k.up = !idle && at.y > d.sy + 3;
+      k.use = !!idle;
       await frame();
-      if (!LQ.battle.dodge) k.right = k.left = k.down = k.up = false;
+      if (!LQ.battle.dodge) {
+        if (idle) { assert(d.elapsed >= 6); assert.equal(d.hits, 0); }
+        k.right = k.left = k.down = k.up = k.use = false;
+      }
     } else if (end()) return;
     else if (LQ.scene !== LQ.world && LQ.scene !== LQ.title && !LQ.scene.cfg && LQ.scene.update) await press('Enter');
     else await frame();
@@ -236,8 +244,38 @@ async function talk(find, choose = () => 0) {
   s().flags.lanternRent = true; s().tool = 'lantern'; Object.assign(w.p, { x: 11 * 16 + 8, y: 34 * 16 + 13 }); await frame(40); await drain(() => 0, untilIdle);
   assert(s().flags.fixMaple && LQ.bazaarOff(), 'the lantern clears Granny Maple\'s porch');
   delete s().flags.lanternRent;
-  const beforeShift = s().coins; await talk(e => e.type === 'board'); assert.equal(LQ.scene, w);
-  assert.equal(s().flags.shiftN, 1); assert(s().coins >= beforeShift); assert.equal(LQ.jobs.left(), 1);
+  const jobs = LQ.jobs;
+  const beforeShift = s().coins;
+  await talk(e => e.type === 'board'); assert.equal(LQ.scene, w);
+  assert.equal(s().coins, beforeShift); assert.equal(jobs.left(), 2, 'zero-score shifts preserve paid attempts');
+  for (const remaining of [1, 0, 0]) {
+    const board = w.ents.find(e => e.type === 'board');
+    near(board); await press('Enter');
+    await drain(() => 0, () => jobs.G?.live);
+    const game = jobs.G;
+    const src = game.sources[0], spot = game.spots[0];
+    if (src) { Object.assign(game.p, { x: src.x, y: 62 }); await press('Enter'); }
+    spot.task = { left: 2, max: 2, pts: 1, want: 0 };
+    Object.assign(game.p, { x: spot.x, y: spot.y });
+    if (career === 'food') {
+      game.carry = 1; await press('Enter');
+      assert(spot.task && game.score === 0, 'wrong order can be corrected');
+      game.carry = 0;
+    }
+    await press('Enter');
+    assert.equal(game.score, 1);
+    const coins = s().coins, pay = jobs.pay(1).net;
+    game.t = .01;
+    for (let i = 0; i < 20 && !ui.okWait && !ui.dlg; i++) await frame();
+    assert.equal(jobs.left(), remaining);
+    assert.equal(s().coins, coins + (ui.okWait ? pay : 0));
+    assert.equal(LQ.loadSlot(1).coins, s().coins, 'pay is saved before closing the stub');
+    await drain(() => 0, untilIdle);
+  }
+  const discounted = LQ.shopPrice(120);
+  s().coins = discounted;
+  await shop([`Saver's Credit Guidebook  -  ${discounted}`, "Buy Saver's Credit Guidebook", 'Leave']);
+  assert(LQ.has('guide')); assert.equal(s().coins, 0, 'the shown discounted price is enough');
   assert(LQ.kit.owned().some(tool => tool.id === 'compass'));
   s().tool = 'compass'; near(w.ents.find(e => e.type === 'falsetree'));
   await frame(8); await press('e'); assert(s().flags.v1path);
@@ -254,7 +292,7 @@ async function talk(find, choose = () => 0) {
   const passAudit = s().coins; LQ.script(LQ.audit); await drain(() => 0, untilIdle); assert(s().coins > passAudit);
   let wrong = false;
   await talk(e => e.qid === 'boss', ch => {
-    if (ch.prompt === 'Counter the myth:' && !wrong) { wrong = true; return 1; } return 0;
+    if (ch.who?.name === 'Baron Befuddle' && !wrong) { wrong = true; return 1; } return 0;
   });
   await frame(); await drain(() => 0, untilIdle);
   assert.equal(s().quest, 8); assert(s().flags.page3);
@@ -306,12 +344,12 @@ async function talk(find, choose = () => 0) {
     if (s().region !== region) await travel(region);
     const available = LQ.gearFor().filter(item => !LQ.has(item.id));
     const before = s().coins;
-    const names = available.flatMap(item => [`${item.name}  -  ${item.price}`, `Buy ${item.name}`]);
+    const names = available.flatMap(item => [`${item.name}  -  ${LQ.shopPrice(item.price)}`, `Buy ${item.name}`]);
     await shop([...names, 'Leave']);
     for (const item of available) assert(LQ.has(item.id));
     // Granny Maple's tenth applies at the Saffron Bazaar only.
     assert.equal(LQ.bazaarOff(), region === 'village');
-    assert.equal(before - s().coins, available.reduce((sum, item) => sum + item.price - (LQ.bazaarOff() ? Math.round(item.price * .1) : 0), 0));
+    assert.equal(before - s().coins, available.reduce((sum, item) => sum + LQ.shopPrice(item.price), 0));
   }
   assert.equal(s().gear.length, LQ.GEAR.length);
   assert.equal(new Set(s().gear).size, LQ.GEAR.length);

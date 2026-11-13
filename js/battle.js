@@ -6,7 +6,7 @@ const pc = r => Math.round(r * 100) + '%';
 const MYTHS = [
   { myth: 'A raise that pushes you into a higher bracket SHRINKS your whole paycheck!',
     opts: ['Only the dollars above the line get the higher rate.', 'True. Refuse any raise near a bracket line.', 'Brackets are random. Nobody understands them.'],
-    truth: 'Brackets are marginal. A raise always leaves you with more than before.' },
+    truth: 'Only the dollars above the bracket line pay the higher rate.' },
   { myth: 'A big refund is FREE bonus money from the kingdom!',
     opts: ['A refund is my own money, over-withheld all year, coming back.', 'Yes! The bigger the refund, the more I won.', 'Refunds are a reward for filing early.'],
     truth: 'A refund means too much was withheld. It was yours the whole time.' },
@@ -60,8 +60,8 @@ const B = LQ.battle = {
       for (const b of D.bolts) { g.fillStyle = 'rgba(4,3,16,.4)'; g.fillRect(b.x - 3, b.y, 6, 2); g.fillStyle = '#ff4fb0'; g.fillRect(b.x - 4, b.y - 15, 8, 5); g.fillStyle = '#ffffff'; g.fillRect(b.x - 2, b.y - 14, 3, 2); }
     }
     g.fillStyle = 'rgba(4,3,16,.5)'; g.fillRect(hx, hy - 2, 32, 5);
-    const walk = D && D.moving ? Math.floor(t * 8) % 2 : Math.floor(t * 1.5) % 2;
-    if (!(D && D.inv > 0 && Math.floor(t * 14) % 2)) g.drawImage(LQ.charSprite(LQ.HERO.look, 'right', walk ? 4 : 0), hx, hy - 48, 32, 48);
+    const walk = D && D.moving ? Math.floor(t * 8) % 4 : 0;
+    if (!(D && D.inv > 0 && Math.floor(t * 14) % 2)) g.drawImage(LQ.charSprite(LQ.HERO.look, 'right', walk), hx, hy - 48, 32, 48);
     if (D && D.block) { g.fillStyle = '#35f0e6'; g.fillRect(hx + 29, hy - 34, 3, 24); g.fillStyle = '#eef4ff'; g.fillRect(hx + 30, hy - 30, 1, 16); }
     LQ.fx.end(g); LQ.fx.light(hx + 16, hy - 23, 36, '#35f0e6', .4);
     if (D) { LQ.fx.light(D.sx, D.sy - 16, 20, '#ffcf4a', .7); for (const b of D.bolts) LQ.fx.light(b.x, b.y - 12, 10, '#ff4fb0', .5); }
@@ -71,16 +71,17 @@ const B = LQ.battle = {
   },
   fog() { return this.bossHP / this.maxHP * (1 - this.dead); },
   drawUI(c) {
-    const K = this.cfg; ui.panel(c, 560, 24, 370, 62); ui.text(c, K.label, 576, 34, K.bar[1], F(11, true));
+    const K = this.cfg; ui.panel(c, 560, 24, 370, 62); ui.text(c, K.label, 576, 34, K.bar[1], F(11, true), 'left', 338);
     c.fillStyle = '#231a36'; c.fillRect(576, 56, 338, 18); c.fillStyle = K.bar[0]; c.fillRect(578, 58, 334 * this.bossHP / this.maxHP, 14); c.fillStyle = K.bar[1]; c.fillRect(578, 58, 334 * this.bossHP / this.maxHP, 4);
     ui.panel(c, 30, 24, 250, 62); ui.text(c, 'CONFIDENCE', 46, 34, '#ffe98a', F(11, true));
     for (let i = 0; i < 4; i++) { c.fillStyle = i < this.hearts ? '#ff4fb0' : '#2a2550'; const x = 48 + i * 40, y = 54; c.fillRect(x, y + 4, 28, 12); c.fillRect(x + 4, y, 8, 4); c.fillRect(x + 16, y, 8, 4); c.fillRect(x + 4, y + 16, 20, 4); c.fillRect(x + 8, y + 20, 12, 4); }
     if (this.dodge && !ui.dlg) {
       const D = this.dodge, shield = LQ.state.items.includes('shield');
-      ui.text(c, 'Dodge the myths and grab the truth shard.   Arrows: move' + (shield ? '   Hold E: shield' : ''), 480, 500, '#ffe98a', F(22), 'center');
-      if (D.lost) ui.text(c, '-' + D.lost + ' coins', 480, 470, '#ff4fb0', F(22), 'center');
+      c.fillStyle = 'rgba(9,11,24,.92)'; c.fillRect(80, 100, 800, 34);
+      ui.text(c, 'Reach the gold shard    Arrows or WASD: move' + (shield ? '    Hold E: shield' : ''), 480, 104, '#ffe98a', F(24), 'center', 760);
+      if (D.lost) ui.text(c, D.lost + ' coins lost', 480, 55, '#ff8aaf', F(24), 'center');
     }
-    if (this.bubble && !ui.dlg) {
+    if (this.bubble && !this.dodge && !ui.dlg && !ui.choice) {
       c.font = F(28); const lines = ui.wrap(c, this.bubble, 312), h = lines.length * 29 + 26, y = 104;
       c.fillStyle = '#090b18'; c.fillRect(192, y - 4, 356, h + 8); c.fillStyle = '#e6eaff'; c.fillRect(196, y, 348, h);
       c.fillStyle = '#e6eaff'; c.beginPath(); c.moveTo(544, y + 20); c.lineTo(590, y + 8); c.lineTo(544, y + 46); c.fill();
@@ -89,7 +90,7 @@ const B = LQ.battle = {
   },
 };
 // The movement phase: cross the field, dodge the myth bolts, and grab the truth shard to earn your answer.
-// A bolt costs coins, never hearts. After three hits the shard comes to you, so nobody gets stuck.
+// A bolt costs coins, never hearts. The shard approaches after three hits or six seconds.
 const FIELD = { x0: 18, x1: 196, y0: 122, y1: 174 };
 function stepDodge(B, D, dt) {
   const inp = LQ.input.down, P = B.pos, st = LQ.state;
@@ -97,8 +98,8 @@ function stepDodge(B, D, dt) {
   const sp = 74 * (D.block ? .45 : 1), mx = (inp.right ? 1 : 0) - (inp.left ? 1 : 0), my = (inp.down ? 1 : 0) - (inp.up ? 1 : 0), k = mx && my ? .707 : 1;
   D.moving = !!(mx || my);
   P.x = LQ.clamp(P.x + mx * sp * k * dt, FIELD.x0, FIELD.x1); P.y = LQ.clamp(P.y + my * sp * k * dt, FIELD.y0, FIELD.y1);
-  D.inv -= dt; D.next -= dt;
-  if (D.next <= 0) {
+  D.inv -= dt; D.next -= dt; D.elapsed += dt;
+  if (D.next <= 0 && D.elapsed < 6 && D.hits < 3) {
     D.next = D.gap; D.n++;
     // every other bolt is aimed at where you stand; the rest sweep a random lane
     const y = D.n % 2 ? P.y : FIELD.y0 + Math.random() * (FIELD.y1 - FIELD.y0);
@@ -109,21 +110,21 @@ function stepDodge(B, D, dt) {
     if (Math.abs(b.x - P.x) < 9 && Math.abs(b.y - P.y) < 8) {
       b.x = -99;
       if (D.block) LQ.audio.sfx('ok');
-      else if (D.inv <= 0) {
+      else if (D.inv <= 0 && D.hits < 3 && D.elapsed < 6) {
         const cost = Math.min(8, st.coins); st.coins -= cost; D.lost += cost; D.hits++; D.inv = 1;
         P.x = Math.max(FIELD.x0, P.x - 14); LQ.audio.sfx('hit'); LQ.shake(0.2); B.hurt = 1; LQ.wait(0.3).then(() => { B.hurt = 0; });
       }
     }
   }
   D.bolts = D.bolts.filter(b => b.x > -8);
-  if (D.hits >= 3) { const dx = P.x - D.sx, dy = P.y - D.sy, d = Math.hypot(dx, dy) || 1; D.sx += dx / d * 60 * dt; D.sy += dy / d * 60 * dt; }
+  if (D.hits >= 3 || D.elapsed >= 6) { const dx = P.x - D.sx, dy = P.y - D.sy, d = Math.hypot(dx, dy) || 1; D.sx += dx / d * 60 * dt; D.sy += dy / d * 60 * dt; }
   if (Math.abs(P.x - D.sx) < 12 && Math.abs(P.y - D.sy) < 10) { B.dodge = null; LQ.audio.sfx('learn'); D.done(D.lost); }
 }
 async function dodgePhase(round) {
   const P = B.pos, fx = P.x, fy = P.y;
   await LQ.tween(0.25, k => { P.x = fx + (38 - fx) * k; P.y = fy + (148 - fy) * k; });
   const lost = await new Promise(done => {
-    B.dodge = { sx: 176, sy: FIELD.y0 + 6 + Math.random() * (FIELD.y1 - FIELD.y0 - 12), bolts: [], next: 0.5, n: 0, hits: 0, inv: 0, lost: 0,
+    B.dodge = { sx: 176, sy: FIELD.y0 + 6 + Math.random() * (FIELD.y1 - FIELD.y0 - 12), bolts: [], next: 0.5, n: 0, hits: 0, inv: 0, lost: 0, elapsed: 0,
       gap: Math.max(0.36, 0.62 - round * 0.035), speed: Math.min(150, 92 + round * 8), done };
   });
   if (lost) ui.toast('The myths cost you ' + lost + ' coins');
@@ -167,12 +168,12 @@ LQ.startBattle = async (id = 'baron') => {
   while (queue.length) {
     const m = queue.shift();
     B.bubble = m.myth; LQ.audio.sfx('wrong'); B.scraps = 1; await LQ.tween(0.5, k => { B.scraps = 1 - k; }); B.scraps = 0;
-    if (K.move) await dodgePhase(round++);
     const first = !attempted.has(m);
+    if (K.move && first) await dodgePhase(round++);
     attempted.add(m);
     if (first) st.asked++;
     const order = LQ.shuffle([0, 1, 2]);
-    const pick = order[await LQ.choose(LQ.HERO, 'Counter the myth:', order.map(i => m.opts[i]))];
+    const pick = order[await LQ.choose(K.who, m.myth, order.map(i => m.opts[i]))];
     if (pick === 0) {
       if (first) { st.first++; LQ.score(true); }
       await strike(m.truth);
@@ -187,7 +188,7 @@ LQ.startBattle = async (id = 'baron') => {
   }
   const fin = K.final();
   B.bubble = fin.bubble; LQ.audio.sfx('wrong'); await LQ.wait(0.4);
-  await LQ.ask(LQ.HERO, fin.prompt, fin.opts, { onWrong: async () => { B.hurt = 1; await LQ.wait(0.4); B.hurt = 0; }, wrong: fin.wrong });
+  await LQ.ask(K.who, fin.bubble, fin.opts, { onWrong: async () => { B.hurt = 1; await LQ.wait(0.4); B.hurt = 0; }, wrong: fin.wrong });
   await strike(fin.strike);
   await LQ.say(K.who, K.lastWords);
   LQ.audio.sfx('rumble'); LQ.shake(0.8); await LQ.tween(1.6, k => { B.dead = k; }); LQ.audio.stop(); LQ.audio.sfx('fanfare');

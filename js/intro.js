@@ -98,8 +98,7 @@ LQ.ROOMS.cottage1 = {
   arrive: async () => {
     const s = st(); if (stage() !== 1 || s.flags.introWoke) return;
     s.flags.introWoke = true;
-    await say(null, 'Your first night in Paystub Village. Rain on the roof. A cottage of your own, for almost nothing.');
-    await say(null, 'On the table sits the letter you were too tired to open.');
+    await say(null, 'Your first night in Paystub Village. Use the arrow keys or WASD to walk to the glowing letter. Face the table and press Space to read it.');
   },
 };
 
@@ -220,7 +219,7 @@ LQ.tip = w => {
   } else if (id === 'cellar1' && s.quest === 0) {
     if (!s.items.includes('stamp')) return 'Space: use things. Try the green lamp, then the pedestal';
     if (!s.flags.cellarGate) return 'Face the gold seal by the gate and press E';
-    if (C && C.imp) return 'E: swing the stamp. Two hits. Step back when it lunges';
+    if (C && C.imp) return 'Face the imp and press E twice to swing. Step back between hits.';
     if (C && C.purse) return 'Walk over your purse to take it';
     if (n === 4) return s.flags.sawDoor ? 'J: see your items. Wisps cannot be struck, so slip past or leave those coins' : 'A tall door glows beyond the gate. Go and read it';
     if (n === 9) return 'Go back up the stairs';
