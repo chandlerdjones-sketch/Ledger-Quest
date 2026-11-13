@@ -223,12 +223,13 @@ LQ.shop = async who => {
     ui.doc = null;
     if (confirm === 0) continue;
     const before = LQ.cur().total;
-    st().coins -= g.price; st().gear.push(g.id); LQ.audio.sfx('fanfare');
+    const back = LQ.bazaarOff && LQ.bazaarOff() ? Math.round(g.price * .1) : 0;
+    st().coins -= g.price - back; st().gear.push(g.id); LQ.audio.sfx('fanfare');
     const saved = before - LQ.cur().total;
     if (!st().journal.includes('gearTiming')) LQ.learn('gearTiming');
     LQ.save();
     const effect = saved === 0 ? '' : ` Your ${st().q4 === 9 ? 'modeled' : 'projected'} federal tax ${saved > 0 ? 'fell' : 'rose'} by ${M(Math.abs(saved))}.`;
-    await LQ.say(who, 'Sold! ' + g.name + ' is yours.' + effect + (g.save ? ' The price you paid now counts toward your in-game savings.' : ''));
+    await LQ.say(who, 'Sold! ' + g.name + ' is yours.' + effect + (g.save ? ' The price you paid now counts toward your in-game savings.' : '') + (back ? ` Granny Maple's tenth: ${back} coins back.` : ''));
   }
   await LQ.say(who, 'Safe travels.');
 };

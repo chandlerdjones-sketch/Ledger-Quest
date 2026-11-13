@@ -120,23 +120,25 @@ const K = LQ.kit = {
 
 // Extra lines every shop offers after its gear: a tonic, a lantern for one trip, and a rumor about a secret.
 LQ.RUMORS = {};
+// Granny Maple's thanks: a tenth off at the Saffron Bazaar. Gear keeps its listed price and pays the tenth back, so the tax math never moves.
+LQ.bazaarOff = () => !!st().flags.fixMaple && st().region === 'village';
 LQ.shopExtras = () => {
-  const s = st(), out = [];
-  out.push({ label: 'Tonic  -  15', run: async who => {
-    if (s.coins < 15) return LQ.say(who, 'A tonic is 15 coins. You are a little short.');
-    s.coins -= 15; s.flags.tonics = (s.flags.tonics || 0) + 1; sfx('coin'); LQ.save();
+  const s = st(), out = [], off = n => LQ.bazaarOff() ? Math.round(n * .9) : n, tonic = off(15), rent = off(10), rumor = off(20);
+  out.push({ label: 'Tonic  -  ' + tonic, run: async who => {
+    if (s.coins < tonic) return LQ.say(who, 'A tonic is ' + tonic + ' coins. You are a little short.');
+    s.coins -= tonic; s.flags.tonics = (s.flags.tonics || 0) + 1; sfx('coin'); LQ.save();
     await LQ.say(who, 'One tonic. Press Q until it is in hand, then E to drink. It mends two hearts.');
   } });
-  if (!K.hasLantern()) out.push({ label: 'Rent a lantern  -  10', run: async who => {
-    if (s.coins < 10) return LQ.say(who, 'Lantern rental is 10 coins. You are a little short.');
-    s.coins -= 10; s.flags.lanternRent = true; sfx('coin'); LQ.save();
+  if (!K.hasLantern()) out.push({ label: 'Rent a lantern  -  ' + rent, run: async who => {
+    if (s.coins < rent) return LQ.say(who, 'Lantern rental is ' + rent + ' coins. You are a little short.');
+    s.coins -= rent; s.flags.lanternRent = true; sfx('coin'); LQ.save();
     await LQ.say(who, 'One lantern for the Lantern Cave. Press Q until it is in hand. The rental ends when you leave the cave or wake at the Notary Lamp.');
   } });
   const r = (LQ.RUMORS[s.region] || []).find(x => !x.done(s));
-  if (r) out.push({ label: s.flags['rumor_' + r.id] ? 'Hear the rumor again' : 'Buy a rumor  -  20', run: async who => {
+  if (r) out.push({ label: s.flags['rumor_' + r.id] ? 'Hear the rumor again' : 'Buy a rumor  -  ' + rumor, run: async who => {
     if (!s.flags['rumor_' + r.id]) {
-      if (s.coins < 20) return LQ.say(who, 'Rumors are 20 coins. You are a little short.');
-      s.coins -= 20; s.flags['rumor_' + r.id] = true; sfx('coin'); LQ.save();
+      if (s.coins < rumor) return LQ.say(who, 'Rumors are ' + rumor + ' coins. You are a little short.');
+      s.coins -= rumor; s.flags['rumor_' + r.id] = true; sfx('coin'); LQ.save();
     }
     await LQ.say(who, r.text);
   } });

@@ -99,7 +99,7 @@ LQ.state = base();
 // ---- 2b. Paystub Village adventure content: carved paths, rooms, and puzzles
 console.log('== Adventure');
 { LQ.state = base(); Object.assign(LQ.state, { region: 'village', flags: {} });
-  const V = LQ.V1, D = V.DOOR, extra = V.STONES.map(s => [s.tx, s.ty]).concat(V.LAMPS, [D.cache]);
+  const V = LQ.V1, D = V.DOOR, extra = V.STONES.map(s => [s.tx, s.ty]).concat(V.LAMPS, [D.cache], V.FIX.stall, [V.FIX.board]);
   const r = reach(LQ.REGIONS.village, LQ.CH1, [24, 37], extra);
   const front = (p, name) => { if (!r.seen[p[1] + 1][p[0]]) fail('village: cannot stand in front of ' + name); };
   front(D.vault, 'the vault door'); front(D.cave, 'the cave mouth'); front(D.cache, 'the cache'); V.LAMPS.forEach(p => { if (![[1, 0], [-1, 0], [0, 1]].some(([dx, dy]) => r.seen[p[1] + dy][p[0] + dx])) fail('village: lamp unreachable ' + p); });
@@ -108,6 +108,15 @@ console.log('== Adventure');
   if (shut.seen[D.cache[1] + 1][D.cache[0]]) fail('village: the cache can be reached without the Bracket Compass');
   for (const x of [7, 8]) { const off = Math.round(Math.sin(x / 4)); if (!r.seen[13 + off][x] || !r.seen[16 + off][x]) fail('village: west bridge landing unreachable at x=' + x); }
   console.log('  village paths checked, trees ' + r.m.trees.length); }
+// Phase 2: the fooled villagers. Rowan's cart must close the east footbridge, and the bridge must work once it is gone.
+{ LQ.state = base(); Object.assign(LQ.state, { region: 'village', flags: {} });
+  const F = LQ.V1.FIX, mid = [[23, 14], [24, 14]];
+  if (reach(LQ.REGIONS.village, LQ.CH1, [24, 37], mid.concat([F.cart])).seen[12][30]) fail('village: the east footbridge can be crossed around Rowan\'s cart');
+  const open = reach(LQ.REGIONS.village, LQ.CH1, [24, 37], mid);
+  if (!open.seen[12][30]) fail('village: the east footbridge does not reach the north bank');
+  if (!open.seen[F.porch[1] + 1][F.porch[0]]) fail('village: cannot stand by Granny Maple\'s porch');
+  console.log('  fooled villagers checked');
+}
 // Flood fill inside a room. `open` lists part characters to treat as walkable.
 function roomFill(m, start, blocked) {
   const seen = new Set([start.join(',')]), q = [start];
