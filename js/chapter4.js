@@ -528,7 +528,7 @@ LQ.CH4 = {
   signs: [
     { tx: 22, ty: 13, fn: () => st().flags.boss4 ? 'THE PEAK. Quiet again. The view is free.' : 'THE PEAK. Beware of hot tips. If it sounds too good to be true, it is roaring.' },
     { tx: 21, ty: 22, text: 'SUMMIT OF GAINS. North-west: the Assay House and the Clock Tower. North-east: the Summit Bank and the Avalanche Station. South-west: the Summit Lodge and Base Camp. South-east: the Summit Tax Office. In the plaza: the Summit Outfitter and the Summit Exchange. South: the trail down to Hustle Canyon.' },
-    { tx: 26, ty: 23, fn: () => 'THE SUMMIT GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Prices react tomorrow.)' + (st().flags.boss4 ? '' : ' Standing notice: Glacier Goldworks will send its crews back up if the peak is ever made safe.') },
+    { tx: 26, ty: 23, fn: () => 'THE SUMMIT GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Already in today\'s price.)' + (st().flags.boss4 ? '' : ' Standing notice: Glacier Goldworks will send its crews back up if the peak is ever made safe.') },
     { tx: 22, ty: 41, text: 'SOUTH TRAIL to Hustle Canyon.' },
   ],
   talk: async id => {

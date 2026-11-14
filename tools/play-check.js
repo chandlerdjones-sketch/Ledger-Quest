@@ -54,6 +54,9 @@ const shieldFallback = new WeakSet(), seenMoves = new Set();
 let chapterOneHit = false;
 // The hands-on activities. Each phase is first handed in wrong, to prove the explanation and the retry, then played right.
 const tried = new Set(), recovered = [];
+// Every line of dialogue shown, so a test can prove a scene really played. Also the pages shown after the last stamp.
+const said = []; let lastDlg = null, endingPages = 0;
+const heard = text => said.some(line => line.includes(text));
 async function playDoc(d) {
   const first = !tried.has(d.phase + (d.title || 'hold')); tried.add(d.phase + (d.title || 'hold'));
   if (first) recovered.push(d.phase);
@@ -82,6 +85,8 @@ async function playDoc(d) {
 }
 async function drain(select, end = () => !LQ.busy && !LQ.title.locked, limit = 2500) {
   for (let i = 0; i < limit; i++) {
+    if (ui.dlg && ui.dlg !== lastDlg) { lastDlg = ui.dlg; said.push(ui.dlg.pages.map(p => p.join(' ')).join(' ')); }
+    if (ui.okWait && ui.doc && LQ.state.flags.ledgerDone && LQ.world.room?.room === 'backoffice') endingPages++;
     if (ui.dlg || ui.okWait) await press('Enter');
     else if (ui.choice) {
       const index = select(ui.choice);
@@ -441,6 +446,7 @@ async function talk(find, choose = () => 0) {
   };
   await collect(w.ents.find(e => e.rid));
   assert.equal(status().count, 'Receipts 2/7');
+  w.auditSeen = null; assert.equal(LQ.auditAllowed(w), false, 'no audits in the middle of a hunt');
   LQ.state = LQ.loadSlot(1); w.start();
   assert.equal(status().count, 'Receipts 2/7'); assert.equal(w.ents.filter(e => e.rid).length, 5);
   await travel('village'); assert.match(status().hint, /Return to Shelter Coast/);
@@ -448,6 +454,7 @@ async function talk(find, choose = () => 0) {
   assert.equal(w.ents.filter(e => e.rid).length, 5);
   for (const e of w.ents.filter(e => e.rid)) await collect(e);
   assert.equal(status().count, 'Receipts 7/7'); assert.match(status().hint, /All lost receipts found/);
+  w.auditSeen = null; assert.equal(LQ.auditAllowed(w), true, 'audits may return once the hunt is done');
   assert(LQ.CH2.hunt.every(id => LQ.loadSlot(1).rcpt[id]));
 
   // Fill, swap, store and cycle the Field Kit through the actual menu.
@@ -476,7 +483,10 @@ async function talk(find, choose = () => 0) {
   await talk(e => e.npc?.id === 'tallow');
   console.log('Coast cutscene advance and skip, seven receipts, finder toggle, reload, return travel and Field Kit swap passed');
   assert.equal(s().q2, 6);
-  await talk(e => e.qid === 'boss2'); await talk(e => e.npc?.id === 'fathom'); assert.equal(s().q2, 8);
+  await talk(e => e.qid === 'boss2');
+  assert(s().flags.page5 && s().items.includes('invoice2') && heard('Folded into Captain Loophole') && heard('a cellar in Paystub Village'), 'Loophole’s page and invoice are read out after the fight');
+  await talk(e => e.npc?.id === 'fathom'); assert.equal(s().q2, 8);
+  assert(s().flags.page6 && heard('Folded into your stamped joint return'), 'the filing page arrives when the return is stamped');
   await travel('canyon'); assert.equal(s().q3, 0);
   assert(!w.R.exits.find(exit => exit.to === 'summit').open(s()));
   for (const id of ['juniper', 'mesa', 'lupe', 'flint', 'dune', 'brick']) {
@@ -535,7 +545,9 @@ async function talk(find, choose = () => 0) {
     await talk(e => e.qid === 'boss3', ch => { if (ch.who?.name && !miss && LQ.scene === LQ.battle) { miss = true; return ch.options.findIndex((o, i) => i !== 0 && o) ; } return 0; });
     assert(s().hp < before && s().hp > 0 && s().hp * 4 % 1 === 0, 'boss damage is in quarter hearts and carries into the world: ' + s().hp);
     assert.equal(LQ.loadSlot(1).hp, s().hp, 'carried hearts are saved'); }
+  assert(s().flags.page8 && s().items.includes('invoice3') && heard('the seal of the Great Ledger office'), 'Slick’s page and invoice are read out after the fight');
   await talk(e => e.npc?.id === 'sage'); assert.equal(s().q3, 8);
+  assert(s().flags.page9 && heard('Folded into your stamped Schedule C'));
   await travel('summit'); assert.equal(s().q4, 0);
   await house('house4'); s().hp = 1.25;
   await talk(e => e.type === 'brazier'); assert.equal(s().hp, LQ.kit.maxHp());
@@ -575,12 +587,39 @@ async function talk(find, choose = () => 0) {
     });
   }
   assert.equal(s().q4, 7);
-  await talk(e => e.qid === 'boss4'); await talk(e => e.npc?.id === 'alpen'); assert.equal(s().q4, 9);
-  await travel('canyon'); await travel('coast'); await travel('village');
+  await talk(e => e.qid === 'boss4');
+  assert(s().flags.page11 && s().items.includes('invoice4') && heard('Q. Murk, Head Clerk of the Great Ledger'), 'the Dragon’s invoice names Murk out loud');
+  // Audits: one per visit to a region, none in a hunt, none after the last return.
+  w.auditSeen = null; assert.equal(LQ.auditAllowed(w), true);
+  w.auditSeen = w.R.id; assert.equal(LQ.auditAllowed(w), false, 'one audit per visit to a region');
+  w.auditSeen = null;
+  await talk(e => e.npc?.id === 'alpen'); assert.equal(s().q4, 9);
+  assert(s().flags.page12 && heard('Folded into your stamped Schedule D'));
+  assert(!heard('Tucked among the papers'), 'no page waits for the stand-still collector on a normal run');
+  w.auditSeen = null; assert.equal(LQ.auditAllowed(w), false, 'no audits once the last return is filed');
+  // The Gazette explains today's move. Buying on a headline gives no edge the next day.
+  { const keep = JSON.stringify({ prices: s().prices, prev: s().prev, day: s().day, news: s().news, gazette: s().gazette, seed: s().seed });
+    let sameDay = 0, nextDay = 0, n = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      s().seed = seed * 7919;
+      for (let d = 0; d < 25; d++) {
+        const before = { ...s().prices }; LQ.tick();
+        const { id, pct } = s().news, stock = LQ.STOCKS.find(x => x.id === id), p0 = s().prices[id];
+        if (Math.sign(p0 - before[id]) === Math.sign(pct)) sameDay++;
+        LQ.tick(); nextDay += s().prices[id] / p0 - 1 - stock.drift; n++;
+      }
+    }
+    assert(sameDay / n > .8, 'a headline moves its stock the day it prints: ' + sameDay / n);
+    assert(Math.abs(nextDay / n) < .03, 'the day after a headline has no reliable direction: ' + nextDay / n);
+    Object.assign(s(), JSON.parse(keep)); }
+  w.auditSeen = 'summit';
+  await travel('canyon'); assert.equal(w.auditSeen, null, 'travel starts a new visit');
+  await travel('coast'); await travel('village');
   assert.equal(LQ.loadSlot(1).q4, 9);
   assert(chapterOneHit, 'Chapter 1 took a bolt hit');
   assert.deepEqual([...seenMoves].sort(), ['beam', 'bolts', 'devils', 'fire'], 'every boss ran its own movement pattern');
   console.log('Coast, Canyon and Summit quest chains, three more boss fights and returns, finale and return travel passed');
+  console.log('Boss and filing pages read out in their own scenes, audit limits, and Gazette news with no next-day edge passed');
 
   // The Torn Ledger. Every activity was handed in wrong once and recovered, and all twelve pages are home.
   for (const phase of ['sort', 'pick', 'dial', 'day', 'drop']) assert(recovered.includes(phase), phase + ' was failed once and retried');
@@ -645,6 +684,7 @@ async function talk(find, choose = () => 0) {
   await talk(e => e.who?.name === 'Head Clerk Murk', () => 1);
   await stampAt(e => e.type === 'seal' && e.tx === 9);
   assert(s().flags.ledgerDone && s().items.includes('greatledger')); assert(!w.ents.some(e => e.who?.name === 'Head Clerk Murk'));
+  assert.equal(endingPages, 2, 'the twelve truths and the final record are both shown: ' + endingPages); assert(!ui.doc);
   assert.match(LQ.curQuest().text, /whole/); assert.equal(LQ.loadSlot(1).flags.ledgerDone, true);
   LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle); assert.equal(w.room.room, 'cellar1');
   LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle); LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle);

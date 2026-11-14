@@ -185,6 +185,7 @@ const world = LQ.world = {
     const st = LQ.state;
     await LQ.fadeTo(1, 0.4);
     st.region = x.to; st.px = x.px; st.py = x.py; st.dir = x.dir;
+    this.auditSeen = null;   // a new visit: one more audit may find you here
     this.start(); this.music();
     await LQ.fadeTo(0, 0.5);
     ui.showBanner(this.R.title, this.R.sub());
@@ -243,7 +244,7 @@ const world = LQ.world = {
       if (LQ.rooms) LQ.rooms.tryPush(this, dx, dy, dt);
       if (!this.room) { st.px = p.x; st.py = p.y; st.dir = p.dir; }
       for (const x of R.exits || []) if (p.x >= x.x0 && p.x < x.x1 && p.y >= x.y0 && p.y < x.y1 && (!x.open || x.open(st))) { p.moving = false; p.frame = 0; LQ.script(() => x.leave ? this.exitRoom() : this.travel(x)); return; }
-      if (R.auditOK(st, this.zone)) {
+      if (R.auditOK(st, this.zone) && LQ.auditAllowed(this)) {
         st.auditDist = (st.auditDist || 0) + Math.hypot(p.x - oldX, p.y - oldY);
         if (st.auditDist > (st.auditNext || 2200)) { st.auditDist = 0; st.auditNext = 2200 + Math.random() * 2000; if (LQ.auditPool().length) { p.moving = false; p.frame = 0; LQ.script(LQ.audit); return; } }
       }

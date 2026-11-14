@@ -298,3 +298,60 @@ Needs checking by hand
 - Everything in this batch: where each line lands after a villager's own dialogue, the six music cues by ear, the narration voice and its timing, and the cutscene art and captions.
 - `tools/play-check.js` has not been run since batch 1. Batches 2 to 4 changed tool cycling, Chapter 4's sale clock, villager dialogue, and the arrival at Shelter Coast, so expect it to need updates.
 
+
+## Director's review and final polish plan (Nov 14)
+Claude reviewed the whole game after Codex's QA commit `8c7336a`: all automated checks, plus one full browser run (Nurse, Canyon Kiln) from the cottage to the Back Office ending, driven by real key input with scripted routes and quiz answers.
+
+What the run measured
+| Measure | Result |
+|---|---|
+| Words read on the main path | about 9,600 |
+| Multiple-choice prompts | 103 |
+| Surprise audits | 5, two of them after the story ended |
+| Coins earned and spent | 5,460 and 428 |
+| Bosses | A script walking straight at the pickup won all four |
+| Stock bought on a Gazette tip | 40 a share, 251 at the end |
+
+Findings
+- Strengths to keep: the Bracket Vault and the three boards, live documents with the player's own numbers, the opening and the Torn Ledger mystery, the look and menus, forgiving saves with real consequences.
+- Weaknesses: the main path is a quiz chain, the best content is optional and hidden, coins do not matter, the action has no stakes, and a few messages were mixed (Gazette tips that paid, reveals delivered by toast).
+- No tax errors found. The standard deductions, bracket edges, Child Tax Credit, 1099 thresholds, and the mileage rates were rechecked against IRS sources, and every on-screen sum recomputed by hand matched.
+
+Decisions (Chandler, Nov 14)
+| Question | Decided |
+|---|---|
+| First outside testers | Teens and young adults, about 15 to 25. Keep the real forms and terms, trim jargon up front, move detail to the Journal. |
+| Pacing | Cut and weave: at most three dialogue boxes and two questions per villager, about 60 prompts in all, and one required hands-on beat per chapter from existing content. Chapter 1 is the pilot. |
+| Gazette | News is unreliable. Prices mostly react the same day and the next day can go either way. |
+| Finale | Add a short Murk fight on the existing boss system, then the stamp and the ending pages. The story does not change. |
+
+Roadmap
+| Batch | Scope | State |
+|---|---|---|
+| 1 | Story reveals, Gazette, audit limits, ending pages, small text fixes | Built and tested Nov 14, see below |
+| 2 | Pacing pass on the main path, Chapter 1 first, then Chandler's playtest | Not started |
+| 3 | Side jobs list in the Quest tab, one required hands-on beat per chapter, economy tuning | Not started. The economy numbers need Chandler's yes |
+| 4 | Boss stakes and the Murk fight | Not started. The boss restart rule needs Chandler's yes |
+| 5 | Sprites for Loophole and Slick, shorter title flow, backstory at the start, fast travel | Not started. Fast travel needs Chandler's yes |
+
+## Final polish, batch 1 notes (Nov 14)
+Scope: fixes and mixed messages. No tax math changed. No save fields changed.
+
+What was built
+- `js/depth.js`: `claim(n)` hands over a boss page or a filing page in the scene that earned it and reads its invoice out loud. The three later bosses call it at the end of `done`, and the three later filings call it at the end of the clerk's conversation. The stand-still collector stays for older saves and chapter starters. Before this, a player who kept moving got both pages in one "tucked among the papers" line, and Murk's signature on the Summit invoice was only a toast.
+- `js/depth.js`: Brick and Frost have their own line when they hand over a page, so the three activity pages no longer share one sentence. The sale clock says "an 8% drop". An empty sort board shows a note in place of a blank panel.
+- `js/economy.js`: `LQ.tick` now makes the day's headline first and applies its move the same day. The day after, that stock gets a small move in either direction. Bex's rules, the daily Gazette line, and the four Gazette signs say the news is already in the price. The career cards drop three untaught terms.
+- `js/audit.js` and `js/world.js`: `LQ.auditAllowed` allows one audit per visit to a region, none while a receipt or slip hunt is unfinished, and none once the last return is filed. `world.auditSeen` is not saved, so a reload allows one more.
+- `js/backoffice.js`: two ending pages after the last stamp. The first lists the twelve truths. The second shows the player's record and a thank-you. Page 3 never had a quoted truth, so it now reads "Know your own numbers, and no myth can sell you a fear."
+
+Left alone on purpose
+- Each boss win still lifts one local stock by 45%, as the standing notices on the Gazette signs promise. That is a story reward the player causes, not a tip, but it is worth a second look in Batch 3.
+- The cellar imp can still hit a player who walks straight through the gate. It starts four tiles away, so this stays.
+
+Checks
+- `node tools/check.js .` passes. `node tools/play-check.js . nurse|owner|food` passes with new assertions: each boss page and invoice is read out right after the fight, each filing page arrives with the stamp, nothing waits for the collector on a normal run, the audit limits hold in a hunt, after an audit, after travel and after the last filing, a headline moves its stock the same day, the next day has no reliable direction across 1,000 simulated headlines, and both ending pages are shown.
+- Seen in the browser: both ending pages, the career cards, the broker's new lines, the empty budget board, and a save made before this batch resuming.
+
+Needs a human
+- Whether one audit per region visit feels like too few.
+- How the twelve truths page reads at a small window size.

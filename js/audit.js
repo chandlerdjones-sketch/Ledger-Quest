@@ -45,8 +45,17 @@ function selectQuestions(s, round) {
   reviewed.sort((a, b) => s.auditHistory[questionKey(a)].round - s.auditHistory[questionKey(b)].round);
   return unseen.concat(missed, reviewed).slice(0, 3);
 }
+// Audits are a spice, not a tax on walking: one per visit to a region, never in the middle of a receipt or slip hunt,
+// and none once the last return is filed. `auditSeen` is not saved, so a reload allows one more.
+LQ.auditAllowed = w => {
+  const s = st(), R = w.R;
+  if (s.q4 === 9 || w.auditSeen === R.id) return false;
+  if (R.finder && R.finder.ready(s) && R.content().hunt.some(id => !s.rcpt[id])) return false;
+  return true;
+};
 LQ.audit = async () => {
   const s = st(), w = LQ.world, p = w.p, round = s.audits + 1;
+  w.auditSeen = w.R.id;
   const pool = selectQuestions(s, round);
   if (!pool.length) { s.audits = round; LQ.save(); return; }
   const required = Math.floor(pool.length / 2) + 1;

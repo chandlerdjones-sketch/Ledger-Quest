@@ -53,6 +53,7 @@ function sortDoc(o) {
     D.paper(c, 30, 10, 640, 336, d.title, d.sub);
     c.textBaseline = 'top';
     d.cols.forEach((name, i) => { c.font = F(20); c.textAlign = 'center'; c.fillStyle = COLC[i]; c.fillText(name, CX[i], 44); });
+    if (!n) { c.font = F(22); c.textAlign = 'left'; c.fillStyle = '#5a5490'; ui.wrap(c, d.empty || 'Nothing loose to sort this time.', 600).forEach((ln, i) => c.fillText(ln, 46, 74 + i * 24)); }
     d.rows.forEach((r, i) => {
       const y = 66 + i * rh;
       if (sorting && d.cur === i) { c.fillStyle = '#d7edf1'; c.fillRect(38, y - 1, 624, rh - 1); c.fillStyle = '#1f6f73'; c.fillRect(38, y - 1, 3, rh - 1); }
@@ -171,7 +172,7 @@ async function budget(who) {
   const f = LQ.fin3(), G = f.G, rows = slipRows(), base = f.gigBase + f.tools, bill = f.gigBill;
   const costs = () => base + rows.reduce((a, r) => a + counted(r), 0);
   const personal = () => rows.reduce((a, r) => a + (r.col < 0 ? 0 : r.amt - counted(r)), 0);
-  const d = sortDoc({ title: 'YOUR GIG BUDGET', sub: G.name, cols: ['IN FULL', 'HALF', 'LEAVE OUT'], rows, value: costs, step: JAR_STEP,
+  const d = sortDoc({ title: 'YOUR GIG BUDGET', sub: G.name, empty: 'No loose slips to sort. Your job costs are the ones already in your books.', cols: ['IN FULL', 'HALF', 'LEAVE OUT'], rows, value: costs, step: JAR_STEP,
     chip: (r, k) => k === 2 ? 'out' : M(k ? r.amt / 2 : r.amt),
     goal: 'Decide how much of each slip is a cost of doing the job.',
     note: 'A job cost is money spent to do the work. Profit is what you earned minus your job costs.',
@@ -300,7 +301,8 @@ async function hold(who) {
     d.msg = `Waiting is still ahead by ${M(H.keepWait(d.k) - H.keepNow)}. Press Left to lower the price some more.`;
   }
   sfx('right'); d.msg = ''; d.phase = 'end';
-  await say(who, `There. In this example a ${Math.round(d.k * DROP_STEP * 100)}% drop takes ${M(Math.round(H.GL.worth * DROP_STEP * d.k))} off the price, more than the tax you saved by waiting. A price drop can outweigh a tax saving.`);
+  const dropPct = Math.round(d.k * DROP_STEP * 100);
+  await say(who, `There. In this example ${[8, 11, 18].includes(dropPct) || (dropPct >= 80 && dropPct < 90) ? 'an' : 'a'} ${dropPct}% drop takes ${M(Math.round(H.GL.worth * DROP_STEP * d.k))} off the price, more than the tax you saved by waiting. A price drop can outweigh a tax saving.`);
   d.goal = d.note = d.keys = ''; scoreOnce(clean);
   return H;
 }
@@ -334,7 +336,17 @@ async function allPagesHint() {
 async function activityPage(n, who) {
   if (st().flags['page' + n]) return;
   pageGot(n);
-  await say(who, `Hm. This was pressed between my papers, and it is not mine. A torn page of the Great Ledger. It reads: "${PAGES[n].truth}"`);
+  const found = { 7: 'Hold on. This was stuck under my tally board, and it is no slip of mine.', 10: 'Tick. So that is what has been jamming the clock all year.' }[n] || 'Hm. This was pressed between my papers, and it is not mine.';
+  await say(who, `${found} A torn page of the Great Ledger. It reads: "${PAGES[n].truth}"`);
+  await allPagesHint();
+}
+// A boss page or a filing page, handed over in the scene that earned it, with its invoice read out loud.
+async function claim(n) {
+  const s = st(), p = PAGES[n];
+  if (!p || !p.done || s.flags['page' + n] || !p.done(s)) return;
+  pageGot(n); if (p.inv) LQ.give(p.inv);
+  await say(null, `Folded into ${p.from}: a torn page of the Great Ledger. It reads: "${p.truth}"`);
+  if (p.inv) await say(null, 'With it is another fog invoice. ' + LQ.ITEMS[p.inv].desc);
   await allPagesHint();
 }
 // Pages owed for milestones already reached. Old saves and chapter starters collect theirs the first time they stand still.
@@ -342,12 +354,8 @@ const owed = s => Object.keys(PAGES).map(Number).filter(n => PAGES[n].done && !s
   .concat(s.flags.starter && s.quest >= 9 ? [1, 2, 3].filter(n => !s.flags['page' + n]) : []).sort((a, b) => a - b);
 async function collect() {
   const s = st(), list = owed(s); if (!list.length) return;
-  if (list.length === 1 && list[0] > 3) {
-    const n = list[0], p = PAGES[n];
-    pageGot(n); if (p.inv) LQ.give(p.inv);
-    await say(null, `Folded into ${p.from}: a torn page of the Great Ledger. It reads: "${p.truth}"`);
-    if (p.inv) await say(null, 'With it is another fog invoice. ' + LQ.ITEMS[p.inv].desc);
-  } else {
+  if (list.length === 1 && list[0] > 3) return claim(list[0]);
+  {
     list.forEach(n => { s.flags['page' + n] = true; if (PAGES[n] && PAGES[n].inv) LQ.give(PAGES[n].inv); });
     if (list.includes(3)) LQ.give('invoice1');
     LQ.give('pages'); sfx('fanfare');
@@ -389,6 +397,17 @@ for (const ch in REPLAY) {
   };
 }
 
+// Milestone pages arrive in the scene that earns them: right after a boss falls, and when a return is stamped.
+// The stand-still collector above is left for older saves and chapter starters.
+for (const [id, n] of [['loophole', 5], ['slick', 8], ['glint', 11]]) {
+  const K = LQ.BOSSES[id], done0 = K.done;
+  K.done = async () => { await done0(); await claim(n); };
+}
+for (const [ch, n] of [['CH2', 6], ['CH3', 9], ['CH4', 12]]) {
+  const talk0 = LQ[ch].talk;
+  LQ[ch].talk = async who => { await talk0(who); await claim(n); };
+}
+
 // ---------- the quest tracker, once a chapter's own quests are done: always an action and a place
 const curQuest0 = LQ.curQuest;
 LQ.pageQuest = () => {
@@ -406,5 +425,5 @@ LQ.pageQuest = () => {
 };
 LQ.curQuest = () => { const q = curQuest0(); return st().q4 === 9 && q === LQ.QUESTS4[9] ? LQ.pageQuest() : q; };
 
-LQ.depth = { receipts, budget, hold, activityPage, collect, owed, PAGES, receiptRows, pileOf, slipRows, holdFigures, JAR_STEP };
+LQ.depth = { receipts, budget, hold, activityPage, collect, claim, owed, PAGES, receiptRows, pileOf, slipRows, holdFigures, JAR_STEP };
 })();

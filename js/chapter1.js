@@ -697,7 +697,7 @@ LQ.CH1 = {
     { tx: 22, ty: 13, text: 'BRACKET MOUNTAIN. Seven ledges. Mind the fog.' },
     { tx: 22, ty: 38, fn: () => st().quest >= 9 ? 'SOUTH ROAD to Shelter Coast. The road is open. Chapter 2 begins there.' : 'SOUTH ROAD to Shelter Coast. Closed until your return is filed.' },
     { tx: 17, ty: 34, text: 'Your cottage. Small, snug, and the rent is due on the first.' },
-    { tx: 26, ty: 22, fn: () => 'THE VILLAGE GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Prices react tomorrow.)' + (st().flags.bossDown ? '' : ' Standing notice: miners say that if the fog ever lifts, the old silver mine reopens.') },
+    { tx: 26, ty: 22, fn: () => 'THE VILLAGE GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Already in today\'s price.)' + (st().flags.bossDown ? '' : ' Standing notice: miners say that if the fog ever lifts, the old silver mine reopens.') },
   ],
   talk: async id => {
     const q = QUEST_FN[id];

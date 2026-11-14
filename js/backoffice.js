@@ -68,8 +68,43 @@ async function finale(w) {
   if (B.murk) { w.remove(B.murk); B.murk = null; w.refresh(); }
   LQ.give('greatledger'); LQ.gain(100, 300, 'The Great Ledger restored'); sfx('fanfare');
   await say(VELL, 'The fog was never magic. It was missing pages. Now anyone can read what you learned the hard way: how pay is taxed, what counts, and what a promise of easy money is worth.');
+  LQ.save();
+  await ending(w);
   ui.showBanner('THE GREAT LEDGER IS WHOLE', 'Twelve pages. Twelve truths.');
   LQ.save();
+}
+// The last two pages of the game: the twelve truths side by side, then the player's own record.
+const TRUTHS = () => ['Tax is counted ledge by ledge, never all at once.', 'A refund is your own money coming home.', 'Know your own numbers, and no myth can sell you a fear.']
+  .concat([4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => LQ.depth.PAGES[n].truth));
+async function ending(w) {
+  const s = st(), D = LQ.docs, F = LQ.F, truths = TRUTHS();
+  await LQ.fadeTo(1, .5); ui.toasts = []; LQ.audio.play('title');
+  ui.doc = { draw(c) {
+    D.paper(c, 70, 16, 820, 470, 'THE GREAT LEDGER', 'Whole again');
+    c.textBaseline = 'top'; c.font = F(21);
+    truths.forEach((t, i) => {
+      const y = 62 + i * 34;
+      c.textAlign = 'right'; c.fillStyle = '#1f6f5c'; c.fillText(String(i + 1), 118, y);
+      c.textAlign = 'left'; c.fillStyle = '#15122e'; ui.wrap(c, t, 730).slice(0, 2).forEach((ln, k) => c.fillText(ln, 134, y + k * 16 - (ui.wrap(c, t, 730).length > 1 ? 7 : 0)));
+    });
+  } };
+  await LQ.fadeTo(0, .6); await LQ.pressOk();
+  const left = Object.keys(LQ.JOURNAL).length - s.journal.length;
+  ui.doc = { draw(c) {
+    D.paper(c, 130, 30, 700, 440, 'LEDGER QUEST', 'The end');
+    c.textAlign = 'center'; c.textBaseline = 'top'; c.font = F(20, true); c.fillStyle = '#1f6f5c'; c.fillText(LQ.rank().toUpperCase(), 480, 80);
+    const L = (i, a, b, o) => D.line(c, 170, 118 + i * 30, 620, a, b, Object.assign({ size: 24 }, o));
+    L(0, 'Ledger Pages brought home', '12 of 12', D.GREEN); L(1, 'Right on the first try', s.first + ' of ' + s.asked);
+    L(2, 'Savvy', String(s.savvy)); L(3, 'Audits faced', String(s.audits || 0));
+    L(4, 'Net worth', String(LQ.netWorth()), D.GREEN); L(5, 'Journal entries', s.journal.length + ' of ' + Object.keys(LQ.JOURNAL).length);
+    c.font = F(24); c.textAlign = 'center'; c.fillStyle = '#15122e';
+    ['The fog is gone, and the pages are back where anyone can read them.', 'Thank you for playing.', '',
+      left > 0 ? 'The towns stay open. ' + left + ' journal entries are still out there with the villagers.' : 'You filled the whole Tax Journal. There is nothing left to hide from you.']
+      .forEach((ln, i) => c.fillText(ln, 480, 318 + i * 28, 640));
+    c.font = F(20); c.fillStyle = '#5a5490'; c.fillText('Educational game. US federal figures for tax year ' + LQ.TAX.year + '. Not tax advice.', 480, 434, 640);
+  } };
+  await LQ.pressOk();
+  await LQ.fadeTo(1, .3); ui.doc = null; w.music(); await LQ.fadeTo(0, .8);
 }
 
 LQ.ROOMS.backoffice = {

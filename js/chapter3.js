@@ -506,7 +506,7 @@ LQ.CH3 = {
     { tx: 21, ty: 22, text: 'HUSTLE CANYON. North-west: the Hustle Hall and the 1099 Depot. North-east: the Ledger Shack and the Assay Office. South-west: the Quarter Station and the Tally House. South-east: the Canyon Tax Office. In the plaza: the Trading Post and the Canyon Exchange. West: the road home to Shelter Coast.' },
     { tx: 25, ty: 24, text: 'RATTLE CREEK. The bridge is sound. The Gulch beyond it is another matter.' },
     { tx: 38, ty: 28, fn: () => st().flags.boss3 ? 'OFF-THE-BOOKS GULCH. Quiet now. Receipts welcome.' : 'OFF-THE-BOOKS GULCH. Cash only. No questions. No forms.' },
-    { tx: 26, ty: 13, fn: () => 'THE CANYON GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Prices react tomorrow.)' + (st().flags.boss3 ? '' : ' Standing notice: Dust Devil Couriers will reopen the south route if the Gulch is ever made safe.') },
+    { tx: 26, ty: 13, fn: () => 'THE CANYON GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Already in today\'s price.)' + (st().flags.boss3 ? '' : ' Standing notice: Dust Devil Couriers will reopen the south route if the Gulch is ever made safe.') },
   ],
   talk: async id => {
     const q = QUEST_FN[id];

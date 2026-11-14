@@ -508,7 +508,7 @@ LQ.CH2 = {
     { tx: 25, ty: 26, text: 'THE PIER. Mind the gulls.' },
     { tx: 43, ty: 9, fn: () => st().q2 >= 8 ? 'EAST ROAD to Hustle Canyon. The road is open. Chapter 3 begins there.' : 'EAST ROAD to Hustle Canyon. Closed until your joint return is filed.' },
     { tx: 39, ty: 29, fn: () => st().flags.boss2 ? 'THE OLD LIGHTHOUSE. Lit again, and quiet.' : 'THE OLD LIGHTHOUSE. Cut off at high tide. Do not buy maps from strangers.' },
-    { tx: 26, ty: 13, fn: () => 'THE HARBOR GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Prices react tomorrow.)' + (st().flags.boss2 ? '' : ' Standing notice: Lantern Works will relight the great lamp if the lighthouse is ever made safe.') },
+    { tx: 26, ty: 13, fn: () => 'THE HARBOR GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Already in today\'s price.)' + (st().flags.boss2 ? '' : ' Standing notice: Lantern Works will relight the great lamp if the lighthouse is ever made safe.') },
   ],
   talk: async id => {
     const q = QUEST_FN[id];
