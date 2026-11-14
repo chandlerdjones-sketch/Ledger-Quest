@@ -8,7 +8,8 @@ assert(['nurse', 'owner', 'food'].includes(career), 'Expected nurse, owner, or f
 const noop = () => {};
 // Run the scripts from index.html with deterministic input, storage, and frame timing.
 // The canvas stub exercises draw paths and sizing. It cannot verify browser pixels or audio.
-const errors = [];
+const errors = [], spoken = [];
+let voiceCancels = 0;
 const saved = new Map();
 const listeners = {};
 let nextFrame, now = 0;
@@ -28,6 +29,8 @@ const env = vm.createContext({
   innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1,
   addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
   localStorage: { getItem: k => saved.get(k) ?? null, setItem: (k, v) => saved.set(k, v), removeItem: k => saved.delete(k) },
+  speechSynthesis: { speak: utterance => spoken.push(utterance.text), cancel: () => voiceCancels++ },
+  SpeechSynthesisUtterance: function (text) { this.text = text; },
   document: { getElementById: () => c, createElement: canvas, fonts: { load: async () => {} } },
 });
 env.window = env;
@@ -48,6 +51,7 @@ async function frame(count = 1) {
 const dispatch = (type, key) => emit(type, { key, preventDefault: noop, repeat: false });
 async function press(key) { dispatch('keydown', key); await frame(); dispatch('keyup', key); }
 const shieldFallback = new WeakSet(), seenMoves = new Set();
+let chapterOneHit = false;
 // The hands-on activities. Each phase is first handed in wrong, to prove the explanation and the retry, then played right.
 const tried = new Set(), recovered = [];
 async function playDoc(d) {
@@ -90,10 +94,17 @@ async function drain(select, end = () => !LQ.busy && !LQ.title.locked, limit = 2
       seenMoves.add(d.kind); assert(LQ.kit.hp() > 0 || d.hits > 0, 'hearts never sit at zero outside a hit');
       if (LQ.battle.bossHP === LQ.battle.maxHP && d.kind === 'bolts') shieldFallback.add(d);
       const idle = shieldFallback.has(d);
-      k.right = !idle && at.x < d.sx - 3; k.left = !idle && at.x > d.sx + 3;
-      k.down = !idle && at.y < d.sy - 3; k.up = !idle && at.y > d.sy + 3;
+      const takeHit = !idle && d.kind === 'bolts' && !chapterOneHit;
+      const still = idle || takeHit;
+      const hp = LQ.kit.hp(), hits = d.hits;
+      k.right = !still && at.x < d.sx - 3; k.left = !still && at.x > d.sx + 3;
+      k.down = !still && at.y < d.sy - 3; k.up = !still && at.y > d.sy + 3;
       k.use = !!idle;
       await frame();
+      if (takeHit && d.hits > hits) {
+        assert.equal(hp - LQ.kit.hp(), .25, 'a Chapter 1 bolt costs exactly one quarter heart');
+        chapterOneHit = true;
+      }
       if (!LQ.battle.dodge) {
         if (idle) { assert(d.elapsed >= 6); assert.equal(d.hits, 0); }
         k.right = k.left = k.down = k.up = k.use = false;
@@ -185,7 +196,7 @@ async function talk(find, choose = () => 0) {
   assert.equal(LQ.loadSlot(2).career, career);
   LQ.setScene(LQ.title); await press('Enter'); await drain(() => 0, () => LQ.scene === w && untilIdle());
   assert.equal(LQ.state.quest, 1);
-  console.log('Title, new game, tutorial, cottage, cellar, combat, quest 1, five menu tabs, three viewports, backup round-trip and Continue passed');
+  console.log('Title, new game, tutorial, cottage, cellar, combat, quest 1, six menu tabs, three viewports, backup round-trip and Continue passed');
   const s = () => LQ.state;
   const gear = id => LQ.GEAR.find(g => g.id === id);
   const shop = actions => talk(e => e.npc?.id === (s().region === 'village' ? 'merchant' : 'trader'), ch => {
@@ -335,7 +346,25 @@ async function talk(find, choose = () => 0) {
   dispatch('keydown', 'e'); await frame(); dispatch('keyup', 'e');
   assert(!w.ents.includes(bolt) && s().hp === hp);
   const failAudit = s().coins; LQ.script(LQ.audit); await drain(() => 1, untilIdle); assert.equal(s().coins, Math.max(0, failAudit - 60));
+  const firstAudit = Object.keys(s().auditHistory);
+  assert.equal(firstAudit.length, 3); assert(firstAudit.every(k => !s().auditHistory[k].right));
   const passAudit = s().coins; LQ.script(LQ.audit); await drain(() => 0, untilIdle); assert(s().coins > passAudit);
+  assert.equal(Object.keys(s().auditHistory).length, 6, 'a second audit chooses unseen questions');
+  assert(firstAudit.every(k => s().auditHistory[k].round === 1), 'misses stay off the immediate next audit');
+  assert.deepEqual(LQ.loadSlot(1).auditHistory, s().auditHistory);
+  const oldAuditSave = { ...s() }; delete oldAuditSave.auditHistory;
+  assert.equal(Object.keys(LQ.cleanSave(oldAuditSave).auditHistory).length, 0);
+  // A single eligible question still teaches, but a missed answer waits a round.
+  const history = s().auditHistory, journal = s().journal, rounds = s().audits;
+  s().journal = ['withholding']; s().auditHistory = {};
+  LQ.script(LQ.audit); await drain(() => 1, untilIdle);
+  const [one] = Object.keys(s().auditHistory);
+  assert(one && !s().auditHistory[one].right);
+  LQ.script(LQ.audit); await drain(() => 0, untilIdle);
+  assert.equal(s().auditHistory[one].round, rounds + 1);
+  LQ.script(LQ.audit); await drain(() => 0, untilIdle);
+  assert(s().auditHistory[one].right); assert.equal(s().auditHistory[one].round, rounds + 3);
+  Object.assign(s(), { auditHistory: history, journal, audits: rounds });
   let wrong = false;
   await talk(e => e.qid === 'boss', ch => {
     if (ch.who?.name === 'Baron Befuddle' && !wrong) { wrong = true; return 1; } return 0;
@@ -351,9 +380,101 @@ async function talk(find, choose = () => 0) {
     LQ.script(() => w.travel(exit)); await drain(() => 0, untilIdle);
     assert.equal(s().region, region); assert(w.canStand(w.p.x, w.p.y), 'arrival is walkable');
   }
-  await travel('coast'); assert.equal(s().q2, 0);
+  const coastExit = w.R.exits.find(exit => exit.to === 'coast');
+  LQ.script(() => w.travel(coastExit));
+  for (let i = 0; i < 100 && !LQ.cutscene.done; i++) await frame();
+  assert.equal(LQ.scene, LQ.cutscene); assert(LQ.cutscene.done);
+  assert.equal(LQ.audio.want, 'story');
+  await press('n'); assert(LQ.narr.on); assert.equal(saved.get('ledgerquest.narration'), '1');
+  assert.equal(spoken.at(-1), LQ.cutscene.def.panels[0].text);
+  await press('Enter'); assert.equal(LQ.cutscene.i, 1);
+  assert.equal(spoken.at(-1), LQ.cutscene.def.panels[1].text);
+  const beforeSkip = voiceCancels;
+  await press('Escape'); assert(voiceCancels > beforeSkip); await drain(() => 0, untilIdle);
+  assert(s().flags.cut2); assert.equal(s().q2, 0); assert.equal(LQ.scene, w);
+  assert.notEqual(LQ.audio.want, 'story'); await press('n');
+  assert(!LQ.narr.on); assert.equal(saved.get('ledgerquest.narration'), '0');
+  const leaveRoom = async () => { LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle); };
+  const house = async id => {
+    await talk(e => e.type === 'housedoor' && e.room === id);
+    assert.equal(w.room.room, id); assert.equal(LQ.audio.want, 'home');
+  };
+  const claimHouse = async (id, amount, tonic) => {
+    const cash = s().coins, count = s().flags.tonics || 0;
+    await talk(e => e.type === 'cache');
+    assert.equal(s().coins - cash, amount); assert.equal((s().flags.tonics || 0) - count, tonic);
+    await leaveRoom(); await house(id);
+    await talk(e => e.type === 'cache'); assert.equal(s().coins - cash, amount, 'house reward pays once');
+    await leaveRoom();
+  };
   assert(!w.R.exits.find(exit => exit.to === 'canyon').open(s()));
-  for (const id of ['marlowe', 'brine', 'pearl', 'dory', 'stone', 'tallow']) await talk(e => e.npc?.id === id);
+  for (const id of ['marlowe', 'brine', 'pearl', 'dory', 'stone']) await talk(e => e.npc?.id === id);
+
+  // Follow the finder to all six loose receipts and the sea chest.
+  s().coins += 120;
+  await shop([/^Receipt Spyglass/, 'Buy Receipt Spyglass', 'Leave']);
+  const status = () => LQ.finderStatus(LQ.REGIONS.coast, w);
+  assert.equal(status().count, 'Receipts 0/7');
+  async function useKitRow(id) {
+    const i = LQ.kit.page.rows().findIndex(r => r.id === id);
+    assert(i >= 0, id);
+    while (ui.menu.sel !== i) await press('ArrowDown');
+    await press('Enter');
+  }
+  await press('k'); assert.equal(ui.menu.tab, 5);
+  await useKitRow('spyglass');
+  assert(!LQ.kit.finderOn('spyglass')); assert(LQ.loadSlot(1).flags.off_spyglass);
+  await useKitRow('spyglass'); assert(LQ.kit.finderOn('spyglass')); await press('Escape');
+  const drawer = w.ents.find(e => e.type === 'chest' && e.id === 'drawer');
+  near(drawer); assert.match(status().hint, new RegExp(LQ.RECEIPTS.rPoints.name));
+  await talk(e => e === drawer);
+  assert.equal(status().count, 'Receipts 1/7'); assert(!status().hint.includes(LQ.RECEIPTS.rPoints.name));
+  const afterChest = s().coins; await talk(e => e === drawer); assert.equal(s().coins, afterChest);
+  const collect = async e => {
+    const x = e.tx * 16 + 8, y = e.ty * 16 + 10;
+    assert(w.canStand(x, y), e.rid);
+    Object.assign(w.p, { x, y });
+    assert(status().hint.includes(LQ.RECEIPTS[e.rid].name), e.rid);
+    await frame(); await drain(() => 0, untilIdle);
+    assert(s().rcpt[e.rid]); assert(!w.ents.some(other => other.rid === e.rid));
+    assert(!status().hint.includes(LQ.RECEIPTS[e.rid].name));
+  };
+  await collect(w.ents.find(e => e.rid));
+  assert.equal(status().count, 'Receipts 2/7');
+  LQ.state = LQ.loadSlot(1); w.start();
+  assert.equal(status().count, 'Receipts 2/7'); assert.equal(w.ents.filter(e => e.rid).length, 5);
+  await travel('village'); assert.match(status().hint, /Return to Shelter Coast/);
+  await travel('coast');
+  assert.equal(w.ents.filter(e => e.rid).length, 5);
+  for (const e of w.ents.filter(e => e.rid)) await collect(e);
+  assert.equal(status().count, 'Receipts 7/7'); assert.match(status().hint, /All lost receipts found/);
+  assert(LQ.CH2.hunt.every(id => LQ.loadSlot(1).rcpt[id]));
+
+  // Fill, swap, store and cycle the Field Kit through the actual menu.
+  assert.equal(LQ.kit.equipped().length, 3);
+  await press('k'); await useKitRow('lantern'); assert.equal(ui.menu.swap, 'lantern');
+  await useKitRow('compass'); assert.equal(ui.menu.swap, null); assert.equal(s().tool, 'lantern');
+  assert.equal(LQ.kit.equipped().length, 3);
+  await useKitRow('lantern'); assert.equal(LQ.kit.equipped().length, 2);
+  await useKitRow('compass'); await press('Escape');
+  const cycled = new Set();
+  for (let i = 0; i < 3; i++) { await press('q'); cycled.add(s().tool); }
+  assert.equal(cycled.size, 3); assert(!cycled.has('lantern'));
+  assert.equal(LQ.loadSlot(1).flags.kitEq, s().flags.kitEq);
+  await house('house2');
+  const savingsCrate = () => w.ents.find(e => e.type === 'block');
+  const pushSavings = async target => {
+    for (let i = 0; i < 100 && savingsCrate().tx < target; i++) {
+      Object.assign(w.p, { x: savingsCrate().tx * 16 - 6, y: savingsCrate().ty * 16 + 13, dir: 'right' });
+      dispatch('keydown', 'ArrowRight'); await frame(6); dispatch('keyup', 'ArrowRight');
+    }
+    assert.equal(savingsCrate().tx, target);
+  };
+  await pushSavings(4); await leaveRoom(); await house('house2');
+  assert.equal(savingsCrate().tx, 3, 'unfinished savings puzzle resets on entry');
+  await pushSavings(8); assert(s().flags.house2); await claimHouse('house2', 30, 1);
+  await talk(e => e.npc?.id === 'tallow');
+  console.log('Coast cutscene advance and skip, seven receipts, finder toggle, reload, return travel and Field Kit swap passed');
   assert.equal(s().q2, 6);
   await talk(e => e.qid === 'boss2'); await talk(e => e.npc?.id === 'fathom'); assert.equal(s().q2, 8);
   await travel('canyon'); assert.equal(s().q3, 0);
@@ -362,6 +483,32 @@ async function talk(find, choose = () => 0) {
     await talk(e => e.npc?.id === id, ch => ch.prompt === 'Which gig will you take?' ? ['nurse', 'owner', 'food'].indexOf(career) : 0);
   }
   assert.equal(s().q3, 6);
+  await house('house3');
+  for (const [x, solved] of [[3, false], [8, true]]) {
+    near(w.ents.find(e => e.type === 'seal' && e.tx === x));
+    LQ.kit.need('stamp'); LQ.kit.cool = 0; await press('e'); await frame(5);
+    assert.equal(!!s().flags.house3, solved);
+  }
+  await claimHouse('house3', 30, 0);
+  await talk(e => e.type === 'gigboard', () => 1);
+  const gigGross = LQ.fin3().gigGross, runs = LQ.money2.totals().runs, gigCash = s().coins;
+  near(w.ents.find(e => e.type === 'gigboard')); await press('Enter'); await press('Enter');
+  await drain(() => 0, () => LQ.scene === LQ.jobs && LQ.jobs.G?.live, 250);
+  const gigRun = LQ.jobs.G;
+  for (let i = 0; i < 140 && !gigRun.score; i++) {
+    const customer = gigRun.spots.find(spot => spot.task);
+    if (customer) {
+      if (!gigRun.stock) {
+        const shelf = gigRun.sources.find(o => o.restock); Object.assign(gigRun.p, shelf); await press('Enter');
+      }
+      Object.assign(gigRun.p, { x: customer.x, y: customer.y }); await press('Enter');
+    } else await frame();
+  }
+  assert(gigRun.score > 0, 'served a customer in the gig run');
+  await drain(() => 0, untilIdle, 1400);
+  assert.equal(LQ.money2.totals().runs, runs + 1);
+  assert.equal(s().coins - gigCash, LQ.money2.pay(gigRun.score).kept);
+  assert.equal(LQ.fin3().gigGross, gigGross, 'practice payout stays out of Schedule C');
   {
     // Slick's Stash: the gift box springs an imp and does not count; the three income boxes open the strongroom.
     const w = LQ.world, stamp = async i => { s().tool = 'stamp'; LQ.kit.inv = 5; LQ.kit.cool = 0; near(w.ents.find(e => e.box === i)); await frame(6); await press('e'); await frame(4); };
@@ -390,12 +537,35 @@ async function talk(find, choose = () => 0) {
     assert.equal(LQ.loadSlot(1).hp, s().hp, 'carried hearts are saved'); }
   await talk(e => e.npc?.id === 'sage'); assert.equal(s().q3, 8);
   await travel('summit'); assert.equal(s().q4, 0);
+  await house('house4'); s().hp = 1.25;
+  await talk(e => e.type === 'brazier'); assert.equal(s().hp, LQ.kit.maxHp());
+  await claimHouse('house4', 20, 1);
+  console.log('Three optional houses, puzzle reset, unique rewards, music cues, narration routing and paid gig passed');
   const shareCost = LQ.price('GLCR'), investBefore = s().inv.st, taxBefore = s().capTax;
-  await broker([/^GLCR/, 'Buy 1', 'Leave']);
+  const wagesBefore = LQ.fin4().wages, realizedBefore = s().brokerRealized;
+  s().coins = Math.max(s().coins, shareCost * 6 + 100);
+  await broker([/^GLCR/, 'Buy 5', 'Leave']);
   assert.equal(LQ.loadSlot(1).lots.GLCR[0].cost, shareCost);
+  assert.equal(s().inv.st, investBefore, 'buying does not report a sale');
   s().prices.GLCR = shareCost + 10;
+  await broker([/^GLCR/, 'Buy 1', 'Leave']);
+  assert.equal(s().inv.st, investBefore, 'holding an unrealized gain does not report it');
+  const cashBefore = s().coins;
   await broker([/^GLCR/, 'Sell 1', 'Leave']);
+  assert.equal(s().coins, cashBefore + shareCost + 10, 'partial sale credits gross proceeds');
+  assert.equal(LQ.holding('GLCR').shares, 5);
+  assert.equal(LQ.holding('GLCR').basis, shareCost * 5 + 10, 'oldest lot is sold first');
+  assert.equal(LQ.holding('GLCR').unrealized, 40);
   assert.equal(s().inv.st, investBefore + 10 * LQ.COIN_USD);
+  const beforeAll = s().coins;
+  s().prices.GLCR = shareCost - 5;
+  await broker([/^GLCR/, 'Sell all (5)', 'Leave']);
+  assert.equal(s().coins, beforeAll + 5 * (shareCost - 5));
+  assert.equal(LQ.holding('GLCR').basis, 0);
+  assert.equal(s().inv.st, investBefore - 25 * LQ.COIN_USD, 'Schedule D records the gain and net loss once');
+  assert.equal(LQ.fin4().stRaw, s().inv.st);
+  assert.equal(LQ.fin4().wages, wagesBefore, 'stock sales are separate from W-2 wages');
+  assert.equal(LQ.loadSlot(1).brokerRealized, realizedBefore - 25);
   assert.equal(s().capTax, taxBefore, 'the Summit broker defers tax to filing');
   for (const id of ['marlowe', 'garnet', 'frost', 'birch', 'larch', 'cirrus', 'tamsin']) {
     await talk(e => e.npc?.id === id, ch => {
@@ -408,6 +578,7 @@ async function talk(find, choose = () => 0) {
   await talk(e => e.qid === 'boss4'); await talk(e => e.npc?.id === 'alpen'); assert.equal(s().q4, 9);
   await travel('canyon'); await travel('coast'); await travel('village');
   assert.equal(LQ.loadSlot(1).q4, 9);
+  assert(chapterOneHit, 'Chapter 1 took a bolt hit');
   assert.deepEqual([...seenMoves].sort(), ['beam', 'bolts', 'devils', 'fire'], 'every boss ran its own movement pattern');
   console.log('Coast, Canyon and Summit quest chains, three more boss fights and returns, finale and return travel passed');
 

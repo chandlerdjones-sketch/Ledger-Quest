@@ -112,7 +112,7 @@ function paper(c, x, y, w, h, title, sub) {
 }
 function line(c, x, y, w, label, value, o = {}) {
   const fs = o.size || 26;
-  if (o.hl) { c.fillStyle = `rgba(255,205,50,${.4 + .22 * Math.sin(LQ.time * 6)})`; c.fillRect(x - 8, y - 2, w + 16, fs + 3); }
+  if (o.hl) { c.fillStyle = '#d7edf1'; c.fillRect(x - 8, y - 2, w + 16, fs + 3); c.fillStyle = '#1f6f73'; c.fillRect(x - 8, y - 2, 3, fs + 3); }
   c.font = F(fs); c.textBaseline = 'top';
   const labelWidth = w - c.measureText(String(value)).width - 12;
   c.textAlign = 'left'; c.fillStyle = o.color || '#15122e'; c.fillText(label, x, y, Math.max(1, labelWidth));
@@ -122,7 +122,7 @@ const rule = (c, x, y, w) => { c.fillStyle = '#7a74b8'; c.fillRect(x, y, w, 2); 
 const RED = { vcolor: '#b0332e' }, GREEN = { vcolor: '#1f6f5c' };
 function sideBox(c, title, rows) {
   c.fillStyle = '#f4f6ff'; c.fillRect(592, 62, 286, 216); c.strokeStyle = '#7a74b8'; c.strokeRect(593, 63, 284, 214);
-  c.font = F(11, true); c.textAlign = 'left'; c.fillStyle = '#5a5490'; c.fillText(title, 608, 76);
+  c.font = F(9, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = '#5a5490'; c.fillText(title, 735, 76, 254);
   const rh = Math.min(32, Math.floor(170 / rows.length));
   rows.forEach((r, i) => {
     const y = 100 + i * rh;

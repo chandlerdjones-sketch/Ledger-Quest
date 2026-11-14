@@ -245,7 +245,7 @@ const world = LQ.world = {
       for (const x of R.exits || []) if (p.x >= x.x0 && p.x < x.x1 && p.y >= x.y0 && p.y < x.y1 && (!x.open || x.open(st))) { p.moving = false; p.frame = 0; LQ.script(() => x.leave ? this.exitRoom() : this.travel(x)); return; }
       if (R.auditOK(st, this.zone)) {
         st.auditDist = (st.auditDist || 0) + Math.hypot(p.x - oldX, p.y - oldY);
-        if (st.auditDist > (st.auditNext || 2200)) { st.auditDist = 0; st.auditNext = 2200 + Math.random() * 2000; if (LQ.auditPool().length >= 3) { p.moving = false; p.frame = 0; LQ.script(LQ.audit); return; } }
+        if (st.auditDist > (st.auditNext || 2200)) { st.auditDist = 0; st.auditNext = 2200 + Math.random() * 2000; if (LQ.auditPool().length) { p.moving = false; p.frame = 0; LQ.script(LQ.audit); return; } }
       }
     } else { p.frame = 0; p.anim = 0; }
     // things you pick up by walking over them
@@ -355,18 +355,21 @@ const world = LQ.world = {
     const lines = [extra, finder?.count && LQ.has(R.finder.gear) && LQ.kit.finderOn(R.finder.gear) ? finder.hint : ''].filter(Boolean);
     c.font = F(24);
     const ew = lines.length ? Math.min(470, Math.max(...lines.map(line => c.measureText(line).width)) + 28) : 0;
-    c.font = F(26); const sw = Math.min(470, c.measureText(s).width + 32);
-    const tw = Math.min(LQ.VW - 44 - Math.max(sw, ew), Math.max(250, c.measureText(q.text).width + 44));
-    hud(16, top, tw, 62); c.fillStyle = '#ffcf4a'; c.fillRect(16, top, 5, 62);
-    c.font = F(10, true); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#ffcf4a'; c.fillText('QUEST', 32, top + 9);
-    ui.text(c, q.text, 32, top + 26, '#eef4ff', F(26), 'left', tw - 36);
-    // coins and savvy
-    hud(LQ.VW - sw - 16, top, sw, 38); ui.text(c, s, LQ.VW - 32, top + 4, '#ffe98a', F(26), 'right', sw - 32);
+    c.font = F(23); const sw = Math.min(470, c.measureText(s).width + 26);
+    const tw = Math.min(LQ.VW - 44 - Math.max(sw, ew), Math.max(250, c.measureText(q.text).width + 88));
+    const questX = 84, questWidth = tw - questX;
+    const steps = ui.wrap(c, q.text, questWidth);
+    const qh = 30 + (Math.min(2, steps.length) - 1) * 22;
+    hud(16, top, tw, qh); c.fillStyle = '#35f0e6'; c.fillRect(16, top, 3, qh);
+    ui.text(c, 'QUEST', 28, top + 11, '#a8fff6', F(8, true));
+    const questLines = steps.length > 2 ? [steps[0], steps.slice(1).join(' ')] : steps;
+    questLines.forEach((line, i) => ui.text(c, line, questX, top + 3 + i * 22, '#eef4ff', F(23), 'left', questWidth));
+    hud(LQ.VW - sw - 16, top, sw, 30); ui.text(c, s, LQ.VW - 28, top + 3, '#ffe98a', F(23), 'right', sw - 24);
     if (lines.length) {
-      hud(LQ.VW - ew - 16, top + 42, ew, 8 + lines.length * 24);
-      lines.forEach((line, i) => ui.text(c, line, LQ.VW - 30, top + 44 + i * 24, i ? '#ffe98a' : '#c9cdea', F(24), 'right', ew - 28));
+      hud(LQ.VW - ew - 16, top + 34, ew, 4 + lines.length * 21);
+      lines.forEach((line, i) => ui.text(c, line, LQ.VW - 27, top + 35 + i * 21, i ? '#a8fff6' : '#c9cdea', F(22), 'right', ew - 22));
     }
-    if (LQ.kit) LQ.kit.drawHUD(c, hud, top + 68);
+    if (LQ.kit) LQ.kit.drawHUD(c, hud, top + qh + 4);
     // pointer toward an off-screen quest target
     const tgt = this.questTarget(), fb = R.fallbackTarget ? R.fallbackTarget(st) : null;
     const e = this.ents.find(x => (x.type === 'npc' && x.npc.id === tgt) || (tgt && x.qid === tgt)) || (fb && this.ents.find(x => x.qid === fb));

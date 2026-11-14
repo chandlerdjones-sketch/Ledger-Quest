@@ -24,15 +24,15 @@ const K = LQ.kit = {
   owned: () => LQ.TOOLS.filter(t => t.have(st())),
   supplies() {
     const s = st(), items = [];
-    if (s.flags.tonics) items.push({ name: 'Tonic x' + s.flags.tonics, desc: 'Restores up to two hearts, anywhere. Switch to it with Q, then press E to drink. A full heart meter leaves the tonic untouched.' });
-    if (s.flags.lanternRent) items.push({ name: 'Rented Lantern', desc: 'Lights dark rooms and repels Myth Wisps while held. Switch to it with Q. Your rental ends when you leave the Lantern Cave or faint inside it.' });
+    if (s.flags.tonics) items.push({ name: 'Tonic x' + s.flags.tonics, desc: 'Restores up to two hearts, anywhere. Equip it in the Field Kit (K), then press E to drink. A full heart meter leaves the tonic untouched.' });
+    if (s.flags.lanternRent) items.push({ name: 'Rented Lantern', desc: 'Lights dark rooms and repels Myth Wisps while held. Equip it in the Field Kit (K). Your rental ends when you leave the Lantern Cave or faint inside it.' });
     return items;
   },
   // Up to three tools ride in hand. The rest wait in the Field Kit page (J, then the Kit tab, or K).
   // `kitEq` is the in-hand list and `kitSeen` is every tool already sorted once, both kept in flags so old saves load.
   sync() {
     const s = st(), own = K.owned().map(t => t.id), first = s.flags.kitEq == null;
-    const eq = csv('kitEq').filter(id => own.includes(id)), seen = csv('kitSeen').filter(id => own.includes(id));
+    const eq = csv('kitEq').filter((id, i, all) => own.includes(id) && all.indexOf(id) === i).slice(0, 3), seen = csv('kitSeen').filter(id => own.includes(id));
     for (const id of own) if (!seen.includes(id)) {
       seen.push(id);
       if (eq.length < 3) eq.push(id);
@@ -149,11 +149,11 @@ const K = LQ.kit = {
   drawHUD(c, hud, top) {
     const s = st(), t = K.cur(); if (!t) return;
     const max = K.maxHp(), hp = K.hp();
-    const label = 'E: ' + (t.label ? t.label(s) : t.name) + (K.equipped().length > 1 ? '    Q: switch' : '') + (K.owned().length > K.equipped().length ? '    K: kit' : '');
-    c.font = F(24); const w = max * 30 + 34 + c.measureText(label).width;
-    hud(16, top, w, 34);
-    for (let i = 0; i < max; i++) K.heart(c, 28 + i * 30, top + 8, LQ.clamp(hp - i, 0, 1), 3);
-    ui.text(c, label, 28 + max * 30 + 6, top + 4, '#c9cdea', F(24), 'left');
+    const label = 'E: ' + (t.label ? t.label(s) : t.name) + (K.equipped().length > 1 ? '   Q: swap' : '') + '   K: kit';
+    c.font = F(22); const w = max * 21 + 30 + c.measureText(label).width;
+    hud(16, top, w, 28);
+    for (let i = 0; i < max; i++) K.heart(c, 27 + i * 21, top + 8, LQ.clamp(hp - i, 0, 1), 2);
+    ui.text(c, label, 30 + max * 21, top + 2, '#c9cdea', F(22), 'left');
   },
 };
 
@@ -209,7 +209,7 @@ const P = K.page = {
     const px = x + 400, pw = 364; let py = y;
     const block = (head, text, col = '#eef4ff') => {
       if (!text) return;
-      ui.text(c, head, px, py, '#35f0e6', F(10, true)); py += 18;
+      if (head) { ui.text(c, head, px, py, '#35f0e6', F(10, true)); py += 18; }
       c.font = F(21); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = col;
       for (const l of ui.wrap(c, text, pw)) { c.fillText(l, px, py); py += 22; }
       py += 10;
@@ -230,7 +230,7 @@ const P = K.page = {
       block('UPGRADES', st().flags.heartUp ? 'You hold the Notary\'s Seal: five hearts.' : 'The Notary\'s Seal in the Lantern Cave adds a fifth heart.');
       block('HEALING', 'Free: Notary Lamps, your bed, and a rest at any shop when you are below two hearts. Paid: a Hot meal (all hearts) or a Tonic (two hearts, carried with you).');
     }
-    if (m.note) ui.text(c, m.note, x, y + h - 22, '#ffcf4a', F(20), 'left', 380);
+    if (m.note) ui.text(c, m.note, x, y + h - 10, '#ffcf4a', F(20), 'left', 380);
   },
 };
 
@@ -254,15 +254,15 @@ LQ.shopExtras = () => {
       await LQ.say(who, 'Take the bench as long as you like. No charge. You are back to two hearts.');
     } });
   }
-  out.push({ label: 'Tonic  -  ' + tonic, run: async who => {
+  out.push({ label: 'Tonic  -  ' + tonic + '  (restore up to two hearts)', run: async who => {
     if (s.coins < tonic) return LQ.say(who, 'A tonic is ' + tonic + ' coins. You are a little short.');
     s.coins -= tonic; s.flags.tonics = (s.flags.tonics || 0) + 1; sfx('coin'); LQ.save();
-    await LQ.say(who, 'One tonic. Press Q until it is in hand, then E to drink. It mends two hearts.');
+    await LQ.say(who, 'One tonic. Equip it in the Field Kit (K), then press E to drink. It mends two hearts.');
   } });
-  if (!K.hasLantern()) out.push({ label: 'Rent a lantern  -  ' + rent, run: async who => {
+  if (!K.hasLantern()) out.push({ label: 'Rent a lantern  -  ' + rent + '  (light and wisp protection for one cave trip)', run: async who => {
     if (s.coins < rent) return LQ.say(who, 'Lantern rental is ' + rent + ' coins. You are a little short.');
     s.coins -= rent; s.flags.lanternRent = true; sfx('coin'); LQ.save();
-    await LQ.say(who, 'One lantern for the Lantern Cave. Press Q until it is in hand. The rental ends when you leave the cave or wake at the Notary Lamp.');
+    await LQ.say(who, 'One lantern for the Lantern Cave. Equip it in the Field Kit (K) and hold it for light. The rental ends when you leave the cave or wake at the Notary Lamp.');
   } });
   const r = (LQ.RUMORS[s.region] || []).find(x => !x.done(s));
   if (r) out.push({ label: s.flags['rumor_' + r.id] ? 'Hear the rumor again' : 'Buy a rumor  -  ' + rumor, run: async who => {

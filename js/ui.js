@@ -204,7 +204,7 @@ function drawDialogue(c) {
     ui.text(c, s, tx, y + 16 + i * 29, '#eef4ff');
   });
   const complete = d.chars >= d.pages[d.page].join('\n').length;
-  ui.text(c, complete ? 'Space: continue' : 'Space: show text', x + w - 18, y + h - 20, '#a8fff6', F(18), 'right');
+  ui.text(c, complete ? 'Space: continue' : 'Space: show text', x + w - 18, y + h + 2, '#a8fff6', F(18), 'right');
 }
 function choiceTop(c, ch) {
   c.font = F(28);
@@ -324,29 +324,29 @@ function drawMenu(c) {
   else if (m.tab === 3) LQ.drawWorldMap(c, bx, by, 764, bodyH, st.region);
   else if (m.tab === 5) LQ.kit.page.draw(c, m, bx, by, bodyH);
   else {
-    ui.text(c, `Cash ${st.coins}    Stocks ${LQ.portfolio()}    Net worth ${LQ.netWorth()}`, bx, by, '#ffcf4a', F(26), 'left', 664);
-    const known = menuStocks(), off = scrollStart(m.sel, known.length, 9), list = known.slice(off, off + 9);
+    const known = menuStocks(), off = scrollStart(m.sel, known.length, 8), list = known.slice(off, off + 8);
+    const unrealized = known.reduce((sum, stock) => sum + LQ.holding(stock.id).unrealized, 0);
+    ui.text(c, `Cash ${st.coins}    Holdings ${LQ.portfolio()}    Unrealized ${LQ.coinChange(unrealized)} coins`, bx, by, '#a8fff6', F(25), 'left', 664);
     const columns = [
-      ['Price', 384, 68], ['Change', 475, 87], ['Shares', 561, 82],
-      ['Gain/loss', 665, 100], ['Holding', 764, 95],
+      ['Price', 362, 64], ['Shares', 441, 68], ['Avg. buy', 538, 85],
+      ['Basis', 635, 85], ['Unrealized', 764, 115],
     ];
     const headingY = by + 31, rh = 23;
     ui.text(c, (m.sel + 1) + ' / ' + known.length, bx + 764, by + 3, '#c9cdea', F(20), 'right');
     ui.text(c, 'Company', bx, headingY, '#c9cdea', F(20));
     columns.forEach(([label, right, width]) => ui.text(c, label, bx + right, headingY, '#c9cdea', F(20), 'right', width));
     list.forEach((s, i) => {
-      const yy = headingY + 23 + i * rh, n = LQ.shares(s.id), ch = (st.prices[s.id] / st.prev[s.id] - 1) * 100;
-      const lots = st.lots[s.id], cost = lots.reduce((a, l) => a + l.n * l.cost, 0), gain = n * LQ.price(s.id) - cost;
-      const term = lots.every(l => l.lt) ? 'Long' : lots.some(l => l.lt) ? 'Mixed' : 'Short';
+      const yy = headingY + 23 + i * rh;
+      const { shares, basis, unrealized } = LQ.holding(s.id);
       if (off + i === m.sel) { c.fillStyle = 'rgba(53,240,230,.15)'; c.fillRect(bx - 8, yy - 1, 776, rh); }
       ui.text(c, s.id, bx, yy, '#a8fff6', F(22), 'left', 61);
-      ui.text(c, s.name, bx + 68, yy, '#eef4ff', F(22), 'left', 242);
+      ui.text(c, s.name, bx + 68, yy, '#eef4ff', F(22), 'left', 222);
       const cells = [
         [LQ.price(s.id), '#eef4ff'],
-        [(ch >= 0 ? '+' : '') + ch.toFixed(1) + '%', ch >= 0 ? '#7fd6a8' : '#ff8a80'],
-        [n || '-', '#c9cdea'],
-        [n ? (gain >= 0 ? '+' : '') + gain : '-', gain >= 0 ? '#7fd6a8' : '#ff8a80'],
-        [n ? term : '-', '#c9cdea'],
+        [shares || '—', '#c9cdea'],
+        [shares ? (basis / shares).toFixed(1) : '—', '#c9cdea'],
+        [shares ? basis.toLocaleString('en-US') : '—', '#c9cdea'],
+        [shares ? LQ.coinChange(unrealized) : '—', unrealized >= 0 ? '#7fd6a8' : '#ff8a80'],
       ];
       cells.forEach(([value, color], k) => {
         const [, right, width] = columns[k];
@@ -354,8 +354,11 @@ function drawMenu(c) {
       });
     });
     const selected = known[m.sel], end = headingY + 23 + list.length * rh;
-    ui.text(c, selected.id + ': Buy or sell at ' + LQ.stockVenue(selected), bx, end + 6, '#a8fff6', F(22), 'left', 764);
-    ui.text(c, `Tax paid on gains and dividends: ${st.capTax || 0}    Banked losses: ${st.lossBank || 0}`, bx, end + 29, '#c9cdea', F(22), 'left', 764);
+    const selectedLots = st.lots[selected.id];
+    const term = selectedLots.length ? '    Held: ' + (selectedLots.every(l => l.lt) ? 'Long-term' : selectedLots.some(l => l.lt) ? 'Mixed' : 'Short-term') : '';
+    ui.text(c, selected.id + ': Buy or sell at ' + LQ.stockVenue(selected) + term, bx, end + 6, '#a8fff6', F(22), 'left', 764);
+    const realized = LQ.coinChange(st.brokerRealized) + ' coins';
+    ui.text(c, `Realized (tracked trades): ${realized}    Tax prepaid: ${st.capTax}    Banked losses: ${st.lossBank}`, bx, end + 29, '#c9cdea', F(22), 'left', 764);
     if (st.gazette.length) ui.text(c, 'Gazette: ' + st.gazette[0], bx, end + 51, '#eef4ff', F(20), 'left', 764);
   }
   const hint = m.reading ? 'Esc: back to list    J: close' :
