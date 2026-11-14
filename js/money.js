@@ -97,14 +97,14 @@ for (const id of ['village', 'coast', 'canyon', 'summit']) wrapSpawn(id, (w, s) 
     if (s.flags.stockTold || LQ.busy || ui.menu || !s.prices) return;
     if (Math.hypot(b.tx * T + 8 - w.p.x, b.ty * T + 8 - w.p.y) > 4.5 * T) return;
     s.flags.stockTold = true;
-    ui.toast('Stocks: talk to ' + b.name + ' under the ticker board to BUY.'); ui.toast('HOLD as long as you like. SELL at any broker. J, then Broker, shows what you own.');
+    ui.toast('Stocks: talk to ' + b.name + ' under the ticker board to BUY.'); ui.toast('HOLD as long as you like. SELL where that stock trades. J, then Broker, shows what you own.');
   } });
 });
 
 // ---------- Chapter 4: three short cards after the sale clock. Enter turns the card.
 const CARDS = [
-  { title: 'HOLD OR SELL', a: ['HOLD', 'No tax yet. A gain you have not sold is only on paper.', 'The price can still rise or fall.'], b: ['SELL', 'The gain is real now. It goes on this year\'s return.', 'Held one year or less: taxed like wages. Held more than one year: lower long-term rates.'] },
-  { title: 'SELLING AT A LOSS', a: ['KEEP THE LOSER', 'A loss you have not sold does nothing on your return.', 'The price may recover. It may not.'], b: ['SELL THE LOSER', 'The loss is real now. It cancels gains from other sales.', 'If losses are bigger than gains, up to $3,000 comes off other income this year. The rest carries forward.'] },
+  { title: 'HOLD OR SELL', a: ['HOLD', 'No tax yet. A gain you have not sold is only on paper.', 'The price can still rise or fall.'], b: ['SELL', 'The gain is real now. It goes on this year\'s return.', 'One year or less: ordinary tax rates. More than one year: long-term rates may be lower. Both are capital gains.'] },
+  { title: 'SELLING AT A LOSS', a: ['KEEP THE LOSER', 'A loss you have not sold does nothing on your return.', 'The price may recover. It may not.'], b: ['SELL THE LOSER', 'The loss is real now. It cancels gains from other sales.', 'If losses are bigger than gains, up to $3,000 can offset other income ($1,500 if married filing separately). The rest carries forward.'] },
   { title: 'TWO KINDS OF ACCOUNT', a: ['TAXABLE BROKERAGE', 'Dividends are taxed every year. Gains are taxed in the year you sell.', 'Take money out any time.'], b: ['ROTH IRA', 'No deduction going in. No tax on dividends or sales while the money stays inside.', 'Qualified withdrawals are tax-free. Taking earnings out early can mean tax plus a 10% extra tax.'] },
 ];
 Mny.CARDS = CARDS;

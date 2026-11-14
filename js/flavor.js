@@ -187,9 +187,11 @@ const CUT = LQ.cutscene = {
   drawUI(c) {
     if (!CUT.def) return;
     const P = CUT.def.panels, k = Math.min(1, CUT.t / .4);
-    ui.panel(c, 60, 388, 840, 122);
-    c.globalAlpha = k; c.font = F(28); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#eef4ff';
-    ui.wrap(c, P[CUT.i].text, 796).forEach((ln, i) => c.fillText(ln, 82, 400 + i * 30)); c.globalAlpha = 1;
+    c.font = F(28);
+    const lines = ui.wrap(c, P[CUT.i].text, 796), top = 474 - Math.max(3, lines.length) * 29;
+    ui.panel(c, 60, top - 12, 840, 522 - top);
+    c.globalAlpha = k; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#eef4ff';
+    lines.forEach((ln, i) => c.fillText(ln, 82, top + i * 29)); c.globalAlpha = 1;
     ui.text(c, (CUT.i + 1) + ' / ' + P.length, 878, 482, '#c9cdea', F(20), 'right');
     ui.text(c, 'Enter: next    Esc: skip    N: narration ' + (N.on ? 'on' : 'off'), 82, 482, '#35f0e6', F(21), 'left', 700);
   },

@@ -11,10 +11,12 @@ Open the game link in a browser on a computer with a keyboard. There is nothing 
 | Arrow keys or WASD | Move |
 | Space or Enter | Talk, confirm |
 | E or C | Use the tool in hand (hold it for the shield) |
-| Q | Switch tools |
-| J or Tab | Menu: quests, journal, items, map, broker |
+| Q | Cycle the tools in hand |
+| K | Field Kit: equip or store tools and toggle finder hints |
+| J or Tab | Menu: quests, journal, items, map, broker, kit |
 | Esc | Back |
 | M | Sound on or off |
+| N | Cutscene narration on or off |
 
 A new game opens in your cottage and teaches the controls as you play. You can skip it. Progress saves in your browser. The title screen has three save slots, and each slot can be saved to a backup file and loaded on another computer.
 

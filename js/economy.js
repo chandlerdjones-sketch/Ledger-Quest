@@ -320,11 +320,18 @@ LQ.yearPass = () => {
 LQ.ltZeroMax = () => st().flags.married ? TX.ltcgZeroMaxJoint : TX.ltcgZeroMax;
 LQ.ltRate = () => LQ.cur().taxable <= LQ.ltZeroMax() ? 0 : 0.15;
 LQ.buy = (id, n) => { const s = st(), p = LQ.price(id); n = Math.min(n, Math.floor(s.coins / p)); if (n <= 0) return 0; s.coins -= n * p; s.lots[id].push({ n, cost: p, lt: false }); return n; };
+LQ.holding = id => {
+  const lots = st().lots[id], shares = LQ.shares(id);
+  const basis = lots.reduce((sum, lot) => sum + lot.n * lot.cost, 0);
+  return { shares, basis, unrealized: shares * LQ.price(id) - basis };
+};
+LQ.coinChange = n => (n > 0 ? '+' : '') + Math.round(n).toLocaleString('en-US');
 // Sell oldest shares first. Capital gains tax is settled on the spot so you feel it.
 LQ.sell = (id, n) => {
   const s = st(), p = LQ.price(id), lots = s.lots[id]; let left = Math.min(n, LQ.shares(id)), sold = 0, stG = 0, ltG = 0;
   while (left > 0 && lots.length) { const l = lots[0], k = Math.min(left, l.n), g = k * (p - l.cost); if (l.lt) ltG += g; else stG += g; l.n -= k; left -= k; sold += k; if (!l.n) lots.shift(); }
-  let net = stG + ltG, used = 0, tax = 0;
+  const net = stG + ltG; let used = 0, tax = 0;
+  s.brokerRealized += net;
   // Chapter 4: sales are recorded and settled on the return, the way it really works.
   if (LQ.deferGains && LQ.deferGains()) { s.inv.st += stG * LQ.COIN_USD; s.inv.lt += ltG * LQ.COIN_USD; s.coins += sold * p; return { sold, proceeds: sold * p, stG, ltG, net, used: 0, tax: 0, deferred: true }; }
   if (net < 0) s.lossBank = (s.lossBank || 0) - net;
@@ -358,7 +365,7 @@ LQ.broker = async who => {
   if (s.region === 'coast' && !s.flags.broker2Seen) { s.flags.broker2Seen = true; await LQ.say(who, 'Welcome to the Harbor Exchange. I trade the coast companies and the index fund. Your village shares are safe in your account, and Bex up north will still buy and sell them.'); }
   if (!s.flags.brokerSeen) {
     s.flags.brokerSeen = true;
-    await LQ.say(who, (s.region === 'coast' ? 'A word on how this works.' : 'Welcome to the Village Exchange.') + ' This is a taxable brokerage account. Buy a share, and you own a slice of a real local business.');
+    await LQ.say(who, (s.region === 'coast' ? 'A word on how this works.' : 'Welcome to ' + LQ.EXCHANGE_NAME[s.region] + '.') + ' This is a taxable brokerage account. Buy a share, and you own a slice of a real local business.');
     await LQ.say(who, 'Two rules of the road. One: the Gazette on the notice board prints news a day before prices react, so read it. Two: when you sell for a gain, the taxman takes a cut. Hold for more than a year and you may get a lower rate.');
     LQ.learn('brokerage');
   }
@@ -368,9 +375,10 @@ LQ.broker = async who => {
     const i = await LQ.choose(who, 'Which one?', list.map(x => x.id + '  ' + x.name).concat('Leave'), k => { brokerDoc.sel = k; });
     const x = list[i]; if (!x) break;
     brokerDoc.sel = i;
-    const p = LQ.price(x.id), have = LQ.shares(x.id), can = Math.floor(s.coins / p);
+    const p = LQ.price(x.id), holding = LQ.holding(x.id), have = holding.shares, can = Math.floor(s.coins / p);
+    const detail = have ? ` Basis ${holding.basis} coins. Unrealized gain/loss ${LQ.coinChange(holding.unrealized)}.` : '';
     const acts = [['Buy 1', () => LQ.buy(x.id, 1)], ['Buy 5', () => can >= 5 ? LQ.buy(x.id, 5) : 0], ['Buy as many as I can (' + can + ')', () => LQ.buy(x.id, can)]];
-    const a = await LQ.choose(who, x.name + ' at ' + p + ' coins. You hold ' + have + '.', acts.map(q => q[0]).concat(have ? ['Sell 1', 'Sell all (' + have + ')'] : [], 'Back'));
+    const a = await LQ.choose(who, x.name + ' at ' + p + ' coins. You hold ' + have + '.' + detail, acts.map(q => q[0]).concat(have ? ['Sell 1', 'Sell all (' + have + ')'] : [], 'Back'));
     if (a < 3) { const n = acts[a][1](); if (n) LQ.save(); LQ.audio.sfx(n ? 'coin' : 'wrong'); await LQ.say(who, n ? 'Bought ' + n + ' share' + (n > 1 ? 's' : '') + ' of ' + x.id + ' for ' + n * p + ' coins.' : 'Not enough coins for that.'); }
     else if (have && a < 5) {
       const r = LQ.sell(x.id, a === 3 ? 1 : have); LQ.save(); LQ.audio.sfx('coin');

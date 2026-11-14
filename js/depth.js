@@ -55,7 +55,7 @@ function sortDoc(o) {
     d.cols.forEach((name, i) => { c.font = F(20); c.textAlign = 'center'; c.fillStyle = COLC[i]; c.fillText(name, CX[i], 44); });
     d.rows.forEach((r, i) => {
       const y = 66 + i * rh;
-      if (sorting && d.cur === i) { c.fillStyle = `rgba(255,205,50,${.42 + .2 * Math.sin(LQ.time * 6)})`; c.fillRect(38, y - 1, 624, rh - 1); }
+      if (sorting && d.cur === i) { c.fillStyle = '#d7edf1'; c.fillRect(38, y - 1, 624, rh - 1); c.fillStyle = '#1f6f73'; c.fillRect(38, y - 1, 3, rh - 1); }
       if (d.bad === i) { c.fillStyle = 'rgba(176,51,46,.25)'; c.fillRect(38, y - 1, 624, rh - 1); }
       c.font = F(21); c.textAlign = 'left'; c.fillStyle = '#15122e'; c.fillText(r.name, 46, y, 272);
       c.textAlign = 'right'; c.fillText(M(r.amt), 394, y);
@@ -69,7 +69,7 @@ function sortDoc(o) {
     if (sorting) {
       const by = 69 + n * rh, on = d.cur === n;
       c.fillStyle = on ? '#1f6f5c' : '#8a84b0'; c.fillRect(250, by, 200, 22);
-      if (on) { c.strokeStyle = '#ffcf4a'; c.lineWidth = 3; c.strokeRect(248.5, by - 1.5, 203, 25); }
+      if (on) { c.strokeStyle = '#1f6f73'; c.lineWidth = 3; c.strokeRect(248.5, by - 1.5, 203, 25); }
       c.font = F(22); c.textAlign = 'center'; c.fillStyle = '#ffffff'; c.fillText('CHECK MY SORTING', 350, by - 1);
     }
     d.side(c, d); helpBox(c, d);
@@ -180,14 +180,17 @@ async function budget(who) {
       c.fillStyle = '#f4f6ff'; c.fillRect(686, 10, 250, 336); c.strokeStyle = '#7a74b8'; c.lineWidth = 2; c.strokeRect(687, 11, 248, 334);
       c.font = F(11, true); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#5a5490'; c.fillText('THE YEAR SO FAR', 700, 24);
       const L = (y, a, b, o) => D.line(c, 700, y, 222, a, b, Object.assign({ size: 24 }, o));
-      L(46, 'Money earned', M(f.gigGross)); L(76, 'Job costs', '-' + M(cst), D.RED);
-      D.rule(c, 700, 106, 222); L(112, 'Profit', M(profit), Object.assign({ hl: !dial }, D.GREEN));
-      L(150, 'Costs you can’t deduct', '-' + M(per), D.RED);
-      L(180, 'Tax jar', dial ? '-' + M(d.jar) : '?', Object.assign({ hl: dial && d.phase === 'dial' }, D.RED));
-      D.rule(c, 700, 210, 222); L(216, 'Cash left', dial ? M(profit - per - d.jar) : '?', D.GREEN);
-      c.font = F(19); c.fillStyle = '#5a5490'; c.textAlign = 'left';
-      ui.wrap(c, dial ? `Tax on this profit: about ${M(bill)}. That is income tax plus self-employment tax.` : `Job costs start at ${M(base)} from your books.`, 222).forEach((ln, i) => c.fillText(ln, 700, 256 + i * 20));
-      delta(c, d, 810, 134);
+      L(48, 'Money earned', M(f.gigGross));
+      L(77, 'Job costs', '-' + M(cst), D.RED);
+      D.rule(c, 700, 106, 222);
+      L(114, 'Business profit', M(profit), { ...D.GREEN, hl: !dial });
+      L(151, 'Other spending', '-' + M(per), D.RED);
+      L(180, 'Tax set aside', dial ? '-' + M(d.jar) : '—', { ...D.RED, hl: d.phase === 'dial' });
+      D.rule(c, 700, 209, 222);
+      const cash = profit - per - d.jar;
+      L(217, 'Cash left', dial ? M(cash) : '—', cash < 0 ? D.RED : D.GREEN);
+      c.font = F(20); c.fillStyle = '#5a5490'; c.textAlign = 'left';
+      ui.wrap(c, dial ? `Target: ${M(bill)} for income tax and self-employment tax.` : `Your books already include ${M(base)} in job costs.`, 222).forEach((ln, i) => c.fillText(ln, 700, 257 + i * 22));
     } });
   ui.doc = d;
   let clean = true;
@@ -201,7 +204,7 @@ async function budget(who) {
     if (d.jar >= bill) break;
     clean = false; sfx('wrong'); LQ.shake(.15);
     await say(who, `The tax on this profit is about ${M(bill)}. Your jar holds ${M(d.jar)}. Set aside another ${M(bill - d.jar)} to cover the difference.`);
-    d.msg = 'Add to the jar and watch Cash left shrink. That smaller number is the honest one.';
+    d.msg = 'Add to the jar and watch Cash left shrink. That is the money still free to spend.';
   }
   sfx('right'); d.msg = '';
   const over = d.jar - bill;
@@ -365,7 +368,7 @@ for (const id of ['village', 'coast', 'canyon', 'summit']) {
       if (quiet > .4 && owed(st()).length) { quiet = 0; LQ.script(collect); }
     } });
   };
-  if (id !== 'village') { const hud0 = R.hud; R.hud = (w, s) => [hud0 ? hud0(w, s) : '', LQ.pages() ? 'Ledger Pages ' + LQ.pages() + '/12' : ''].filter(Boolean).join('    '); }
+  if (id !== 'village') { const hud0 = R.hud; R.hud = (w, s) => [hud0 ? hud0(w, s) : '', LQ.pages() ? 'Ledger ' + LQ.pages() + '/12' : ''].filter(Boolean).join('    '); }
 }
 // Chapter starters skip the village, so they are owed its three pages too.
 for (const ch of ['CH2', 'CH3', 'CH4']) { const s0 = LQ[ch].starter; LQ[ch].starter = function () { st().flags.starter = true; return s0.apply(this, arguments); }; }

@@ -98,7 +98,7 @@ LQ.ROOMS.cottage1 = {
   arrive: async () => {
     const s = st(); if (stage() !== 1 || s.flags.introWoke) return;
     s.flags.introWoke = true;
-    await say(null, 'Your first night in Paystub Village. Use the arrow keys or WASD to walk to the glowing letter. Face the table and press Space to read it.');
+    await say(null, 'You just moved to Paystub Village for work. Your job offer is on the table. Use the arrow keys or WASD to walk to the glowing letter. Face the table and press Space to read it.');
   },
 };
 

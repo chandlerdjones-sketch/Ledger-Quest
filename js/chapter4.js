@@ -52,24 +52,24 @@ LQ.QUESTS4 = [
 ];
 
 Object.assign(LQ.JOURNAL, {
-  realize4: { title: 'Gains on the return', text: 'An investment that has gone up is not taxed while you hold it. You owe tax in the year you sell. Your broker reports each sale on Form 1099-B by mid-February, you list them on Form 8949, and the totals go on Schedule D of your return.' },
-  basis4: { title: 'Cost basis', text: 'Your basis is what an investment cost you: the price you paid, plus fees, plus any dividends you reinvested. Your gain or loss is what you sold it for minus your basis. A higher basis means a smaller taxable gain, so keep the records.' },
-  stepup4: { title: 'Inherited and gifted shares', text: 'When you inherit an investment, your basis is generally its market value at the owner\'s death, even if the value went down. Inherited shares get long-term treatment. Gifts usually keep the giver\'s basis for figuring a gain, with special rules for losses.' },
-  holding4: { title: 'Short-term and long-term', text: 'A gain is long-term if you held the investment for more than one year, counting from the day after you bought it. Long-term gains are taxed at 0%, 15%, or 20%. A short-term gain, held one year or less, is taxed like wages at your ordinary rate.' },
+  realize4: { title: 'Gains on the return', text: 'A stock price rising by itself does not trigger tax. When you sell, you generally report the gain or loss for that year. Use your broker’s Form 1099-B to check your records. Report sales on Form 8949 when required and summarize them on Schedule D. Dividends can be taxable while you hold shares.' },
+  basis4: { title: 'Cost basis', text: 'For shares you buy, basis usually starts with the price and purchase fees. Reinvested dividends buy new shares with their own basis. Take your net sale proceeds and subtract the basis of the shares sold to find your gain or loss.' },
+  stepup4: { title: 'Inherited and gifted shares', text: 'Inherited stock generally starts with its market value at the owner’s death. That can raise or lower the basis. An estate can sometimes use a different valuation date. A sale of inherited stock generally gets long-term treatment. For a lifetime gift, you usually use the giver’s basis for a gain. If market value was lower at the time of the gift, use that lower value to figure a loss. A sale between the two amounts produces neither gain nor loss.' },
+  holding4: { title: 'Short-term and long-term', text: 'A gain is long-term if you held the investment for more than one year, counting from the day after you bought it. Long-term gains are taxed at 0%, 15%, or 20%. A short-term gain on shares held one year or less generally uses ordinary income tax rates. It still goes on Schedule D.' },
   dividends4: { title: 'Dividends', text: 'Dividends are taxable in the year they are paid, even if you reinvest them automatically and never see the cash. Reinvested dividends add to your basis. Qualified dividends get long-term gain rates. For most common stock, you must hold the shares more than 60 days within the 121-day window around the ex-dividend date. The company must also qualify. They arrive on Form 1099-DIV.' },
   interest4: { title: 'Interest', text: 'Interest from savings accounts, certificates of deposit, and most bonds is taxed like wages, at your ordinary rate. It arrives on Form 1099-INT. Interest from municipal bonds is generally free of federal income tax.' },
-  harvest4: { title: 'Tax-loss harvesting', text: 'Selling an investment at a loss turns the loss into something useful. Losses cancel out gains first. If losses are larger than gains, up to $3,000 of the rest comes off your other income each year, and anything beyond that carries forward to later years with no time limit.' },
-  washsale4: { title: 'The wash sale rule', text: 'If you sell at a loss and buy the same or a substantially identical investment within 30 days before or after the sale, the loss is disallowed for now. It is added to the basis of the new shares instead. To keep the loss, wait 31 days, or buy something similar but not identical.' },
+  harvest4: { title: 'Tax-loss harvesting', text: 'Selling an investment at a loss turns the loss into something useful. Losses cancel out gains first. If losses are larger than gains, up to $3,000 of the rest can offset other income each year ($1,500 if married filing separately). Unused losses carry forward.' },
+  washsale4: { title: 'The wash sale rule', text: 'If you sell at a loss and buy the same or a substantially identical investment within 30 days before or after the sale, the loss is disallowed for now. For a replacement in a taxable account, the disallowed loss generally raises the new shares’ basis. A replacement in an IRA or Roth IRA can disallow the loss without raising the basis. Check purchases on both sides of the sale.' },
   stack4: { title: 'How gains stack', text: 'On the return, your ordinary income fills the brackets first. Long-term gains and qualified dividends sit on top of it and are taxed at their own rates. A large long-term gain never raises the rate on your wages.' },
   zero4: { title: 'The 0% zone', text: 'For 2026, long-term gains and qualified dividends are taxed at 0% as long as your taxable income stays at or under $98,900 on a joint return, or $49,450 for a single filer. Above that the rate is 15%, and 20% only above $613,700 on a joint return.' },
-  accounts4: { title: 'Four kinds of account', text: 'A taxable account is taxed every year on dividends, interest, and sales. A traditional 401(k) or IRA takes money before tax, grows untaxed, and is taxed as income when you take it out. A Roth takes money after tax, grows untaxed, and offers tax-free qualified withdrawals. An HSA is untaxed going in, growing, and coming out for medical costs.' },
+  accounts4: { title: 'Four kinds of account', text: 'In a taxable brokerage account, dividends and interest can be taxable each year. Selling shares can create a reportable gain or loss. A traditional 401(k) or IRA takes money before tax, grows untaxed, and is taxed as income when you take it out. A Roth takes money after tax, grows untaxed, and offers tax-free qualified withdrawals. An HSA is untaxed going in, growing, and coming out for medical costs.' },
   location4: { title: 'What goes where', text: 'Hold investments that throw off a lot of taxable income every year, such as bonds and high-dividend funds, inside tax-sheltered accounts. Hold broad index funds you plan to keep for years in the taxable account, where they are taxed lightly. The same investments can cost less in tax just by sitting in the right account.' },
   tip4Reinvest: { title: 'Tip: reinvested dividends', text: 'Every reinvested dividend buys new shares and adds to your basis. If you forget them when you sell, you pay tax on the same money twice.' },
   tip4B: { title: 'Tip: check your 1099-B', text: 'Form 1099-B lists each sale and the basis your broker has on record. For shares that were inherited, gifted, or moved from another broker, that basis may be missing or wrong. Correct it on Form 8949.' },
   tip4Day: { title: 'Tip: a year and a day', text: 'The holding period starts the day after you buy. Sell exactly one year after the purchase date and the gain is still short-term. Wait one more day.' },
   pro4Niit: { title: 'Pro: the investment income surtax', text: 'High earners pay an extra 3.8% Net Investment Income Tax on interest, dividends, and gains. It applies once income passes $250,000 on a joint return or $200,000 for a single filer, and those thresholds do not rise with inflation.' },
   pro4Index: { title: 'Pro: index funds and taxes', text: 'A fund that trades often passes its gains to you every year as capital gain distributions, and you owe tax on them even if you never sold a share. Broad index funds trade very little, so most of your gain waits untaxed until you sell.' },
-  pro4Early: { title: 'Pro: taking money out early', text: 'Money taken from a traditional 401(k) or IRA before age 59 and a half is taxed as income and usually hit with an extra 10% tax. A Roth IRA is more forgiving: what you put in can come out at any time with no tax and no penalty. Only the earnings have to wait.' },
+  pro4Early: { title: 'Pro: taking money out early', text: 'Money taken from a traditional 401(k) or IRA before age 59 and a half is taxed as income and usually hit with an extra 10% tax. A Roth IRA is more forgiving: what you put in can come out at any time with no tax and no penalty. Regular contributions usually come out first. Earnings can be taxable and may face an extra 10% tax if the withdrawal is not qualified.' },
   pro4Hsa: { title: 'Pro: invest your HSA', text: 'An HSA is the only account that is untaxed three times: going in, growing, and coming out for medical costs. If you can pay today\'s medical bills from your pocket and keep the receipts, the HSA can stay invested for decades.' },
   pro4Donate: { title: 'Pro: give shares, not cash', text: 'If you itemize, giving shares you have held more than a year straight to a charity lets you deduct their full value, and nobody pays tax on the gain. Selling first and giving the cash means paying the gains tax yourself.' },
   pro4Lots: { title: 'Pro: choosing which shares to sell', text: 'Shares bought at different times are separate lots, each with its own basis and holding period. Unless you say otherwise, your broker sells the oldest first. You can tell the broker to sell specific lots, such as the ones with the highest basis.' },
@@ -95,7 +95,7 @@ const basisDoc = { show: 0, draw(c) {
   L(0, 'Great-Aunt Opal paid, long ago', M(OPAL.paid)); L(1, 'Value on the day she died', M(OPAL.atDeath), { hl: sh === 1 });
   L(2, 'You sell today for', M(OPAL.sold)); D.rule(c, 84, 66 + 3 * 38 - 4, 470);
   L(3, 'Your taxable gain', sh > 1 ? M(OPAL.gain) : '________', Object.assign({ hl: sh === 2 }, D.GREEN));
-  D.sideBox(c, 'WHERE BASIS COMES FROM', [['You bought it', 'what you paid', { size: 22 }], ['You inherited it', 'value at death', { size: 22 }], ['It was a gift', "giver's basis", { size: 22 }], 0, ['Gain', 'sale - basis', { size: 22 }]]);
+  D.sideBox(c, 'WHERE BASIS COMES FROM', [['You bought it', 'what you paid', { size: 22 }], ['You inherited it', 'usually value at death', { size: 20 }], ['Gift (gain)', "usually giver’s basis", { size: 20 }], 0, ['Gain', 'sale - basis', { size: 22 }]]);
 } };
 const holdDoc = { now: 0, wait: 0, pick: -1, draw(c) {
   const L = (i, a, b, o) => D.line(c, 84, 66 + i * 38, 470, a, b, o);
@@ -133,7 +133,7 @@ const stackDoc = { draw(c) {
   c.fillStyle = '#1f8a5c'; c.fillText('Long-term gains and qualified dividends taxed at 0%: ' + M(f.at0), x0, y + h + 48);
   c.fillStyle = '#c9781c'; c.fillText('Long-term gains and qualified dividends taxed at 15%: ' + M(f.at15), x0, y + h + 72);
 } };
-const ACCTS = [['Taxable brokerage', 'after tax', 'taxed every year', 'gains are taxed'], ['Traditional 401(k), IRA', 'before tax', 'untaxed', 'taxed as income'], ['Roth IRA, Roth 401(k)', 'after tax', 'untaxed', 'tax-free'], ['HSA', 'before tax', 'untaxed', 'tax-free for medical']];
+const ACCTS = [['Taxable brokerage', 'after tax', 'taxed every year', 'gains are taxed'], ['Traditional 401(k), IRA', 'before tax', 'untaxed', 'taxed as income'], ['Roth IRA, Roth 401(k)', 'after tax', 'untaxed', 'tax-free if qualified'], ['HSA', 'before tax', 'untaxed', 'tax-free for medical']];
 const acctDoc = { hl: -1, draw(c) {
   D.paper(c, 60, 20, 840, 272, 'FOUR KINDS OF ACCOUNT', 'Simplified');
   const X = [84, 372, 532, 700];
@@ -177,14 +177,14 @@ async function qGarnet() {
   const s = st();
   await say(N.garnet, "So you are Opal's family. She was in here every spring with her ledgers. I am sorry. And I am glad the shares went to people who will ask questions.");
   basisDoc.show = 0; ui.doc = basisDoc;
-  await say(N.garnet, 'Every gain starts with one number: your basis. Basis is what an investment cost you. The price paid, plus fees, plus any dividends that were reinvested along the way. Gain is the sale price minus the basis.');
+  await say(N.garnet, 'Start with basis. For shares you buy, it is usually what you paid, including fees. Subtract the basis of the shares you sold from what you received after selling costs.');
   await say(N.garnet, `Opal paid ${M(OPAL.paid)} for these forty shares, a lifetime ago. On the day she died they were worth ${M(OPAL.atDeath)}. Today a buyer offers ${M(OPAL.sold)}.`);
   basisDoc.show = 1;
   await ask(N.garnet, `You sell for ${M(OPAL.sold)}. What is your taxable gain?`, [`${M(OPAL.gain)}. My basis is the value on the day she died`, `${M(OPAL.sold - OPAL.paid)}. The sale minus what Opal paid`, `${M(OPAL.sold)}. I paid nothing, so all of it`],
     { wrong: ["That would be right for a gift made while she was alive. An inheritance is treated differently.", 'An heir does not start from zero. Look at the highlighted line.'] });
   basisDoc.show = 2; LQ.audio.sfx('coin');
-  await say(N.garnet, `${M(OPAL.gain)}. When you inherit, the basis steps up to the value on the day of death. All the growth during Opal's lifetime, ${M(OPAL.atDeath - OPAL.paid)} of it, is never taxed as a gain to anyone.`);
-  await say(N.garnet, 'Two more things about inherited shares. They always count as long-term, even if you sell them the next morning. And a gift is not the same. Had Opal handed you these shares while she was alive, you would have taken over her ' + M(OPAL.paid) + ' basis along with them.');
+  await say(N.garnet, `${M(OPAL.gain)}. Here the basis resets to what Opal’s shares were worth when she died. Our gain is the rise since then. If the shares had fallen during Opal’s lifetime, the reset could have lowered the basis.`);
+  await say(N.garnet, `This sale counts as long-term even if you sell right away. If Opal had given you the shares while alive, you would generally use her ${M(OPAL.paid)} basis to figure a gain. If the stock had dropped before the gift, a separate rule would apply when figuring a loss.`);
   s.inv.lt += OPAL.gain; ui.doc = null; LQ.learn('basis4'); LQ.learn('stepup4'); LQ.give('basisbook');
   LQ.gain(0, 60, 'Inherited shares sold');
   await say(N.garnet, `Sold, and ${M(OPAL.gain)} of long-term gain is written in your record. Now, your Glacier Goldworks shares. Before you touch them, talk to Timekeeper Frost at the Clock Tower next door. With those, the calendar matters.`);
@@ -209,7 +209,7 @@ async function qFrost() {
     LQ.gain(10, 80, 'Glacier shares sold');
   } else {
     s.inv.st += GL.gain; LQ.audio.sfx('coin'); ui.doc = null;
-    await say(N.frost, `Sold. ${M(GL.gain)} of short-term gain is in your record, and it will be taxed like wages. Waiting until the gain qualified as long-term would have saved you about ${M(Math.max(0, holdDoc.now - holdDoc.wait))}. Sometimes selling early is the right call. Just know the price of it.`);
+    await say(N.frost, `Sold. ${M(GL.gain)} of short-term gain is in your record, and it uses ordinary income tax rates. Waiting until the gain qualified as long-term would have saved you about ${M(Math.max(0, holdDoc.now - holdDoc.wait))}. Sometimes selling early is the right call. Just know the price of it.`);
     LQ.gain(0, 80, 'Glacier shares sold');
   }
   LQ.learn('holding4'); LQ.give('hourglass');
@@ -222,11 +222,11 @@ async function qBirch() {
   divDoc.qd = s.inv.qd + DIV; divDoc.hl = -1;
   await say(N.birch, 'Ah, yes. Your family index fund and your savings account are both with us. I have two forms for you.');
   ui.doc = divDoc;
-  await say(N.birch, `The index fund paid dividends through the year. With the dividends from your own shares, the total is ${M(divDoc.qd)}. Every one of them was reinvested automatically. You never held the cash.`);
+  await say(N.birch, `The index fund paid dividends through the year. With the dividends from your own shares, the total is ${M(divDoc.qd)}. The index fund dividends were reinvested. Your broker paid the other dividends in cash.`);
   await ask(N.birch, 'The dividends were reinvested and you never saw a coin. Are they taxable this year?', ['Yes. Dividends are taxed in the year they are paid', 'No. Not until I sell the fund', 'Only if I spend them'],
     { wrong: ['Reinvesting does not delay the tax. The dividend was paid to you, and then it bought more shares.', 'Spending has nothing to do with it. Paid is paid.'] });
   divDoc.hl = 0;
-  await say(N.birch, 'Taxed this year. The good news is twofold. Each reinvested dividend adds to your basis, so you are not taxed on it again when you sell. And yours are qualified dividends, which are taxed at the long-term gain rates. Shares held more than about two months around the payment date generally qualify.');
+  await say(N.birch, 'Taxed this year. The good news is twofold. Each reinvested dividend adds to your basis, so you are not taxed on it again when you sell. And yours are qualified dividends, which are taxed at the long-term gain rates. For most common shares, hold them more than 60 days in the 121-day window around the ex-dividend date. The payer also has to qualify.');
   divDoc.hl = 1;
   await say(N.birch, LQ.has('munis')
     ? `Your Muni Bond Lantern moved your savings into municipal bonds. The ${M(INT)} is tax-exempt interest on Form 1099-INT. Ordinary bank interest would be taxed like wages.`
@@ -431,7 +431,7 @@ const MYTHS4 = [
     truth: 'Losses offset gains, then up to $3,000 of other income a year, and the rest carries forward.' },
   { myth: 'Roth, traditional, who cares? Every pot of gold is taxed the SAME!',
     opts: ['Traditional is taxed coming out. A Roth is taxed going in.', 'True. The names are for show.', 'True. Both are taxed twice.'],
-    truth: 'Traditional: a deduction now, tax later. Roth: tax now, nothing later.' },
+    truth: 'Traditional accounts generally defer tax. Roth contributions use after-tax dollars, and qualified withdrawals are tax-free.' },
 ];
 LQ.BOSSES.glint = {
   who: GLINT, label: 'GLINT, THE HOT-TIP DRAGON', kind: 'glint', move: 'fire', sky: ['#070a26', '#2c3f8a'], hill: '#3a4a7e', ground: ['#5a6ea8', '#7186c0'], fog: '240,200,90', bar: ['#d9a520', '#fff3b0'], ink: '#7a5a12',
@@ -509,7 +509,7 @@ LQ.AUDIT_POOL.push(
   { need: 'realize4', q: 'Your shares rise in value and you do not sell. What tax do you owe on the gain?', o: ['None until I sell', 'Tax on the rise each year', 'Half the gain'], why: 'Gains are taxed in the year of the sale.' },
   { need: 'basis4', q: 'How is a capital gain worked out?', o: ['Sale price minus basis', 'Sale price minus dividends', 'Basis minus sale price'], why: 'Basis is what the investment cost you.' },
   { need: 'stepup4', q: 'You inherit shares. What is your basis?', o: ['Their value on the day the owner died', 'What the owner first paid', 'Zero'], why: 'Inherited property gets a step-up in basis.' },
-  { need: 'stepup4', q: 'You sell inherited shares one week after receiving them. The gain is...', o: ['Long-term', 'Short-term', 'Not taxable'], why: 'Inherited property always counts as long-term.' },
+  { need: 'stepup4', q: 'You sell inherited shares one week after receiving them. The gain is...', o: ['Long-term', 'Short-term', 'Not taxable'], why: 'Sales of inherited stock generally get long-term treatment.' },
   { need: 'holding4', q: 'A gain on shares held for exactly eleven months is taxed...', o: ['Like wages, as a short-term gain', 'At the long-term rates', 'Not at all'], why: 'Long-term means held for more than one year.' },
   { need: 'dividends4', q: 'You reinvest every dividend automatically. When are they taxed?', o: ['In the year they are paid', 'When I sell the shares', 'Never'], why: 'Reinvested dividends are taxed when paid and add to your basis.' },
   { need: 'interest4', q: 'How is interest from a savings account taxed?', o: ['Like wages, at my ordinary rate', 'At the long-term gain rates', 'It is tax-free'], why: 'Interest gets no special rate.' },

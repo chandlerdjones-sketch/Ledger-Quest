@@ -153,7 +153,7 @@ const FOUND = {
   rLight: () => `A thank-you letter from the Lighthouse Keepers' Fund for your ${M(RC.rLight.amt)} cash gift. It says you received nothing in return. That one sentence is what makes it a valid receipt.`,
   rSchool: () => `A receipt from the Harbor School: ${M(RC.rSchool.amt)} in cash for new books. Deductible.`,
   rRaffle: () => `A raffle ticket stub from the Harbor School fair: ${M(RC.rRaffle.amt)}. Bad luck twice. You did not win, and you bought a chance at a prize, so it is not a gift. Raffle tickets are never deductible.`,
-  rMedical: () => `A bundle of healer's bills: ${M(RC.rMedical.amt)}. Keep them, but medical costs only count above 7.5% of your income, and yours is well past that.`,
+  rMedical: () => `A bundle of healer's bills: ${M(RC.rMedical.amt)}. Keep them, but medical costs count only to the extent they exceed 7.5% of your adjusted gross income. Tallow can check the numbers.`,
 };
 async function found(id) {
   const s = st(); if (s.rcpt[id]) return;
@@ -282,11 +282,11 @@ async function qTallow() {
   }
   const f = LQ.fin2();
   await say(N.tallow, `Two shields, and you may carry only one. The standard deduction for a joint return is ${M(STD.mfj)}. Or you itemize: add up your mortgage interest, your state and local taxes, and your gifts to charity.`);
-  await say(N.tallow, `Your state and local taxes come to ${M(f.saltRaw)}. That is under the ${M(TX.saltCap)} cap, so all of it counts.`);
+  await say(N.tallow, `Your state and local taxes come to ${M(f.saltRaw)}. For this household, ${M(f.salt)} goes into the itemized total after the cap.`);
   await say(N.tallow, f.gifts ? `Your cash gifts come to ${M(f.gifts)}, and here the law keeps two rulebooks. Carry the standard shield, and up to ${M(TX.charityJoint)} of cash gifts counts on top of it. Itemize, and only the part above 0.5% of your income counts: ${M(f.gifts)} minus ${M(f.giftFloor)} leaves ${M(f.giftItem)}.`
     : `You brought no gift receipts. For the record, the law keeps two rulebooks. With the standard shield, up to ${M(TX.charityJoint)} of cash gifts counts on top of it. Itemized, only the part above 0.5% of your income counts.`);
   const item = f.better === 'item', equal = f.itemized === f.stdTotal;
-  await say(N.tallow, 'Now sort them yourself. Some of this paper belongs in the itemized pile, some earns a credit instead, and some counts for nothing.');
+  await say(N.tallow, 'Try three examples. Put mortgage interest in Itemize: it lowers the income that gets taxed. Put eligible daycare in Credit: the credit comes off the tax bill itself. Put a raffle ticket in Leave Out: it buys a chance to win and gives you neither break.');
   await LQ.depth.receipts(N.tallow);
   const gap = Math.abs(f.itemized - f.stdTotal), left = HUNT.length - HUNT.filter(got).length;
   await say(N.tallow, (equal ? 'Both options deduct the same amount. We will use the standard deduction for now.'

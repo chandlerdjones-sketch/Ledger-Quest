@@ -21,7 +21,7 @@ const POOL = [
   { need: 'proHSA', q: 'What is the 2026 HSA limit for self-only coverage?', o: ['$4,400', '$7,500', '$24,500'], why: '$7,500 is the IRA limit and $24,500 is the 401(k) limit.' },
   { need: 'proGains', q: 'A gain is long-term when you held the investment...', o: ['More than one year', 'More than 30 days', 'Past December 31'], why: 'More than one year earns the lower long-term rates.' },
   { need: 'proLoss', q: 'How much net capital loss can offset other income each year?', o: ['$3,000', '$10,000', 'None'], why: 'Up to $3,000, and the rest carries forward.' },
-  { need: 'proRoth', q: 'Which account is taxed going in but tax-free coming out?', o: ['Roth', 'Traditional', 'Neither'], why: 'Roth: pay tax now, withdraw tax-free later.' },
+  { need: 'proRoth', q: 'Which account uses after-tax contributions and offers tax-free qualified withdrawals?', o: ['Roth', 'Traditional', 'Neither'], why: 'Roth IRA contributions are not deductible. Withdrawals are tax-free when the qualification rules are met.' },
   { need: 'proCharity', q: 'In 2026, how much cash charity can a single non-itemizer deduct?', o: ['Up to $1,000', 'Nothing', 'Up to $16,100'], why: 'Up to $1,000, or $2,000 for a joint return.' },
   { need: 'brokerage', q: 'In a taxable brokerage account, when do you owe tax on a stock gain?', o: ['When I sell it for a gain', 'Every day the price rises', 'Never'], why: 'Gains are taxed when realized, meaning when you sell.' },
   { need: 'overtime', career: 'nurse', q: 'Which part of overtime pay does the overtime deduction cover?', o: ['Only the extra half-time premium', 'All pay for overtime hours', 'All wages'], why: 'Only the premium above your regular rate.' },
@@ -32,24 +32,44 @@ const POOL = [
 ];
 LQ.AUDIT_POOL = POOL;
 LQ.auditPool = () => POOL.filter(p => st().journal.includes(p.need) && (!p.career || p.career === st().career));
+const questionKey = q => q.need + ':' + q.q;
+function selectQuestions(s, round) {
+  const unseen = [], missed = [], reviewed = [];
+  for (const q of LQ.shuffle(LQ.auditPool())) {
+    const previous = s.auditHistory[questionKey(q)];
+    if (!previous) unseen.push(q);
+    else if (previous.right) reviewed.push(q);
+    else if (round - previous.round >= 2) missed.push(q);
+  }
+  // Fill with the oldest correct answers only when fresh and due questions run short.
+  reviewed.sort((a, b) => s.auditHistory[questionKey(a)].round - s.auditHistory[questionKey(b)].round);
+  return unseen.concat(missed, reviewed).slice(0, 3);
+}
 LQ.audit = async () => {
-  const s = st(), w = LQ.world, p = w.p, pool = LQ.shuffle(LQ.auditPool()).slice(0, 3);
-  if (pool.length < 3) return;
-  s.audits = (s.audits || 0) + 1;
+  const s = st(), w = LQ.world, p = w.p, round = s.audits + 1;
+  const pool = selectQuestions(s, round);
+  if (!pool.length) { s.audits = round; LQ.save(); return; }
+  const required = Math.floor(pool.length / 2) + 1;
+  const format = `${pool.length} question${pool.length === 1 ? '' : 's'}, ${required} to pass.`;
+  const firstAudit = !Object.keys(s.auditHistory).length && !s.audits;
+  s.audits = round;
   const who = { name: AGENTS[s.audits % AGENTS.length], look: LOOK };
   const side = w.canStand(p.x + 18, p.y) ? 18 : w.canStand(p.x - 18, p.y) ? -18 : 0;
   w.agent = { x: p.x + side, y: side ? p.y : p.y - 14, look: LOOK }; if (side) p.dir = side < 0 ? 'left' : 'right';
   w.burst(w.agent.x, w.agent.y - 8, '#c9cdea', 22, 60); LQ.audio.sfx('rumble'); LQ.shake(0.35);
   ui.showBanner('AUDIT!', who.name + ' leaps out of nowhere'); await LQ.wait(1.1); ui.banner = null;
-  await LQ.say(who, s.audits === 1 ? 'HALT. Internal Revenue Service. This is a surprise audit. Three questions. Answer two correctly and you walk away richer. Fail, and it will cost you.'
-    : 'You again. Routine check. Three questions, two to pass. Let us see what you have learned since last time.');
+  await LQ.say(who, (firstAudit ? 'HALT. This is a surprise audit. ' : 'You again. Routine check. ') + format);
   let right = 0;
-  for (const q of pool) if (await LQ.quiz(who, q.q, q.o, q.why)) right++;
-  let pass = right >= 2;
-  if (!pass && right === 1 && LQ.has('ledger')) { pass = true; await LQ.say(who, 'Hm. One short... but your Receipt Ledger is in perfect order. Good records count. I will let it pass.'); }
+  for (const q of pool) {
+    const correct = await LQ.quiz(who, q.q, q.o, q.why);
+    s.auditHistory[questionKey(q)] = { round, right: correct };
+    if (correct) right++;
+  }
+  let pass = right >= required;
+  if (!pass && right > 0 && right === required - 1 && LQ.has('ledger')) { pass = true; await LQ.say(who, 'Hm. One short... but your Receipt Ledger is in perfect order. Good records count. I will let it pass.'); }
   if (pass) {
     LQ.audio.sfx('fanfare'); LQ.gain(20, (40 + 10 * right) * (LQ.has('abacus') ? 2 : 1), 'Audit passed');
-    await LQ.say(who, right === 3 ? 'Three for three. Flawless. Carry on, citizen.' : 'Good enough. You pass. Carry on, citizen.');
+    await LQ.say(who, right === pool.length ? 'Every answer correct. Carry on, citizen.' : 'Good enough. You pass. Carry on, citizen.');
   } else {
     LQ.gain(-15, -Math.min(s.coins, 60), 'Audit failed');
     await LQ.say(who, 'Not good enough. That is a penalty. Study your Tax Journal. I will be back.');

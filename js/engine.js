@@ -70,7 +70,7 @@ const OLD_KEY = 'ledgerquest.save.v2', MIGRATED_KEY = 'ledgerquest.save.v2.migra
 LQ.SAVE_VERSION = 3; LQ.slot = 1;
 LQ.newState = () => ({ ver: LQ.SAVE_VERSION, quest: 0, w4: null, savvy: 0, coins: 0, asked: 0, first: 0, journal: [], items: [],
   season: 'summer', px: 24 * 16, py: 37 * 16 + 14, dir: 'up', chests: {}, coinsGot: {}, flags: {},
-  career: null, streak: 0, gear: [], tips: {}, audits: 0, auditDist: 0, auditNext: 2200, day: 0, prices: null, prev: null, lots: null, gazette: [], news: null, lossBank: 0, capTax: 0, divs: 0, seed: 1,
+  career: null, streak: 0, gear: [], tips: {}, audits: 0, auditHistory: {}, auditDist: 0, auditNext: 2200, day: 0, prices: null, prev: null, lots: null, gazette: [], news: null, lossBank: 0, brokerRealized: 0, capTax: 0, divs: 0, seed: 1,
   region: 'village', q2: null, rcpt: {}, w4b: null, wh2: null, child: false,
   q3: null, gig: null, est3: null, q4: null, inv: null, hold4: null, harv4: null, acct4: null,
   hp: 4, tool: null });
