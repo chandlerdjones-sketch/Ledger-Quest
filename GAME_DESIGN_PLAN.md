@@ -329,7 +329,7 @@ Roadmap
 | Batch | Scope | State |
 |---|---|---|
 | 1 | Story reveals, Gazette, audit limits, ending pages, small text fixes | Built and tested Nov 14, see below |
-| 2 | Pacing pass on the main path, Chapter 1 first, then Chandler's playtest | Not started |
+| 2 | Pacing pass on the main path, Chapter 1 first, then Chandler's playtest | Chapter 1 pilot built Nov 14, waiting on Chandler's playtest. Chapters 2 to 4 not started |
 | 3 | Side jobs list in the Quest tab, one required hands-on beat per chapter, economy tuning | Not started. The economy numbers need Chandler's yes |
 | 4 | Boss stakes and the Murk fight | Not started. The boss restart rule needs Chandler's yes |
 | 5 | Sprites for Loophole and Slick, shorter title flow, backstory at the start, fast travel | Not started. Fast travel needs Chandler's yes |
@@ -355,3 +355,44 @@ Checks
 Needs a human
 - Whether one audit per region visit feels like too few.
 - How the twelve truths page reads at a small window size.
+
+## Final polish, batch 2 notes: the Chapter 1 pilot (Nov 14)
+Scope: the pacing rules, applied to Chapter 1 only. Chapters 2 to 4 wait for Chandler's playtest of this pilot. No tax math changed. No save fields changed.
+
+The rules
+- At most three dialogue boxes before the player does something.
+- At most two quiz questions per villager in one visit. A villager's own decisions (the W-4, the estimates) do not count.
+- A question the boss or the filing already covers is cut once, at whichever place teaches less.
+- Detail that leaves the dialogue goes to the Journal.
+
+What changed, by stop (`js/chapter1.js`, `js/battle.js`)
+| Stop | Before | After |
+|---|---|---|
+| Mayor | 5 boxes | 3 boxes. The lines about auditors and tonics are gone, since both introduce themselves |
+| Brannock | 2 closing boxes | 1 closing box |
+| Pim | 3 questions | 2 questions. The Social Security and Medicare rates are one line said over the highlighted stub. The owner's third question is also a line |
+| Odette | 2 questions | Unchanged |
+| Sable | 3 questions | 2 questions: your own banner, then Wren's. The married-on-December-30 rule is in her opening and in the Journal |
+| Thorn | 3 questions plus a career question | 2 questions: your own shield, then the career question. Fast Food Workers get the "what does a deduction do" question, and the others hear it as a line |
+| Altamira | 3 boxes before the raise question | 2 boxes |
+| Mythmonger | 6 myths and the final sum | 5 myths and the final sum. The filing status myth is cut |
+| Juno | 5 questions | 2 questions: taxable income and the result. Wages, tax, and tax already paid are short lines, and the two deduction rows fill in by themselves |
+
+- Journal: Filing status now carries the married-all-year rule, and Standard vs. itemized now says a deduction is not a credit.
+
+Measured in the browser, Nurse, tutorial skipped, Mayor to the end of Chapter 1
+| Measure | Before | After |
+|---|---|---|
+| Quiz prompts, not counting one audit | 25 | 17 |
+| Words read | about 1,900 | about 1,700 |
+
+The question count fell by about a third. The word count fell by about a tenth, because several cut questions became single lines. The reading is now broken up better, but it is not much shorter. The larger fix for that is Batch 3, which puts a shift and the shop on the path.
+
+Checks
+- `tools/play-check.js` now fails if any Chapter 1 villager asks more than two questions in one visit, or if the Mythmonger has more or fewer than five myths. Passes for all three careers, along with `tools/check.js`.
+- Seen in the browser: the whole of Chapter 1 for the Nurse, including the vault, the boss, and the new filing flow.
+
+Questions for the playtest
+- Does Chapter 1 still teach enough with a third fewer questions, or does anything now feel skipped?
+- Does the filing feel better with two questions, or too hands-off?
+- Is five myths the right length for the Mythmonger?

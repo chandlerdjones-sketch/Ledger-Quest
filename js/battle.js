@@ -22,9 +22,6 @@ const MYTHS = [
   { myth: "Cash sales don't count if nobody sends you a form!", only: 'se',
     opts: ['All business income is taxable, form or no form.', 'True. No 1099, no tax.', 'Only sales paid by check count.'],
     truth: 'Every coin of income is taxable, whether or not a 1099 ever arrives.' },
-  { myth: 'Your filing status is whatever you FEEL like on tax day!',
-    opts: ['It is set by my real situation on the last day of the year.', 'Sure, pick the one with the biggest deduction.', 'Everyone files Single unless they are rich.'],
-    truth: 'Status follows the facts of your life on December 31.' },
 ];
 const B = LQ.battle = {
   cfg: null, bossHP: 7, maxHP: 7, fly: null, flash: 0, hurt: 0, slash: 0, scraps: 0, dead: 0, bubble: '', dodge: null, pos: { x: 38, y: 115 },

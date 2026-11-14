@@ -57,6 +57,9 @@ const tried = new Set(), recovered = [];
 // Every line of dialogue shown, so a test can prove a scene really played. Also the pages shown after the last stamp.
 const said = []; let lastDlg = null, endingPages = 0;
 const heard = text => said.some(line => line.includes(text));
+// Quiz prompts shown (LQ.ask and boss myths go through LQ.choose; a villager's own decisions do not).
+let quizzes = 0; const choose0 = LQ.choose; LQ.choose = (...args) => { quizzes++; return choose0(...args); };
+const quizCap = async (label, cap, run) => { const before = quizzes; await run(); assert(quizzes - before <= cap, `${label} asks at most ${cap} questions, asked ${quizzes - before}`); };
 async function playDoc(d) {
   const first = !tried.has(d.phase + (d.title || 'hold')); tried.add(d.phase + (d.title || 'hold'));
   if (first) recovered.push(d.phase);
@@ -252,7 +255,8 @@ async function talk(find, choose = () => 0) {
   console.log('Village shop, purchase cancel, insufficient funds, duplicates, prerequisites, consumables, rental, rumors, broker, and cave branches passed');
 
   vm.runInContext('Math.random = () => 0.99999', env);
-  for (const id of ['brannock', 'pim', 'odette', 'sable', 'thorn', 'altamira']) await talk(e => e.npc?.id === id);
+  // The pacing rule: no villager asks more than two questions in one visit.
+  for (const id of ['brannock', 'pim', 'odette', 'sable', 'thorn', 'altamira']) await quizCap(id, 2, () => talk(e => e.npc?.id === id));
   assert.equal(s().quest, 6); assert(s().flags.vaultGo);
   await talk(e => e.type === 'vaultdoor');
   async function fillVault() {
@@ -278,7 +282,7 @@ async function talk(find, choose = () => 0) {
   stand(w.ents.find(e => e.type === 'page'));
   await frame(); await drain(() => 0, untilIdle); assert(s().flags.vaultDone && s().flags.page1);
   LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle);
-  await talk(e => e.npc?.id === 'altamira'); assert.equal(s().quest, 7);
+  await quizCap('altamira', 2, () => talk(e => e.npc?.id === 'altamira')); assert.equal(s().quest, 7);
   // Phase 2: the three fooled villagers and one paid shift.
   assert(w.ents.some(e => e.type === 'cart'), 'Rowan\'s cart blocks the footbridge');
   s().tool = 'compass'; near(w.ents.find(e => e.npc?.id === 'rowan')); await frame(30); await press('e'); await drain(() => 0, untilIdle);
@@ -376,7 +380,8 @@ async function talk(find, choose = () => 0) {
   });
   await frame(); await drain(() => 0, untilIdle);
   assert.equal(s().quest, 8); assert(s().flags.page3);
-  await talk(e => e.npc?.id === 'juno'); assert.equal(s().quest, 9);
+  assert.equal(LQ.BOSSES.baron.myths().length, 5, 'the Mythmonger fights with five myths');
+  await quizCap('juno', 2, () => talk(e => e.npc?.id === 'juno')); assert.equal(s().quest, 9);
   console.log('All Village quests, audits, vault reset, both puzzle outcomes, three Ledger pages and first filing passed');
 
   async function travel(region) {
