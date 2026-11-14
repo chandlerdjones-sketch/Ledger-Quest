@@ -57,8 +57,10 @@ const tried = new Set(), recovered = [];
 // Every line of dialogue shown, so a test can prove a scene really played. Also the pages shown after the last stamp.
 const said = []; let lastDlg = null, endingPages = 0;
 const heard = text => said.some(line => line.includes(text));
-// Quiz prompts shown (LQ.ask and boss myths go through LQ.choose; a villager's own decisions do not).
-let quizzes = 0; const choose0 = LQ.choose; LQ.choose = (...args) => { quizzes++; return choose0(...args); };
+// Quiz prompts shown. Every quiz shuffles its answers, and shop menus and a villager's own decisions do not.
+let quizzes = 0; const shuffle0 = LQ.shuffle; LQ.shuffle = values => { if (values.every((v, i) => v === i)) quizzes++; return shuffle0(values); };
+// The pacing rule, in every chapter: no villager asks more than two questions in one visit. A failure here reaches the test through the game's own error log.
+for (const ch of ['CH1', 'CH2', 'CH3', 'CH4']) { const talk0 = LQ[ch].talk; LQ[ch].talk = async who => { const before = quizzes; const r = await talk0(who); assert(quizzes - before <= 2, `${ch} ${who} asks at most 2 questions in one visit, asked ${quizzes - before}`); return r; }; }
 const quizCap = async (label, cap, run) => { const before = quizzes; await run(); assert(quizzes - before <= cap, `${label} asks at most ${cap} questions, asked ${quizzes - before}`); };
 async function playDoc(d) {
   const first = !tried.has(d.phase + (d.title || 'hold')); tried.add(d.phase + (d.title || 'hold'));
@@ -594,6 +596,7 @@ async function talk(find, choose = () => 0) {
   assert.equal(s().q4, 7);
   await talk(e => e.qid === 'boss4');
   assert(s().flags.page11 && s().items.includes('invoice4') && heard('Q. Murk, Head Clerk of the Great Ledger'), 'the Dragon’s invoice names Murk out loud');
+  for (const id of ['baron', 'loophole', 'slick', 'glint']) assert.equal(LQ.BOSSES[id].myths().length, 5, id + ' fights with five myths');
   // Audits: one per visit to a region, none in a hunt, none after the last return.
   w.auditSeen = null; assert.equal(LQ.auditAllowed(w), true);
   w.auditSeen = w.R.id; assert.equal(LQ.auditAllowed(w), false, 'one audit per visit to a region');
@@ -625,6 +628,7 @@ async function talk(find, choose = () => 0) {
   assert.deepEqual([...seenMoves].sort(), ['beam', 'bolts', 'devils', 'fire'], 'every boss ran its own movement pattern');
   console.log('Coast, Canyon and Summit quest chains, three more boss fights and returns, finale and return travel passed');
   console.log('Boss and filing pages read out in their own scenes, audit limits, and Gazette news with no next-day edge passed');
+  console.log('Pacing: two questions at most per villager visit in all four chapters, and five myths per boss passed');
 
   // The Torn Ledger. Every activity was handed in wrong once and recovered, and all twelve pages are home.
   for (const phase of ['sort', 'pick', 'dial', 'day', 'drop']) assert(recovered.includes(phase), phase + ' was failed once and retried');

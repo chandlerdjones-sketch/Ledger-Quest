@@ -329,7 +329,7 @@ Roadmap
 | Batch | Scope | State |
 |---|---|---|
 | 1 | Story reveals, Gazette, audit limits, ending pages, small text fixes | Built and tested Nov 14, see below |
-| 2 | Pacing pass on the main path, Chapter 1 first, then Chandler's playtest | Chapter 1 pilot built Nov 14, waiting on Chandler's playtest. Chapters 2 to 4 not started |
+| 2 | Pacing pass on the main path | Built for all four chapters Nov 14, at Chandler's request before his playtest. Waiting on that playtest |
 | 3 | Side jobs list in the Quest tab, one required hands-on beat per chapter, economy tuning | Not started. The economy numbers need Chandler's yes |
 | 4 | Boss stakes and the Murk fight | Not started. The boss restart rule needs Chandler's yes |
 | 5 | Sprites for Loophole and Slick, shorter title flow, backstory at the start, fast travel | Not started. Fast travel needs Chandler's yes |
@@ -396,3 +396,34 @@ Questions for the playtest
 - Does Chapter 1 still teach enough with a third fewer questions, or does anything now feel skipped?
 - Does the filing feel better with two questions, or too hands-off?
 - Is five myths the right length for the Mythmonger?
+
+## Final polish, batch 2 notes: Chapters 2 to 4 (Nov 14)
+Chandler asked for the pacing rules to go through Chapters 2 to 4 before his playtest, so the Chapter 1 pilot was not played first. No tax math changed. No save fields changed.
+
+What changed (`js/chapter2.js`, `js/chapter3.js`, `js/chapter4.js`)
+| Chapter | Dialogue | Questions | Filing | Boss |
+|---|---|---|---|---|
+| 2, Shelter Coast | Marlowe, Brine, Pearl, Dory, Stone and Tallow each say at most three boxes before the player acts. Brine's two closing boxes, Tallow's two after the board, and Fathom's two openers are each one box | No villager asked more than two already | Two questions: where Coral's credit goes, and the result | Five myths. "File separately" and "a giant refund" are cut |
+| 3, Hustle Canyon | Juniper's hobby warning is shorter. Lupe's commuting line is for the Dust Runner only. Flint and Dune have one box between their questions | Mesa's second question is cut, because it asked the same thing as her first and Slick asks it again | Two questions: the Schedule SE line, and the result | Five myths. "Side money" and "write off everything" are cut |
+| 4, Summit of Gains | Marlowe and Garnet have two boxes after their question. Tamsin explains the four accounts in three boxes, down from five, and the "what goes where" line is Journal only | No villager asked more than two already | Two questions: the tax on the stacked gains, and the result | Five myths. "Tax on a rising price" and "reinvested dividends" are cut |
+
+- Each filing now asks one question that belongs to its chapter, plus the result. The other lines fill themselves in, with a short line only where something changed from last year or reflects the player's own gear and choices.
+- Journal: Married filing jointly now lists what filing separately costs, and Four kinds of account now carries the 401(k) and IRA limits.
+
+Measured
+| Measure | Before the polish work | Now |
+|---|---|---|
+| Quiz questions on a main-path run, not counting audits | 88 | 63 |
+| Audits | 5 on the review run | At most one per visit to a region |
+| Words shown in the scripted playthrough, through Chapter 4 | 10,550 | 9,853 |
+
+The first row is counted from the scripts. The last row comes from running `tools/play-check.js` for the Nurse against Codex's commit `8c7336a` and against this one. Questions fell by more than a quarter. Words fell by about 7%. The reading is broken up better, but the game is not much shorter to read. Batch 3 is the larger fix for that.
+
+Checks
+- `tools/play-check.js` now fails if any villager in any chapter asks more than two questions in one visit, or if any boss has more or fewer than five myths. Passes for all three careers, along with `tools/check.js`.
+- Not seen in the browser. The Browser pane was running in the background at two frames a second when this was built, so a timed replay of Chapters 2 to 4 was not possible. The changes are text and question removal only, with no new layouts, but the three filings and Tamsin's account table deserve a look by eye.
+
+Questions for the playtest, on top of the Chapter 1 ones
+- Do the filings in Chapters 2 to 4 feel right with one chapter question and the result?
+- Does Tamsin's shorter account lesson still land before the savings choice?
+- Do five myths feel right for Loophole, Slick and Glint?
