@@ -29,6 +29,25 @@ const TRACKS = {
   summit: { bpm: 96, lw: 'triangle', lv: .075, bv: .06,
     lead: seq('D5 - F#5 A5 D6 - A5 - | B5 - G5 B5 A5 - - - | D5 - F#5 A5 D6 - E6 - | C#6 - A5 C#6 D6 - - -'),
     bass: seq('D3 - - - A3 - - - | G3 - - - A3 - - - | B2 - - - F#3 - - - | A2 - - - D3 - - -') },
+  // boss, puzzle, home, and story cues (Nov 13). Each later boss has its own theme.
+  boss2: { bpm: 148, lw: 'square', lv: .035, bv: .08,   // Captain Loophole: a minor-key shanty
+    lead: seq('D5 F5 A5 D6 A5 F5 D5 F5 | C5 E5 G5 C6 G5 E5 C5 E5 | A#4 D5 F5 A#5 F5 D5 A#4 D5 | A4 C#5 E5 A5 E5 C#5 A5 A5'),
+    bass: seq('D3 D3 A3 D3 D3 A3 D3 A3 | C3 C3 G3 C3 C3 G3 C3 G3 | A#2 A#2 F3 A#2 A#2 F3 A#2 F3 | A2 A2 E3 A2 A2 E3 E3 E3') },
+  boss3: { bpm: 168, lw: 'square', lv: .033, bv: .08,   // Sidewinder Slick: a gallop
+    lead: seq('E5 E5 G5 E5 B5 E5 G5 E5 | D5 D5 F#5 D5 A5 D5 F#5 D5 | C5 C5 E5 C5 G5 C5 E5 C5 | B4 D#5 F#5 B5 F#5 D#5 B5 B5'),
+    bass: seq('E2 E3 E2 E3 E2 E3 E2 E3 | D2 D3 D2 D3 D2 D3 D2 D3 | C2 C3 C2 C3 C2 C3 C2 C3 | B2 B2 B3 B2 B2 B3 B3 B3') },
+  boss4: { bpm: 140, lw: 'sawtooth', lv: .028, bv: .09,   // Glint: heavy and low
+    lead: seq('C5 - D#5 G5 C6 - G5 D#5 | G#4 - C5 D#5 G#5 - D#5 C5 | A#4 - D5 F5 A#5 - F5 D5 | G4 B4 D5 G5 B5 G5 D5 B4'),
+    bass: seq('C2 C2 C3 C2 C2 C3 C2 C3 | G#2 G#2 G#3 G#2 G#2 G#3 G#2 G#3 | A#2 A#2 A#3 A#2 A#2 A#3 A#2 A#3 | G2 G2 G3 G2 G2 G3 G3 G3') },
+  puzzle: { bpm: 88, lw: 'triangle', lv: .07, bv: .06,
+    lead: seq('E5 - B4 - G5 - B4 - | D5 - A4 - F#5 - A4 - | C5 - G4 - E5 - G4 - | B4 - F#4 - D#5 - - -'),
+    bass: seq('E3 - - - B2 - - - | D3 - - - A2 - - - | C3 - - - G2 - - - | B2 - - - B2 - - -') },
+  home: { bpm: 80, lw: 'triangle', lv: .075, bv: .06,
+    lead: seq('C5 - E5 - G5 - E5 - | F5 - A5 - G5 - - - | E5 - G5 - C6 - G5 - | F5 - D5 - C5 - - -'),
+    bass: seq('C3 - G3 - C3 - G3 - | F3 - C3 - G3 - - - | A2 - E3 - A2 - E3 - | F3 - G3 - C3 - - -') },
+  story: { bpm: 72, lw: 'triangle', lv: .075, bv: .06,
+    lead: seq('A4 - C5 - E5 - - - | G4 - B4 - D5 - - - | F4 - A4 - C5 - E5 - | E5 - - - A4 - - -'),
+    bass: seq('A2 - - - E3 - - - | G2 - - - D3 - - - | F2 - - - C3 - - - | E2 - - - A2 - - -') },
   title: { bpm: 84, lw: 'triangle', lv: .08, bv: .06,
     lead: seq('C5 - E5 G5 C6 - B5 - | A5 - F5 A5 G5 - - - | C5 - E5 G5 C6 - D6 - | B5 - G5 B5 C6 - - -'),
     bass: seq('C3 - - - C3 - - - | F3 - - - G3 - - - | A3 - - - E3 - - - | G3 - - - C3 - - -') },
@@ -72,6 +91,9 @@ const A = LQ.audio = {
     else if (name === 'slash') { A.noise(t, .1, .1); T(900, t, .12, 'sawtooth', .05, 300); }
     else if (name === 'learn') { T(523, t, .09, 'triangle', .1); T(659, t + .09, .09, 'triangle', .1); T(784, t + .18, .09, 'triangle', .1); T(1047, t + .27, .25, 'triangle', .1); }
     else if (name === 'rumble') { A.noise(t, .7, .14); T(70, t, .7, 'sawtooth', .08, 40); }
+    else if (name === 'warn') { T(880, t, .07, 'square', .04); T(880, t + .12, .07, 'square', .04); }
+    else if (name === 'beam') { T(1320, t, .3, 'triangle', .08, 660); }
+    else if (name === 'fire') { A.noise(t, .45, .13); T(140, t, .4, 'sawtooth', .06, 70); }
     else if (name === 'stamp') { A.noise(t, .12, .2); T(120, t, .15, 'square', .1, 60); }
     else if (name === 'fanfare') {
       ['C5', 'E5', 'G5', 'C6', 'G5', 'C6', 'E6'].forEach((n, i) => T(freq(n), t + i * .12, i === 6 ? .7 : .14, 'square', .06));

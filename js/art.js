@@ -292,15 +292,26 @@ const bossRaw = (frame, kind) => {
     return c;
   }
   if (kind === 'glint') {
-    // Glint, the Hot-Tip Dragon: gold scales, ivory horns, red wings, green eyes
-    blob(18, 50 - f, 10, '#8a6a1c'); blob(46, 51 + f, 10, '#8a6a1c'); blob(32, 54, 12, '#8a6a1c');
-    R(g, 1, 22 - f * 2, 12, 4, '#b0332e'); R(g, 0, 26 - f * 2, 9, 9, '#b0332e'); R(g, 51, 22 - f * 2, 12, 4, '#b0332e'); R(g, 55, 26 - f * 2, 9, 9, '#b0332e');
-    blob(32, 36, 20, '#d9a520'); blob(18, 38 + f, 12, '#d9a520'); blob(46, 38 - f, 12, '#d9a520');
-    blob(26, 30, 12, '#f3c531'); blob(38, 28, 10, '#f3c531'); blob(24, 26, 5, '#fff3b0');
-    R(g, 16, 6, 4, 12, '#f6efd9'); R(g, 44, 6, 4, 12, '#f6efd9'); R(g, 18, 3, 3, 4, '#f6efd9'); R(g, 43, 3, 3, 4, '#f6efd9');
-    R(g, 19, 26, 10, 5, '#7fd6a8'); R(g, 35, 26, 10, 5, '#7fd6a8'); R(g, 23 + f, 26, 2, 5, '#1b1626'); R(g, 39 + f, 26, 2, 5, '#1b1626');
-    R(g, 28, 35, 2, 2, '#1b1626'); R(g, 34, 35, 2, 2, '#1b1626');
-    R(g, 21, 40, 22, 5, '#1b1626'); for (let i = 0; i < 5; i++) R(g, 22 + i * 4, i % 2 ? 42 : 40, 3, 3, '#f6efd9');
+    // Glint, the Hot-Tip Dragon, facing the hero: red wings that beat, a long neck, a horned head with a snout, and a spade tail
+    const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.fill(); };
+    const wing = f ? [[33, 37], [40, 25], [52, 24], [63, 31], [61, 43], [54, 37], [48, 44], [42, 38]] : [[33, 37], [29, 9], [41, 2], [53, 7], [62, 17], [54, 19], [51, 28], [44, 25], [43, 35]];
+    poly(wing, '#b0332e');
+    g.strokeStyle = '#7a1f1c'; g.lineWidth = 1; g.beginPath();
+    (f ? [[52, 24], [61, 43], [48, 44]] : [[41, 2], [62, 17], [51, 28]]).forEach(q => { g.moveTo(34, 36); g.lineTo(q[0], q[1]); }); g.stroke();
+    // tail
+    blob(49, 47, 6, '#8a6a1c'); blob(55, 44 - f, 4, '#8a6a1c'); blob(59, 40 - f, 3, '#8a6a1c'); poly([[58, 38 - f], [63, 32 - f], [63, 40 - f]], '#b0332e');
+    // legs and claws
+    R(g, 40, 51, 6, 8, '#8a6a1c'); R(g, 38, 59, 9, 2, '#f6efd9'); R(g, 27, 51, 5, 8, '#8a6a1c'); R(g, 25, 59, 8, 2, '#f6efd9');
+    // body, belly, neck
+    blob(37, 43, 13, '#d9a520'); blob(34, 47, 8, '#f3c531');
+    blob(27, 35, 7, '#d9a520'); blob(22, 28, 6, '#d9a520'); blob(19, 22, 6, '#d9a520'); blob(25, 33, 3, '#f3c531');
+    R(g, 29, 27, 2, 3, '#f6efd9'); R(g, 25, 21, 2, 3, '#f6efd9'); R(g, 33, 32, 2, 3, '#f6efd9');
+    // head: horns, snout, jaw, teeth, eye
+    R(g, 19, 5, 2, 8, '#f6efd9'); R(g, 23, 7, 2, 7, '#f6efd9');
+    blob(16, 16, 7, '#d9a520'); R(g, 3, 14, 13, 7, '#d9a520'); R(g, 3, 14, 11, 2, '#f3c531'); blob(15, 13, 3, '#fff3b0');
+    R(g, 4, 21 + f, 11, 2, '#8a6a1c'); R(g, 5, 20, 1, 2, '#f6efd9'); R(g, 8, 20, 1, 2, '#f6efd9'); R(g, 11, 20, 1, 2, '#f6efd9');
+    R(g, 4, 16, 1, 1, '#1b1626'); R(g, 12, 13, 4, 3, '#7fd6a8'); R(g, 13, 13, 1, 3, '#1b1626');
+    if (f) { R(g, 0, 20, 3, 2, '#ff8a3a'); R(g, 1, 22, 2, 1, '#ffcf4a'); }
     return c;
   }
   blob(18, 50 - f, 10, '#4a2374'); blob(46, 51 + f, 10, '#4a2374'); blob(32, 54, 12, '#4a2374');

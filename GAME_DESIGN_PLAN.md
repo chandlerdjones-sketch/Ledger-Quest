@@ -189,3 +189,112 @@ Needs a human playtest
 - The Back Office with real movement: the bolt lane timing, the imp, and the crate push.
 - Reading size on a phone-width window. The whole screen scales down evenly, so nothing overlaps, but the text gets small.
 - The cellar's tall door sits near the top HUD. It works, but the view is tight.
+
+
+## Adventure pass, batch 1 notes (Nov 13)
+Scope: active gameplay in Chapters 2 to 4 and the health loop. Not committed. Tax math is unchanged.
+
+What was built
+- `js/battle.js`: every boss now has its own movement phase before each answer, set by `move` on the boss config. Each one warns before it hurts, and the pickup comes to the player after three hits or the time limit.
+
+| Boss | `move` | Pattern | Shield |
+|---|---|---|---|
+| Baron Befuddle | `bolts` | Myth bolts along lanes (unchanged) | Blocks |
+| Captain Loophole | `beam` | The lighthouse lamp marks a strip of sand, then floods it. Step out of the strip. | No |
+| Sidewinder Slick | `devils` | Dust devils bounce around the field while the player collects three cash slips | No |
+| Glint | `fire` | The dragon flies to a lane and breathes fire along it, and drops hot tips on a marked spot | Blocks the fire |
+
+- The myth for the round stays on screen during the movement phase, so the dodge and the question are one beat.
+- Hearts are shared. The fight uses the same hearts as the world (`state.hp`), in quarter steps. A dodge hit costs a quarter heart (it used to cost coins), a wrong answer costs half a heart, and at zero the player gets two hearts back and the fight goes on. Whatever is left carries into the world and is saved.
+- `js/kit.js`: `kit.heart` draws partial hearts for both HUDs. Shops offer a Hot meal (8 coins, fills every heart) when the player is hurt, and Sit and rest (free, back to two hearts) when below two. Tonics are unchanged.
+- `js/adventure.js` (new): a free Notary Lamp beside each later boss (`LQ.ADV.lamps`), and Slick's Stash, a small dungeon in the red rock south-west of the creek bridge in Hustle Canyon. Cross a fog-bolt passage, then stamp the three strongboxes that hold income (cash fares with no form, online sales under the 1099-K threshold, tips) and leave the birthday gift. Stamping the gift springs a Scrap Imp. Reward: 40 coins and a tonic. It is optional, open from the start of Chapter 3, and has a rumor at the Trading Post. Flags: `stash3`, `stash3Chest`, `stashSeen`, `stashImp`.
+- `js/art.js`: Glint is redrawn as a dragon (beating wings, long neck, horned head with a snout, spade tail). In the fight Glint flies to the lane it is about to burn. Loophole drifts and Slick shivers.
+- `js/audio.js`: three sounds, `warn`, `beam`, `fire`. `js/engine.js`: saved hearts keep quarter steps.
+
+Checks
+- `tools/check.js`: the stash door, each lamp, and each boss approach are reachable with the lamps standing; the stash has three income boxes and one that is not.
+- `tools/play-check.js`: all four movement patterns run, the stash is solved with one wrong box first, the chest pays once, boss damage lands in quarter hearts and is saved, the meal needs coins, the free rest and the Gulch lamp work with an empty purse. Passes for nurse, food, and owner.
+- Seen in the browser by setting state directly: the lighthouse, dust devil, and dragon phases, the quarter heart on both HUDs, and the stash room.
+
+Needs a human playtest
+- Difficulty and feel of the three new phases with real hands. Warn times start at 0.9 seconds and tighten to 0.6.
+- Whether half a heart per wrong answer and a two-heart second wind feel fair.
+- Loophole and Slick keep their old sprites. Only Glint was redrawn.
+
+Still open from the Nov 13 brief
+- Field Kit page (three equipped tools, store and swap, finder toggle), storefronts, enterable houses
+- Playable side-income activity, earned/spent/kept/reported summary, easier stock discovery, the Chapter 4 hold-versus-sell and taxable-versus-Roth comparison with official-source wording
+- NPC tips and money problems, one optional finance quest per chapter (Chapter 3 has the stash), music cues, narration and cutscene prototype
+- Chapters 5 and 6 are proposed only, not built
+
+
+## Adventure pass, batch 2 notes (Nov 13)
+Scope: tools and exploration. Not committed. At Chandler's request this batch had no playthrough and no browser check. Only syntax and `tools/check.js` were run. `tools/play-check.js` was not run and may need its tool steps updated for the three-slot rule.
+
+What was built
+- `js/kit.js`: three tools in hand at most. Q cycles the tools in hand and E uses the active one. The in-hand list is `flags.kitEq` and the sorted list is `flags.kitSeen` (comma-separated ids), so old saves load and get their first three tools in hand.
+- A new tool goes in hand if there is room. Otherwise a toast says it went into the kit.
+- Recovery: `kit.need(id)` puts a stored tool in hand and stores the one not being held. The Lantern Cave door calls it, and any code that sets `state.tool` to a stored tool gets the same swap.
+- The Field Kit page is the sixth menu tab, Kit, also opened with K. It shows the three hand slots, every tool with "hand 1 to 3" or "stored", and a panel with what the tool does, its upgrades, and the free route to get it back. Enter stores or equips. With three in hand, Enter on a stored tool asks which one to store.
+- Upgrades shown are the real ones only: the lantern tiers (rental, Old Lantern, Charity Lantern) and the fifth heart. Other tools say they are at full strength.
+- Finders (Receipt Spyglass, Dowsing Rod) are rows on the same page. Enter switches hints off and on (`flags.off_spyglass`, `flags.off_rod`). The count stays on the HUD; only the direction hint hides.
+- `js/adventure.js`: a coin banner beside every shopkeeper and a ticker board behind every broker, in all four regions. Both are decoration and do not block movement.
+- Three enterable houses, entered at the right-hand door tile. Each resets on entry and pays once.
+
+| Region | Building | Room | Puzzle | Reward |
+|---|---|---|---|---|
+| Shelter Coast | `seacot` | `house2`, your sea cottage | Push the savings crate onto the rune (pay yourself first) | 30 coins, a tonic |
+| Hustle Canyon | `c3depot` | `house3`, the depot back room | Stamp the bill that must be paid first, rent or boots (needs before wants) | 30 coins |
+| Summit of Gains | `c4lodge` | `house4`, your lodge | Light the hearth: a free full rest, and the frozen trunk opens | 20 coins, a tonic |
+
+Needs checking by hand
+- Everything in this batch. In particular: the Kit tab layout and the swap flow, the six tabs fitting the menu bar, each house door being reachable and its puzzle opening the alcove, and where the banners and ticker boards sit relative to the stalls.
+- Paystub Village has no enterable house beyond the player's cottage.
+
+
+## Adventure pass, batch 3 notes (Nov 13)
+Scope: money players earn and see. Not committed. No playthrough and no browser check, at Chandler's request. Only syntax and `tools/check.js` were run. No tax math changed.
+
+What was built (`js/money.js`, new)
+- Gig run: a board at (26, 22) just south of the Hustle Canyon plaza, open once a gig is picked. It reuses the shift-work engine with the sell-and-restock game, relabeled per gig (parcels, pots, letters). 30 seconds, two paid runs per quest step, the rest are practice.
+- After a paid run a stub shows Earned, Spent on the job (a quarter of earned), Profit, Tax jar (self-employment tax on the profit, from `taxdata.js`), and Kept. The cap is 40 coins earned per run. Kept coins go to the purse.
+- Money trail: "See my money trail" on the board puts the practice totals (flags `gE`, `gC`, `gJ`, `gK`, `gR`) beside the real Schedule C figures from `LQ.fin3`, with a Reported line that turns to "Yes, on Schedule C" after filing. Both the stub and the trail say the runs are practice and never change the return.
+- Stocks: the first time the hero comes within about four tiles of a broker, two toasts say how to buy, hold, and sell and where holdings show (`flags.stockTold`). The Broker tab footer now says where to trade.
+- Chapter 4 compare board: three cards after Timekeeper Frost's sale clock, then one unscored question. Cards: hold or sell, selling at a loss, taxable brokerage or Roth IRA. Each card carries a PRACTICE line and a REAL line naming what does reach the return.
+
+Tax wording and sources (checked Nov 13)
+- Holding period, short-term taxed as ordinary income, the $3,000 loss limit and carryforward: IRS Topic 409, https://www.irs.gov/taxtopics/tc409
+- Roth IRA: contributions not deductible, qualified distributions tax-free, possible tax and a 10% additional tax on early withdrawals: https://www.irs.gov/retirement-plans/roth-iras and https://www.irs.gov/retirement-plans/traditional-and-roth-iras
+- The cards add no new wash sale wording. Publication 550 was too long to load to the wash sale section, so the existing wash sale text was not rechecked.
+
+Simplifications
+- The gig run's job cost is a flat quarter of what is earned, and the tax jar is self-employment tax only, with no income tax share.
+- Gig run coins are pocket money, like shift coins. The return uses the story figures.
+
+Needs checking by hand
+- Everything in this batch: the gig run and its labels, the stub and trail layouts, the board position, the toasts, and the three cards. `tools/play-check.js` has not been run since batch 1.
+
+
+## Adventure pass, batch 4 notes (Nov 13)
+Scope: world and presentation. Not committed. No playthrough and no browser check, at Chandler's request. Only syntax and `tools/check.js` were run.
+
+What was built (`js/flavor.js`, new, loaded last before the title)
+- A tip or a funny money problem for all 77 villagers (`LQ.QUIPS`). Each is one line, said once, after the villager's usual business, and remembered in `flags.quip_<chapter>_<id>`. `tools/check.js` fails if a villager has none.
+- Music cues in `js/audio.js`: `boss2` (Loophole, a minor shanty), `boss3` (Slick, a gallop), `boss4` (Glint, heavy and low), `puzzle` (Bracket Vault and Slick's Stash), `home` (the cottage and the three houses), and `story` (the cutscene). The Mythmonger keeps `battle`, and each chapter keeps its own town track. A boss config can name its track with `music`.
+- Narration prototype: N switches spoken narration on and off. It uses the browser's built-in speech voice, reads cutscene captions only, and is saved outside the game save. If the browser has no speech voice, a toast says so and captions carry on. Villager dialogue stays text.
+- One cutscene: the Torn Ledger so far, four panels, shown the first time the hero reaches Shelter Coast (`flags.cut2`). Captions are always on. Enter turns the page, Esc skips the whole scene, and a page turns by itself after a pause.
+
+Optional finance quests, one per chapter (plan)
+| Chapter | Quest | Lesson | Reward | State |
+|---|---|---|---|---|
+| 1 | Granny Maple's jar: bring her three coins found around the village, and she shows the jar she has filled one coin in ten for sixty years | Pay yourself first, small and steady | 30 coins and a tonic | Planned, not built |
+| 2 | The sea cottage cupboard: push the savings crate onto its spot before anything else | Pay yourself first | 30 coins and a tonic | Built in batch 2 as `house2` |
+| 3 | Slick's Stash: stamp the strongboxes that hold income | All income counts, with or without a form | 40 coins and a tonic | Built in batch 1 as `stash3` |
+| 4 | The lodge hearth today. Planned upgrade: Index Ada asks the hero to sort six stock tips into "a plan" and "a guess" | Diversify, and ignore hot tips | 20 coins and a tonic today. A fund pin that cuts broker fees if upgraded | Hearth built in batch 2 as `house4`. Sorting quest planned |
+
+None of the four appears in the quest tracker yet. A tracker line and a journal entry per optional quest is a small follow-up.
+
+Needs checking by hand
+- Everything in this batch: where each line lands after a villager's own dialogue, the six music cues by ear, the narration voice and its timing, and the cutscene art and captions.
+- `tools/play-check.js` has not been run since batch 1. Batches 2 to 4 changed tool cycling, Chapter 4's sale clock, villager dialogue, and the arrival at Shelter Coast, so expect it to need updates.
+

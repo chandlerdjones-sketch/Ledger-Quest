@@ -9,7 +9,7 @@ global.LQ = { ui: { toast: noop, wrap: () => [], text: noop, panel: noop, choice
 const base = () => ({ quest: 9, w4: 0, savvy: 0, coins: 500, asked: 0, first: 0, journal: [], items: [], season: 'summer', chests: {}, coinsGot: {}, flags: { married: true }, career: 'nurse', streak: 0, gear: [], tips: {},
   lossBank: 0, region: 'canyon', q2: 8, rcpt: {}, w4b: 0, wh2: null, child: true, q3: 0, gig: null, est3: null, q4: null, inv: null, hold4: null, harv4: null, acct4: null });
 LQ.state = base();
-for (const f of ['taxdata', 'economy', 'household', 'chapter1', 'audit', 'battle', 'chapter2', 'chapter3', 'chapter4', 'world', 'coast', 'canyon', 'summit', 'kit', 'foes', 'rooms', 'vaults1', 'jobs', 'depth', 'intro', 'backoffice'])
+for (const f of ['taxdata', 'economy', 'household', 'chapter1', 'audit', 'battle', 'chapter2', 'chapter3', 'chapter4', 'world', 'coast', 'canyon', 'summit', 'kit', 'foes', 'rooms', 'vaults1', 'jobs', 'depth', 'adventure', 'money', 'intro', 'backoffice', 'flavor'])
   vm.runInThisContext(fs.readFileSync(dir + '/js/' + f + '.js', 'utf8'), { filename: f + '.js' });
 let bad = 0; let fail = m => { bad++; console.log('  FAIL: ' + m); };
 const M = LQ.money, TX = LQ.TAX;
@@ -86,7 +86,17 @@ LQ.state = base();
   for (const p of [[0, 20], [23, 0], [40, 33], [41, 33], [24, 2]]) if (!r.seen[p[1]][p[0]]) fail('canyon: key tile unreachable ' + p);
   const g = reach(LQ.REGIONS.canyon, LQ.CH3, [2, 20], [[40, 31], [41, 31]]); if (g.seen[33][40]) fail('canyon: the Gulch can be entered around the rockfall');
   const b = reach(LQ.REGIONS.canyon, LQ.CH3, [2, 20], [[23, 1], [24, 1]]); if (b.seen[0][23]) fail('canyon: the North Trail barricade can be bypassed');
-  console.log('  canyon checked, trees ' + r.m.trees.length); }
+  // Adventure pass: with the Notary Lamps standing, the stash door and every boss are still reachable.
+  const A = LQ.ADV, a = reach(LQ.REGIONS.canyon, LQ.CH3, [2, 20], A.lamps.canyon);
+  if (!a.seen[A.stashDoor[1] + 1][A.stashDoor[0]]) fail("canyon: Slick's Stash door cannot be reached");
+  for (const p of [[40, 33], [41, 33], [42, 32], [7, 34]]) if (!a.seen[p[1]][p[0]]) fail('canyon: a lamp blocks or cannot be reached at ' + p);
+  const c2 = reach(LQ.REGIONS.coast, LQ.CH2, [24, 2], A.lamps.coast); for (const p of [[40, 33], [41, 33], [39, 32]]) if (!c2.seen[p[1]][p[0]]) fail('coast: the lighthouse lamp blocks the way at ' + p);
+  const s4 = reach(LQ.REGIONS.summit, LQ.CH4, [24, 41], A.lamps.summit); for (const p of [[23, 4], [24, 4], [21, 4]]) if (!s4.seen[p[1]][p[0]]) fail('summit: the peak lamp blocks the way at ' + p);
+  const rows = LQ.ROOMS.stash3.rows(); if (rows.some(r => r.length !== rows[0].length)) fail('stash3: uneven rows');
+  if (A.boxes.filter(b => b.inc).length !== 3 || A.boxes.length !== 4) fail('stash3: expected three income boxes and one that is not');
+    // every villager has a tip or a money problem, and every music cue names a real track
+  for (const ch of ['CH1', 'CH2', 'CH3', 'CH4']) for (const n of LQ[ch].npcs) if (!LQ.QUIPS[ch][n.id]) fail(ch + ': no tip or money problem for ' + n.id);
+  console.log('  canyon checked, trees ' + r.m.trees.length + ', stash door and boss lamps checked'); }
 { const r = reach(LQ.REGIONS.summit, LQ.CH4, [24, 41]);
   for (const p of [[23, 43], [23, 4], [24, 4], [29, 8]]) if (!r.seen[p[1]][p[0]]) fail('summit: key tile unreachable ' + p);
   const g = reach(LQ.REGIONS.summit, LQ.CH4, [24, 41], [[23, 11], [24, 11]]); if (g.seen[4][23]) fail('summit: the peak can be reached around the ice wall');

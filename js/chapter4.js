@@ -198,6 +198,7 @@ async function qFrost() {
   await say(N.frost, 'Tick, tick. Everyone who climbs up here wants to sell at once. I am the one who asks them what day it is.');
   await say(N.frost, 'You bought Glacier Goldworks eleven months ago. More than one year, counted from the day after you bought, and a gain is long-term, taxed at 0%, 15%, or 20%. A year or less and it is short-term, taxed exactly like wages. Here is my clock. Try it.');
   await LQ.depth.hold(N.frost);
+  if (LQ.money2) await LQ.money2.compare(N.frost);   // hold or sell, selling at a loss, taxable or Roth
   ui.doc = holdDoc;
   const p = await choose(N.frost, 'What will you do with the Glacier Goldworks shares?', ['Wait the month, then sell', 'Sell today'], i => { holdDoc.pick = i; });
   s.hold4 = p === 0 ? 1 : 0;
@@ -433,7 +434,7 @@ const MYTHS4 = [
     truth: 'Traditional: a deduction now, tax later. Roth: tax now, nothing later.' },
 ];
 LQ.BOSSES.glint = {
-  who: GLINT, label: 'GLINT, THE HOT-TIP DRAGON', kind: 'glint', sky: ['#070a26', '#2c3f8a'], hill: '#3a4a7e', ground: ['#5a6ea8', '#7186c0'], fog: '240,200,90', bar: ['#d9a520', '#fff3b0'], ink: '#7a5a12',
+  who: GLINT, label: 'GLINT, THE HOT-TIP DRAGON', kind: 'glint', move: 'fire', sky: ['#070a26', '#2c3f8a'], hill: '#3a4a7e', ground: ['#5a6ea8', '#7186c0'], fog: '240,200,90', bar: ['#d9a520', '#fff3b0'], ink: '#7a5a12',
   approach: 'Gold light pours over the ridge. Something enormous uncoils from a hoard of crumpled stock tips.',
   intro: ['PSSST. Hero. I am Glint. I have a tip for ye. A SURE thing. Everyone on this mountain is buying it. Ye would be a fool to miss out.', 'I know everything there is to know about gains. Ask anyone I have ruined.'],
   taunt: 'HAR! Now ye are thinking like an investor. Buy high! Sell in a panic!', fogLine: 'The gold glare dazzles you.',
