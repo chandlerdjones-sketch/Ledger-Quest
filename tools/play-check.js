@@ -47,7 +47,7 @@ async function frame(count = 1) {
 }
 const dispatch = (type, key) => emit(type, { key, preventDefault: noop, repeat: false });
 async function press(key) { dispatch('keydown', key); await frame(); dispatch('keyup', key); }
-const shieldFallback = new WeakSet();
+const shieldFallback = new WeakSet(), seenMoves = new Set();
 // The hands-on activities. Each phase is first handed in wrong, to prove the explanation and the retry, then played right.
 const tried = new Set(), recovered = [];
 async function playDoc(d) {
@@ -87,7 +87,8 @@ async function drain(select, end = () => !LQ.busy && !LQ.title.locked, limit = 2
     } else if (LQ.battle && LQ.battle.dodge) {
       // The boss movement phase: walk straight to the truth shard.
       const d = LQ.battle.dodge, at = LQ.battle.pos, k = LQ.input.down;
-      if (LQ.battle.bossHP === LQ.battle.maxHP) shieldFallback.add(d);
+      seenMoves.add(d.kind); assert(LQ.kit.hp() > 0 || d.hits > 0, 'hearts never sit at zero outside a hit');
+      if (LQ.battle.bossHP === LQ.battle.maxHP && d.kind === 'bolts') shieldFallback.add(d);
       const idle = shieldFallback.has(d);
       k.right = !idle && at.x < d.sx - 3; k.left = !idle && at.x > d.sx + 3;
       k.down = !idle && at.y < d.sy - 3; k.up = !idle && at.y > d.sy + 3;
@@ -361,7 +362,33 @@ async function talk(find, choose = () => 0) {
     await talk(e => e.npc?.id === id, ch => ch.prompt === 'Which gig will you take?' ? ['nurse', 'owner', 'food'].indexOf(career) : 0);
   }
   assert.equal(s().q3, 6);
-  await talk(e => e.qid === 'boss3'); await talk(e => e.npc?.id === 'sage'); assert.equal(s().q3, 8);
+  {
+    // Slick's Stash: the gift box springs an imp and does not count; the three income boxes open the strongroom.
+    const w = LQ.world, stamp = async i => { s().tool = 'stamp'; LQ.kit.inv = 5; LQ.kit.cool = 0; near(w.ents.find(e => e.box === i)); await frame(6); await press('e'); await frame(4); };
+    await talk(e => e.type === 'stashdoor'); assert.equal(w.room?.room, 'stash3', 'the stash opens during Chapter 3');
+    await stamp(1); assert(!s().flags.stash3 && w.ents.some(e => e.type === 'imp' && !e.rewardKey), 'a gift is not income');
+    await stamp(0); await stamp(2); assert(!s().flags.stash3); await stamp(3); assert(s().flags.stash3, 'three income boxes open the door');
+    assert(!w.ents.some(e => e.type === 'door'));
+    const coins = s().coins, tonics = s().flags.tonics || 0;
+    await talk(e => e.type === 'cache'); assert.equal(s().coins, coins + 40); assert.equal(s().flags.tonics, tonics + 1);
+    await talk(e => e.type === 'cache'); assert.equal(s().coins, coins + 40, 'the chest pays once');
+    LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle); assert.equal(s().region, 'canyon'); assert(!w.room);
+    // hearts carry out of a boss fight, a lamp by the arena refills them, and a broke player can still rest
+    s().hp = 1.5; s().coins = 0; LQ.kit.inv = 0;
+    const ex = LQ.shopExtras().map(x => x.label);
+    assert(ex.some(l => l.startsWith('Hot meal')) && ex.some(l => l.startsWith('Sit and rest')), 'meal and free rest are offered when hurt');
+    LQ.script(() => LQ.shopExtras().find(x => x.label.startsWith('Hot meal')).run(null)); await drain(() => 0, untilIdle); assert.equal(s().hp, 1.5, 'no coins, no meal');
+    LQ.script(() => LQ.shopExtras().find(x => x.label.startsWith('Sit and rest')).run(null)); await drain(() => 0, untilIdle); assert.equal(s().hp, 2);
+    s().coins = 8; LQ.script(() => LQ.shopExtras().find(x => x.label.startsWith('Hot meal')).run(null)); await drain(() => 0, untilIdle);
+    assert.equal(s().hp, LQ.kit.maxHp()); assert.equal(s().coins, 0);
+    s().hp = 1.25; await talk(e => e.type === 'lamp' && e.tx === 42); assert.equal(s().hp, LQ.kit.maxHp(), 'the lamp by the Gulch is free');
+    s().hp = 3;
+  }
+  { const before = s().hp; let miss = false;
+    await talk(e => e.qid === 'boss3', ch => { if (ch.who?.name && !miss && LQ.scene === LQ.battle) { miss = true; return ch.options.findIndex((o, i) => i !== 0 && o) ; } return 0; });
+    assert(s().hp < before && s().hp > 0 && s().hp * 4 % 1 === 0, 'boss damage is in quarter hearts and carries into the world: ' + s().hp);
+    assert.equal(LQ.loadSlot(1).hp, s().hp, 'carried hearts are saved'); }
+  await talk(e => e.npc?.id === 'sage'); assert.equal(s().q3, 8);
   await travel('summit'); assert.equal(s().q4, 0);
   const shareCost = LQ.price('GLCR'), investBefore = s().inv.st, taxBefore = s().capTax;
   await broker([/^GLCR/, 'Buy 1', 'Leave']);
@@ -381,6 +408,7 @@ async function talk(find, choose = () => 0) {
   await talk(e => e.qid === 'boss4'); await talk(e => e.npc?.id === 'alpen'); assert.equal(s().q4, 9);
   await travel('canyon'); await travel('coast'); await travel('village');
   assert.equal(LQ.loadSlot(1).q4, 9);
+  assert.deepEqual([...seenMoves].sort(), ['beam', 'bolts', 'devils', 'fire'], 'every boss ran its own movement pattern');
   console.log('Coast, Canyon and Summit quest chains, three more boss fights and returns, finale and return travel passed');
 
   // The Torn Ledger. Every activity was handed in wrong once and recovered, and all twelve pages are home.

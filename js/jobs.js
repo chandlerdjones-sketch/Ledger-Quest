@@ -58,7 +58,7 @@ const J = LQ.jobs = {
     const p = G.p, near = o => Math.hypot(o.x - p.x, o.y - p.y) < 24, say = m => { G.msg = m; G.msgT = 1.6; };
     const src = G.sources.find(near), spot = G.spots.find(s => s.task && near(s));
     if (src) {
-      if (src.restock) { G.stock = 3; sfx('coin'); say('Shelf restocked'); } else { G.carry = src.item; sfx('ok'); }
+      if (src.restock) { G.stock = 3; sfx('coin'); say(G.stockName ? G.stockName + ' ready' : 'Shelf restocked'); } else { G.carry = src.item; sfx('ok'); }
       return;
     }
     if (!spot) return say(G.id === 'nurse' ? 'Move closer to a lit bed' : 'Move closer to a waiting customer');
@@ -110,9 +110,9 @@ const J = LQ.jobs = {
     const G = this.G; if (!G) return;
     if (ui.doc || !G.live) return;
     ui.panel(c, 30, 14, 900, 72);
-    ui.text(c, LQ.career().work.toUpperCase(), 48, 26, '#ffe98a', F(11, true));
+    ui.text(c, G.title || LQ.career().work.toUpperCase(), 48, 26, '#ffe98a', F(11, true));
     ui.text(c, G.practice ? 'Practice: ' + G.score + ' / ' + PRACTICE_GOAL : 'Score: ' + G.score + ' / ' + G.K.target, 48, 56, '#eef4ff', F(28));
-    if (G.id === 'owner') ui.text(c, 'Candles: ' + G.stock, 300, 56, G.stock ? '#eef4ff' : '#ff4fb0', F(28));
+    if (G.id === 'owner') ui.text(c, (G.stockName || 'Candles') + ': ' + G.stock, 300, 56, G.stock ? '#eef4ff' : '#ff4fb0', F(28));
     if (G.id === 'food') ui.text(c, 'Carrying: ' + (G.carry == null ? 'nothing' : NAMES[G.carry]), 300, 56, G.carry == null ? '#c9cdea' : COLS[G.carry], F(28));
     if (G.practice) ui.text(c, 'NO TIMER. Esc: end practice', 912, 58, '#7fd6a8', F(24), 'right', 300);
     else { ui.text(c, Math.ceil(G.t) + 's', 912, 26, '#35f0e6', F(11, true), 'right');

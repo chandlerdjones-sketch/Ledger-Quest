@@ -24,7 +24,7 @@ const KEYMAP = { ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', 
   ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right',
   ' ': 'ok', Enter: 'ok', z: 'ok', Z: 'ok', Escape: 'back', x: 'back', X: 'back',
   j: 'menu', J: 'menu', Tab: 'menu', m: 'mute', M: 'mute',
-  e: 'use', E: 'use', c: 'use', C: 'use', q: 'cycle', Q: 'cycle' };
+  e: 'use', E: 'use', c: 'use', C: 'use', q: 'cycle', Q: 'cycle', k: 'kit', K: 'kit', n: 'narr', N: 'narr' };
 const input = LQ.input = { down: {}, pressed: {} };
 addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -104,7 +104,7 @@ LQ.cleanSave = raw => {
   if (out.hold4 != null && ![0, 1].includes(out.hold4)) return null;
   if (out.wh2 != null && (!Number.isFinite(out.wh2) || out.wh2 < 0)) return null;
   if (out.news != null && (!record(out.news) || !Number.isFinite(out.news.pct) || typeof out.news.text !== 'string')) return null;
-  out.hp = LQ.clamp(Math.round(out.hp) || 4, 1, 6);
+  out.hp = LQ.clamp(Math.round(out.hp * 4) / 4 || 4, .25, 6);   // quarter hearts
   if (out.tool != null && typeof out.tool !== 'string') out.tool = null;
   if (out.gig != null && !(typeof out.gig === 'string' && Object.hasOwn(LQ.GIGS, out.gig))) return null;
   if (out.q4 != null && (!out.gig || !out.inv)) return null;
@@ -176,6 +176,7 @@ function frame(now) {
     if (tm.t <= 0) { timers.splice(i, 1); tm.r(); }
   }
   if (LQ.hit('mute')) LQ.audio.toggleMute();
+  if (LQ.hit('narr') && LQ.narr) LQ.narr.toggle();
   LQ.ui.update(dt);
   if (LQ.scene && LQ.scene.update) LQ.scene.update(dt);
 

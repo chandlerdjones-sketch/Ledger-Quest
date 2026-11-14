@@ -91,7 +91,7 @@ LQ.learn = id => {
 LQ.give = id => { if (!LQ.state.items.includes(id)) { LQ.state.items.push(id); ui.toast('Got: ' + LQ.ITEMS[id].name); } };
 
 // ---- update
-const TABS = ['Quest', 'Journal', 'Items', 'Map', 'Broker'];
+const TABS = ['Quest', 'Journal', 'Items', 'Map', 'Broker', 'Kit'];
 const menuStocks = () => {
   const known = LQ.stocksKnown(), here = LQ.exchange();
   return known.filter(s => LQ.shares(s.id)).concat(
@@ -105,9 +105,10 @@ const menuEntries = [
   () => LQ.state.items.map(id => LQ.ITEMS[id]).concat(menuGear(), LQ.kit?.supplies() || []),
   () => [],
   menuStocks,
+  () => LQ.kit ? LQ.kit.page.rows() : [],
 ];
 const scrollStart = (sel, length, rows) => Math.max(0, Math.min(sel - Math.floor(rows / 2), length - rows));
-ui.openMenu = () => { ui.menu = { tab: 0, sel: 0, selections: [0, 0, 0, 0, 0], reading: null }; sfx('ok'); };
+ui.openMenu = (tab = 0) => { ui.menu = { tab, sel: 0, selections: [0, 0, 0, 0, 0, 0], reading: null }; sfx('ok'); };
 ui.update = dt => {
   if (canShowToasts()) {
     for (const t of ui.toasts) t.t += dt;
@@ -119,6 +120,7 @@ ui.update = dt => {
     if (LQ.hit('menu')) { ui.menu = null; sfx('move'); return; }
     if (LQ.hit('back')) {
       if (m.reading) m.reading = null;
+      else if (m.swap) m.swap = null;
       else ui.menu = null;
       sfx('move'); return;
     }
@@ -131,13 +133,14 @@ ui.update = dt => {
     if (tabDir) {
       m.selections[m.tab] = m.sel;
       m.tab = (m.tab + TABS.length + tabDir) % TABS.length;
-      m.sel = m.selections[m.tab];
+      m.sel = m.selections[m.tab]; m.swap = null; m.note = '';
       sfx('move');
     }
     if (dir) {
       const n = menuEntries[m.tab]().length;
       if (n) { m.sel = (m.sel + n + dir) % n; sfx('move'); }
     }
+    if (m.tab === 5) { if (LQ.hit('ok')) LQ.kit.page.press(m); return; }
     if (LQ.hit('ok') && m.tab < 3) {
       const entry = menuEntries[m.tab]()[m.sel];
       if (entry) { m.reading = { entry, offset: 0, maxOffset: 0 }; sfx('ok'); }
@@ -292,9 +295,9 @@ function drawMenu(c) {
   c.fillStyle = 'rgba(7,8,26,.72)'; c.fillRect(0, 0, VW, VH);
   ui.panel(c, x, y, w, h);
   TABS.forEach((t, i) => {
-    const on = i === m.tab, tx = x + 24 + i * 156;
-    c.fillStyle = on ? '#35f0e6' : '#1a1d4a'; c.fillRect(tx, y + 18, 146, 34); if (on) { c.fillStyle = '#a8fff6'; c.fillRect(tx, y + 18, 146, 3); }
-    c.font = F(12, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = on ? '#07081a' : '#c9cdea'; c.fillText(t.toUpperCase(), tx + 73, y + 30);
+    const on = i === m.tab, tx = x + 24 + i * 130;
+    c.fillStyle = on ? '#35f0e6' : '#1a1d4a'; c.fillRect(tx, y + 18, 122, 34); if (on) { c.fillStyle = '#a8fff6'; c.fillRect(tx, y + 18, 122, 3); }
+    c.font = F(12, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = on ? '#07081a' : '#c9cdea'; c.fillText(t.toUpperCase(), tx + 61, y + 30);
   });
   const bx = x + 28, by = y + 76;
   const bodyH = 326;
@@ -319,6 +322,7 @@ function drawMenu(c) {
     });
   } else if (m.tab === 1 || m.tab === 2) drawEntries(c, m, bx, by, bodyH);
   else if (m.tab === 3) LQ.drawWorldMap(c, bx, by, 764, bodyH, st.region);
+  else if (m.tab === 5) LQ.kit.page.draw(c, m, bx, by, bodyH);
   else {
     ui.text(c, `Cash ${st.coins}    Stocks ${LQ.portfolio()}    Net worth ${LQ.netWorth()}`, bx, by, '#ffcf4a', F(26), 'left', 664);
     const known = menuStocks(), off = scrollStart(m.sel, known.length, 9), list = known.slice(off, off + 9);
@@ -355,7 +359,7 @@ function drawMenu(c) {
     if (st.gazette.length) ui.text(c, 'Gazette: ' + st.gazette[0], bx, end + 51, '#eef4ff', F(20), 'left', 764);
   }
   const hint = m.reading ? 'Esc: back to list    J: close' :
-    ['Up / Down: gear    Enter: read', 'Up / Down: notes    Enter: read', 'Up / Down: items    Enter: read', '', 'Up / Down: stocks'][m.tab];
+    ['Up / Down: gear    Enter: read', 'Up / Down: notes    Enter: read', 'Up / Down: items    Enter: read', '', 'Up / Down: stocks    Buy or sell: talk to a broker', 'Up / Down: tools    Enter: equip or store'][m.tab];
   const footer = m.reading ? hint : ['Left / Right: tabs', hint, 'J or Esc: close'].filter(Boolean).join('    ');
   ui.text(c, footer, x + w / 2, y + h - 32, '#c9cdea', F(21), 'center', 764);
 }

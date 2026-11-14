@@ -2,6 +2,7 @@
 (() => {
 const LQ = window.LQ, T = 16, ui = LQ.ui, F = LQ.F;
 const st = () => LQ.state, sfx = n => LQ.audio.sfx(n);
+const csv = k => (LQ.state.flags[k] || '').split(',').filter(Boolean);
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 const R = (g, x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
 
@@ -23,15 +24,56 @@ const K = LQ.kit = {
   owned: () => LQ.TOOLS.filter(t => t.have(st())),
   supplies() {
     const s = st(), items = [];
-    if (s.flags.tonics) items.push({ name: 'Tonic x' + s.flags.tonics, desc: 'Restores up to two hearts. Switch to it with Q, then press E to drink. A full heart meter leaves the tonic untouched.' });
+    if (s.flags.tonics) items.push({ name: 'Tonic x' + s.flags.tonics, desc: 'Restores up to two hearts, anywhere. Switch to it with Q, then press E to drink. A full heart meter leaves the tonic untouched.' });
     if (s.flags.lanternRent) items.push({ name: 'Rented Lantern', desc: 'Lights dark rooms and repels Myth Wisps while held. Switch to it with Q. Your rental ends when you leave the Lantern Cave or faint inside it.' });
     return items;
   },
-  cur() { const o = K.owned(); return o.find(t => t.id === st().tool) || o[0] || null; },
+  // Up to three tools ride in hand. The rest wait in the Field Kit page (J, then the Kit tab, or K).
+  // `kitEq` is the in-hand list and `kitSeen` is every tool already sorted once, both kept in flags so old saves load.
+  sync() {
+    const s = st(), own = K.owned().map(t => t.id), first = s.flags.kitEq == null;
+    const eq = csv('kitEq').filter(id => own.includes(id)), seen = csv('kitSeen').filter(id => own.includes(id));
+    for (const id of own) if (!seen.includes(id)) {
+      seen.push(id);
+      if (eq.length < 3) eq.push(id);
+      else if (!first) ui.toast(LQ.TOOLS.find(t => t.id === id).name + ' went into your Field Kit. Press K to put it in hand.');
+    }
+    const a = eq.join(','), b = seen.join(',');
+    if (s.flags.kitEq !== a) s.flags.kitEq = a;
+    if (s.flags.kitSeen !== b) s.flags.kitSeen = b;
+    return eq;
+  },
+  equipped() { const eq = K.sync(); return eq.map(id => LQ.TOOLS.find(t => t.id === id)); },
+  // Put a stored tool in hand. With three already in hand, the one not being held goes back in the kit.
+  need(id, quiet) {
+    const s = st(), eq = K.sync();
+    if (!K.owned().some(t => t.id === id)) return false;
+    if (!eq.includes(id)) {
+      let out = null;
+      if (eq.length >= 3) { const i = eq[eq.length - 1] !== s.tool ? eq.length - 1 : eq.length - 2; out = eq[i]; eq[i] = id; } else eq.push(id);
+      s.flags.kitEq = eq.join(',');
+      if (!quiet) ui.toast(LQ.TOOLS.find(t => t.id === id).name + ' is in hand.' + (out ? ' ' + LQ.TOOLS.find(t => t.id === out).name + ' went back in the kit.' : ''));
+    }
+    s.tool = id; return true;
+  },
+  cur() {
+    const s = st(); let o = K.equipped();
+    if (s.tool && !o.some(t => t.id === s.tool) && K.owned().some(t => t.id === s.tool)) { K.need(s.tool, true); o = K.equipped(); }
+    return o.find(t => t.id === s.tool) || o[0] || null;
+  },
+  finderOn: id => !st().flags['off_' + id],
   holding: id => { const t = K.cur(); return !!t && t.id === id; },
   hasLantern: () => LQ.TOOLS[3].have(st()),
-  cycle() { const o = K.owned(); if (o.length < 2) return; st().tool = o[(o.indexOf(K.cur()) + 1) % o.length].id; sfx('move'); },
+  cycle() { const o = K.equipped(); if (o.length < 2) return; st().tool = o[(o.indexOf(K.cur()) + 1) % o.length].id; sfx('move'); },
   speed: () => K.blocking ? .45 : 1,
+  // One heart on the full-size canvas, filled from the left by `fill` (0 to 1), so quarter hearts show. `u` is the pixel unit.
+  heart(c, x, y, fill, u = 3) {
+    const shape = col => { c.fillStyle = col; c.fillRect(x, y + u, 7 * u, 3 * u); c.fillRect(x + u, y, 2 * u, u); c.fillRect(x + 4 * u, y, 2 * u, u); c.fillRect(x + u, y + 4 * u, 5 * u, u); c.fillRect(x + 2 * u, y + 5 * u, 3 * u, u); };
+    shape('#2a2550');
+    if (fill <= 0) return;
+    if (fill >= 1) return shape('#ff4fb0');
+    c.save(); c.beginPath(); c.rect(x, y, Math.round(7 * u * fill), 6 * u); c.clip(); shape('#ff4fb0'); c.restore();
+  },
   blink: () => K.inv > 0 && Math.floor(LQ.time * 14) % 2 === 0,
 
   update(dt, w) {
@@ -107,14 +149,88 @@ const K = LQ.kit = {
   drawHUD(c, hud, top) {
     const s = st(), t = K.cur(); if (!t) return;
     const max = K.maxHp(), hp = K.hp();
-    const label = 'E: ' + (t.label ? t.label(s) : t.name) + (K.owned().length > 1 ? '    Q: switch' : '');
+    const label = 'E: ' + (t.label ? t.label(s) : t.name) + (K.equipped().length > 1 ? '    Q: switch' : '') + (K.owned().length > K.equipped().length ? '    K: kit' : '');
     c.font = F(24); const w = max * 30 + 34 + c.measureText(label).width;
     hud(16, top, w, 34);
-    for (let i = 0; i < max; i++) {
-      c.fillStyle = i < hp ? '#ff4fb0' : '#2a2550'; const x = 28 + i * 30, y = top + 7;
-      c.fillRect(x, y + 3, 22, 9); c.fillRect(x + 2, y, 7, 3); c.fillRect(x + 13, y, 7, 3); c.fillRect(x + 3, y + 12, 16, 4); c.fillRect(x + 7, y + 16, 8, 3);
-    }
+    for (let i = 0; i < max; i++) K.heart(c, 28 + i * 30, top + 8, LQ.clamp(hp - i, 0, 1), 3);
     ui.text(c, label, 28 + max * 30 + 6, top + 4, '#c9cdea', F(24), 'left');
+  },
+};
+
+// ---------- the Field Kit page (the Kit tab of the menu). See, equip, swap, and store tools, and switch finders on or off.
+const INFO = {
+  stamp: { does: 'E swings the stamp. It strikes Scrap Imps and presses seals and strongboxes.' },
+  shield: { does: 'Hold E to block. It stops fog bolts, and in boss fights it stops myth bolts and dragon fire. You walk slower while blocking.' },
+  compass: { does: 'E sends out a pulse that reveals hidden paths and false walls nearby.' },
+  lantern: { does: 'While in hand it lights dark rooms and Myth Wisps keep away.',
+    up: () => 'Rented (one trip)  >  Old Lantern (yours to keep)  >  Charity Lantern (yours, and it counts as a gift on your return). You have: ' + (LQ.has('charity') ? 'Charity Lantern.' : st().flags.lanternFound ? 'Old Lantern.' : 'a rental.') },
+  tonic: { does: 'E drinks one. It mends two hearts anywhere, even far from a shop.', up: () => 'Shops sell more. A Hot meal at a shop fills every heart for less.' },
+};
+const P = K.page = {
+  rows() {
+    const eq = K.sync(), out = K.owned().map(t => ({ kind: 'tool', id: t.id, name: t.label ? t.label(st()) : t.name, slot: eq.indexOf(t.id), t }));
+    for (const g of LQ.GEAR) if (g.status && LQ.has(g.id)) out.push({ kind: 'finder', id: g.id, name: g.name, on: K.finderOn(g.id), g });
+    out.push({ kind: 'info', id: 'hearts', name: 'Hearts  ' + K.hp() + ' / ' + K.maxHp() });
+    return out;
+  },
+  press(m) {
+    const s = st(), r = P.rows()[m.sel]; if (!r) return;
+    if (r.kind === 'finder') { if (r.on) s.flags['off_' + r.id] = true; else delete s.flags['off_' + r.id]; sfx('ok'); LQ.save(); return; }
+    if (r.kind !== 'tool') return;
+    const eq = K.sync();
+    if (m.swap) {   // choosing which in-hand tool makes room
+      if (r.slot < 0) { m.swap = r.id === m.swap ? null : r.id; sfx('move'); return; }
+      eq[r.slot] = m.swap; s.flags.kitEq = eq.join(','); s.tool = m.swap; m.swap = null; sfx('ok'); LQ.save(); return;
+    }
+    if (r.slot >= 0) {
+      if (eq.length < 2) { sfx('wrong'); m.note = 'Keep at least one tool in hand.'; return; }
+      eq.splice(r.slot, 1); s.flags.kitEq = eq.join(','); if (s.tool === r.id) s.tool = eq[0]; sfx('move'); m.note = r.t.name + ' is stored. It is safe here until you want it.';
+    } else if (eq.length < 3) { eq.push(r.id); s.flags.kitEq = eq.join(','); s.tool = r.id; sfx('ok'); m.note = r.t.name + ' is in hand.'; }
+    else { m.swap = r.id; sfx('move'); m.note = ''; }
+    LQ.save();
+  },
+  draw(c, m, x, y, h) {
+    const rows = P.rows(), eq = K.equipped(), cur = K.cur(), sel = rows[Math.min(m.sel, rows.length - 1)];
+    ui.text(c, 'IN HAND   Q: switch   E: use', x, y, '#35f0e6', F(10, true));
+    for (let i = 0; i < 3; i++) {
+      const t = eq[i], bx = x + i * 126, by = y + 20, active = t && t === cur;
+      c.fillStyle = '#12143a'; c.fillRect(bx, by, 118, 40); c.fillStyle = active ? '#ffcf4a' : t ? '#35f0e6' : '#3a3668'; c.fillRect(bx, by, 118, 2); c.fillRect(bx, by + 38, 118, 2);
+      ui.text(c, t ? (t.label ? t.label(st()) : t.name) : 'empty', bx + 59, by + 9, t ? (active ? '#ffe98a' : '#eef4ff') : '#6d7299', F(20), 'center', 108);
+    }
+    ui.text(c, m.swap ? 'Three in hand. Pick the one to store (Enter), or Esc.' : 'ALL TOOLS', x, y + 72, m.swap ? '#ffcf4a' : '#35f0e6', m.swap ? F(20) : F(10, true), 'left', 372);
+    rows.forEach((r, i) => {
+      const yy = y + 96 + i * 26, on = i === m.sel;
+      if (on) { c.fillStyle = 'rgba(53,240,230,.15)'; c.fillRect(x - 6, yy - 1, 380, 26); }
+      const tag = r.kind === 'tool' ? (r.slot >= 0 ? 'hand ' + (r.slot + 1) : r.id === m.swap ? 'moving' : 'stored') : r.kind === 'finder' ? (r.on ? 'hints on' : 'hints off') : '';
+      ui.text(c, r.name, x, yy, on ? '#a8fff6' : '#c9cdea', F(24), 'left', 250);
+      ui.text(c, tag, x + 368, yy + 2, r.slot >= 0 || r.on ? '#7fd6a8' : '#9298bc', F(20), 'right', 110);
+    });
+    if (!sel) return;
+    const px = x + 400, pw = 364; let py = y;
+    const block = (head, text, col = '#eef4ff') => {
+      if (!text) return;
+      ui.text(c, head, px, py, '#35f0e6', F(10, true)); py += 18;
+      c.font = F(21); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = col;
+      for (const l of ui.wrap(c, text, pw)) { c.fillText(l, px, py); py += 22; }
+      py += 10;
+    };
+    ui.text(c, sel.name, px, py, '#ffe98a', F(26), 'left', pw); py += 36;
+    if (sel.kind === 'tool') {
+      const info = INFO[sel.id] || {};
+      block('WHAT IT DOES', info.does);
+      block('UPGRADES', info.up ? info.up() : 'None. This tool is already at full strength.');
+      block('IF YOU EVER LACK IT', sel.t.free ? sel.t.free + '. Required tools always have a route that costs no coins.' : 'Shops sell it, and Cook Basil sells it cheaper once his stall reopens.');
+      block('', sel.slot >= 0 ? 'Enter: store it' : 'Enter: put it in hand', '#a8fff6');
+    } else if (sel.kind === 'finder') {
+      block('WHAT IT DOES', sel.g.desc);
+      block('RIGHT NOW', sel.on ? sel.g.status() : 'Stored. No hints will show until you switch it back on.');
+      block('', sel.on ? 'Enter: turn hints off and store it' : 'Enter: take it out and turn hints on', '#a8fff6');
+    } else {
+      block('HOW HEARTS WORK', 'Boss hits cost a quarter heart and a wrong answer costs half. What is left follows you back into the world.');
+      block('UPGRADES', st().flags.heartUp ? 'You hold the Notary\'s Seal: five hearts.' : 'The Notary\'s Seal in the Lantern Cave adds a fifth heart.');
+      block('HEALING', 'Free: Notary Lamps, your bed, and a rest at any shop when you are below two hearts. Paid: a Hot meal (all hearts) or a Tonic (two hearts, carried with you).');
+    }
+    if (m.note) ui.text(c, m.note, x, y + h - 22, '#ffcf4a', F(20), 'left', 380);
   },
 };
 
@@ -124,6 +240,20 @@ LQ.RUMORS = {};
 LQ.bazaarOff = () => !!st().flags.fixMaple && st().region === 'village';
 LQ.shopExtras = () => {
   const s = st(), out = [], tonic = LQ.shopPrice(15), rent = LQ.shopPrice(10), rumor = LQ.shopPrice(20);
+  // Two ways to mend hearts on the spot: a paid meal fills them all, and a free rest brings you back to two.
+  // The free rest is the fallback, so an empty purse never leaves anyone stuck.
+  const meal = LQ.shopPrice(8);
+  if (K.hp() < K.maxHp()) {
+    out.push({ label: 'Hot meal  -  ' + meal + '  (fills every heart)', run: async who => {
+      if (s.coins < meal) return LQ.say(who, 'A hot meal is ' + meal + ' coins. You are a little short. Sit and rest instead. That one is free.');
+      s.coins -= meal; s.hp = K.maxHp(); sfx('learn'); LQ.save();
+      await LQ.say(who, 'One hot meal. Every heart is full again. That is ' + meal + ' coins spent, and worth it.');
+    } });
+    if (K.hp() < 2) out.push({ label: 'Sit and rest  -  free  (back to two hearts)', run: async who => {
+      s.hp = Math.min(K.maxHp(), 2); sfx('ok'); LQ.save();
+      await LQ.say(who, 'Take the bench as long as you like. No charge. You are back to two hearts.');
+    } });
+  }
   out.push({ label: 'Tonic  -  ' + tonic, run: async who => {
     if (s.coins < tonic) return LQ.say(who, 'A tonic is ' + tonic + ' coins. You are a little short.');
     s.coins -= tonic; s.flags.tonics = (s.flags.tonics || 0) + 1; sfx('coin'); LQ.save();

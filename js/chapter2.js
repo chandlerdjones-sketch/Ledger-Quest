@@ -409,7 +409,7 @@ const MYTHS2 = [
     truth: 'A gift is what you give without getting something back. A ticket or a cookie is a purchase.' },
 ];
 LQ.BOSSES.loophole = {
-  who: LOOPHOLE, label: 'CAPTAIN LOOPHOLE', kind: 'loophole', sky: ['#040d22', '#0f3a5a'], hill: '#081f30', ground: ['#2e2a58', '#4a4480'], fog: '120,220,210', bar: ['#1f8a86', '#8fe6da'], ink: '#14575a',
+  who: LOOPHOLE, label: 'CAPTAIN LOOPHOLE', kind: 'loophole', move: 'beam', sky: ['#040d22', '#0f3a5a'], hill: '#081f30', ground: ['#2e2a58', '#4a4480'], fog: '120,220,210', bar: ['#1f8a86', '#8fe6da'], ink: '#14575a',
   approach: 'A bell clangs. From the lamp room drifts a shape in a tricorn hat, trailing treasure maps.',
   intro: ['ARRR! A customer! Captain Loophole, purveyor of secret write-offs. Every map I sell leads to buried deductions the taxman does not want ye to find!', 'Half this coast has bought one already. Let us see if YE can resist a bargain.'],
   taunt: 'Har har har! Sold! That will be one map, no refunds.', fogLine: 'The sea mist muddles your thinking.',

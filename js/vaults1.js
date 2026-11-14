@@ -87,6 +87,7 @@ function addVillage(w, s) {
   w.ents.push({ type: 'cavedoor', tx: 40, ty: 8, solid: true, base: 9 * T - 1,
     use: () => LQ.script(async () => {
       if (!LQ.kit.hasLantern()) return say(null, 'A cave mouth, black as a closed ledger. You cannot see one step inside. You need a lantern. Merchant Saffron sells one and rents one, and they say an old one is hidden in the north-west woods.');
+      LQ.kit.need('lantern');   // a stored lantern comes out by itself at the cave mouth
       await w.enterRoom('cave1');
     }),
     draw(g, cx, cy, tm) {

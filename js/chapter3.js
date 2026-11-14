@@ -409,7 +409,7 @@ const MYTHS3 = [
     truth: 'By default a one-person LLC files the same Schedule C and pays the same self-employment tax.' },
 ];
 LQ.BOSSES.slick = {
-  who: SLICK, label: 'SIDEWINDER SLICK', kind: 'slick', sky: ['#12061a', '#7a1f5a'], hill: '#3a1230', ground: ['#452443', '#6a3a62'], fog: '230,170,90', bar: ['#c9781c', '#f6d08a'], ink: '#7a3a12',
+  who: SLICK, label: 'SIDEWINDER SLICK', kind: 'slick', move: 'devils', sky: ['#12061a', '#7a1f5a'], hill: '#3a1230', ground: ['#452443', '#6a3a62'], fog: '230,170,90', bar: ['#c9781c', '#f6d08a'], ink: '#7a3a12',
   approach: 'A hot wind spins the dust into a shape with a hat, a bandana, and a fistful of unreported cash.',
   intro: ['Well, well. A working stiff with a tax form. Name is Slick. I teach folks in this canyon how to keep what they earn. All of it. Off the books.', 'Every word I say, somebody down here believes. Let us see if ye are any smarter.'],
   taunt: 'Heh heh heh. That is the spirit. Cash only, friend.', fogLine: 'The dust gets in your eyes.',

@@ -225,6 +225,7 @@ const world = LQ.world = {
     this.parts = this.parts.filter(pt => pt.t > 0);
     if (LQ.busy || ui.menu) { p.moving = false; p.frame = 0; return this.follow(dt); }
     if (LQ.hit('menu')) { ui.openMenu(); return; }
+    if (LQ.hit('kit') && LQ.kit.cur()) { ui.openMenu(5); return; }
     if (LQ.kit) LQ.kit.update(dt, this);
     for (const e of this.ents.slice()) if (e.step) e.step(dt, this);
     if (LQ.busy) { p.moving = false; p.frame = 0; return this.follow(dt); }
@@ -351,7 +352,7 @@ const world = LQ.world = {
     const s = `Coins ${st.coins}    Savvy ${st.savvy}`;
     const finder = R.finder && LQ.finderStatus(R, this);
     const extra = [st.streak >= 3 ? 'Streak x' + st.streak : '', finder?.count, R.hud?.(this, st)].filter(Boolean).join('    ');
-    const lines = [extra, finder?.count && LQ.has(R.finder.gear) ? finder.hint : ''].filter(Boolean);
+    const lines = [extra, finder?.count && LQ.has(R.finder.gear) && LQ.kit.finderOn(R.finder.gear) ? finder.hint : ''].filter(Boolean);
     c.font = F(24);
     const ew = lines.length ? Math.min(470, Math.max(...lines.map(line => c.measureText(line).width)) + 28) : 0;
     c.font = F(26); const sw = Math.min(470, c.measureText(s).width + 32);
