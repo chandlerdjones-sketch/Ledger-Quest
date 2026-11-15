@@ -319,9 +319,10 @@ LQ.drawWorldMap = (c, x, y, w, h, currentRegion) => {
 
 // ---------- quest scripts
 const advance = () => {
-  const s = st(); s.quest++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.QUESTS[s.quest].short);
-  const c = LQ.career(), pay = c.kind === 'se' ? c.pay - 35 + Math.floor(LQ.hash(s.day, 9, s.seed) * 90) : c.pay;
-  LQ.gain(0, pay, c.kind === 'se' ? 'Shop profits' : 'Payday'); LQ.tick();
+  const s = st(); s.quest++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.curQuest().short);
+  const se = LQ.career().kind === 'se', shift = s.w4 == null ? 0 : LQ.w4Shift();
+  const why = shift < 0 ? (se ? ', extra set aside for tax' : ', extra tax withheld') : shift > 0 ? (se ? ', less set aside for tax' : ', less tax withheld') : '';
+  LQ.gain(0, LQ.payBase() + shift, (se ? 'Shop profits' : 'Payday') + why); LQ.tick();
 };
 
 async function qMayor() {
@@ -582,7 +583,7 @@ async function qJuno() {
       : `A refund of ${M(amt)}. Your W-4 guess turned out close to the deductions you really ended up with.`)
     : `${owed ? 'You owe' : 'A refund of'} ${M(amt)}.` + (f.diff > 300 ? ' Your plain W-4 did not know about your extra deductions, so more was withheld than you owed. A new W-4 could put that money in your paychecks instead.' : ' Your plain W-4 landed your withholding almost exactly on your real tax. That is a well-tuned W-4.');
   await say(N.juno, amt === 0 ? 'Your payments match the tax exactly. There is no balance due or refund.' : why);
-  const coins = Math.max(-400, Math.round(f.diff / 5)) - (owner && w === 2 ? 60 : 0);
+  const coins = Math.max(-400, Math.round(f.diff / 15)) - (owner && w === 2 ? 120 : 0);
   LQ.gain(50, coins, owed ? 'Tax settled' : 'Refund');
   await say(N.juno, 'Either way: filed, on time, and you understood every line. One last thing. Even if you could not pay what you owe, you should still file on time. Filing late costs far more than paying late.');
   ui.doc = null; LQ.learn('refund'); LQ.learn('filing'); LQ.learn('latefile'); LQ.give('return');
@@ -669,7 +670,7 @@ const CHESTS = {
 };
 LQ.curQuest = () => { const s = st(); return s.q4 != null && LQ.QUESTS4 ? LQ.QUESTS4[s.q4] : s.q3 != null && LQ.QUESTS3 ? LQ.QUESTS3[s.q3] : s.q2 != null && LQ.QUESTS2 ? LQ.QUESTS2[s.q2] : LQ.QUESTS[s.quest]; };
 LQ.CH1 = {
-  npcs: NPC_LIST, chests: CHESTS, ending,
+  npcs: NPC_LIST, chests: CHESTS, tips: TIPS, ending,
   coins: [[20, 33], [27, 34], [12, 27], [6, 27], [41, 27], [35, 30], [18, 23], [29, 22], [10, 30], [40, 31], [21, 19], [27, 19], [5, 20], [43, 22], [19, 9], [30, 6], [21, 4], [26, 4], [8, 36], [38, 37]],
   signs: [
     { tx: 21, ty: 31, text: 'PAYSTUB VILLAGE. West: the Work Hall. East: Post Office. North: Guild Hall, Armory, and the bridge to Bracket Mountain. South-east: Town Hall. In the plaza: the Saffron Bazaar and the Village Exchange.' },

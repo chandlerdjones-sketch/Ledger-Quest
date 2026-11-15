@@ -5,13 +5,13 @@ const st = () => LQ.state;
 
 // ---------- careers
 LQ.CAREERS = {
-  nurse: { id: 'nurse', name: 'Nurse', kind: 'w2', wages: 83200, ot: 6000, pays: 26, pay: 80, work: 'Willowbrook Infirmary', diff: 'Normal',
+  nurse: { id: 'nurse', name: 'Nurse', kind: 'w2', wages: 83200, ot: 6000, pays: 26, pay: 40, work: 'Willowbrook Infirmary', diff: 'Normal',
     look: { hair: '#3a2a1c', long: 1, shirt: '#2fa39a', pants: '#2a7d76', trim: '#e8fbf8' },
     lines: ['Steady paycheck plus overtime', 'Higher pay, higher top tax rate', 'Perk: the overtime deduction'] },
-  food: { id: 'food', name: 'Fast Food Worker', kind: 'w2', wages: 31200, ot: 0, pays: 26, pay: 40, work: 'the Griddle Goblin', diff: 'Tight budget',
+  food: { id: 'food', name: 'Fast Food Worker', kind: 'w2', wages: 31200, ot: 0, pays: 26, pay: 20, work: 'the Griddle Goblin', diff: 'Tight budget',
     look: { hair: '#7a4a2a', shirt: '#d9463e', pants: '#3a3550', trim: '#f3d24a', hat: 'cap', hatColor: '#d9463e' },
     lines: ['Hourly pay, every coin counts', 'Low brackets, small tax bill', 'Perk: a credit for saving'] },
-  owner: { id: 'owner', name: 'Small Business Owner', kind: 'se', sales: 96000, expenses: 44000, pays: 4, pay: 95, work: 'your candle shop', diff: 'Hard',
+  owner: { id: 'owner', name: 'Small Business Owner', kind: 'se', sales: 96000, expenses: 44000, pays: 4, pay: 48, work: 'your candle shop', diff: 'Hard',
     look: { hair: '#231a36', shirt: '#3d9a5a', pants: '#5a4630', trim: '#f1e3bd' },
     lines: ['No paycheck. You are the boss', 'You pay your own payroll taxes', 'Perk: business write-offs'] },
 };
@@ -142,6 +142,17 @@ LQ.finSplit = () => {
   return { joint: j, sepTax: taxP + taxS, sepTotal: taxP + taxS - TX.ctc + j.se, jointTotal: j.total, lostCare: j.care, lostOt: j.ot, singles, bonus: singles - j.tax };
 };
 LQ.cur = () => st().flags.married ? LQ.fin2() : LQ.fin();
+
+// ---------- paydays
+// Coins for one payday. Shop profits swing with the season.
+LQ.payBase = () => { const s = st(), c = LQ.career(); return c.kind === 'se' ? c.pay - 17 + Math.floor(LQ.hash(s.day, 9, s.seed) * 36) : c.pay; };
+// Chapter 1: the W-4 or estimate choice moves each of the six paydays that follow it, by the coins the same choice
+// adds to or takes from the settlement at filing (15 dollars a coin). A refund is the hero's own money coming back.
+LQ.w4Shift = (w4 = st().w4 || 0) => {
+  if (!w4) return 0;
+  const c = LQ.career();
+  return LQ.clamp(Math.round((LQ.fin(0).withheld - LQ.fin(w4).withheld) / 15 / 6), -Math.round(c.pay / 2), c.pay);
+};
 
 // ---------- points
 LQ.gain = (savvy, coins, why) => {

@@ -147,9 +147,8 @@ const slipDoc = { draw(c) {
 
 // ---------- quest scripts
 const advance3 = () => {
-  const s = st(); s.q3++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.QUESTS3[s.q3].short);
-  const c = LQ.career(), base = c.kind === 'se' ? c.pay - 35 + Math.floor(LQ.hash(s.day, 9, s.seed) * 90) : c.pay;
-  LQ.gain(0, base + 50 + (s.gig ? 40 : 0), s.gig ? 'Payday and gig money' : 'Household payday'); LQ.tick();
+  const s = st(); s.q3++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.curQuest().short);
+  LQ.gain(0, LQ.payBase() + 25 + (s.gig ? 20 : 0), s.gig ? 'Payday and gig money' : 'Household payday'); LQ.tick();
 };
 const FOUND = {
   xSupply: () => `A receipt for ${M(SL.xSupply.amt)} of supplies for the gig. Ordinary, necessary, and all of it counts.`,
@@ -344,8 +343,8 @@ async function qSage() {
     `${owed ? 'You owe' : 'A refund of'} ${M(amt)}. The tax was paid, but in one lump in January. The penalty is figured quarter by quarter, so a small one applies for the three quarters you skipped.`][e]);
   let coins = LQ.clamp(Math.round(f.diff / 15), -350, 350);
   if (e === 0 && Math.abs(f.diff) < 1500) coins += 80;
-  if (e === 1 && f.diff <= -TX.estMinimum) coins -= 60;
-  if (e === 2) coins -= 25;
+  if (e === 1 && f.diff <= -TX.estMinimum) coins -= 120;
+  if (e === 2) coins -= 50;
   LQ.gain(60, coins, owed ? 'Tax settled' : 'Refund');
   await say(N.sage, 'Filed, with every coin of the gig on it. Plenty of people out here cannot say the same.');
   ui.doc = null; LQ.give('return3'); s.q3 = 8; LQ.tick(); LQ.save();
@@ -483,7 +482,7 @@ LQ.AUDIT_POOL.push(
 );
 
 LQ.CH3 = {
-  npcs: NPC_LIST, chests: CHESTS, begin, found, hunt: HUNT,
+  npcs: NPC_LIST, chests: CHESTS, tips: TIPS, begin, found, hunt: HUNT,
   spots: { xSupply: [42, 9], xPhone: [6, 9], xLicense: [15, 23], xMeal: [25, 18], xLunch: [36, 29], xBoots: [4, 22], xFine: [44, 23] },
   coins: [[10, 10], [20, 11], [28, 10], [36, 11], [42, 10], [6, 20], [12, 21], [30, 20], [40, 21], [23, 5], [24, 23], [12, 30], [20, 31], [28, 33], [24, 29], [34, 29], [36, 34], [43, 33]],
   signs: [

@@ -258,45 +258,13 @@ async function talk(find, choose = () => 0) {
 
   vm.runInContext('Math.random = () => 0.99999', env);
   // The pacing rule: no villager asks more than two questions in one visit.
-  for (const id of ['brannock', 'pim', 'odette', 'sable', 'thorn', 'altamira']) await quizCap(id, 2, () => talk(e => e.npc?.id === id));
-  assert.equal(s().quest, 6); assert(s().flags.vaultGo);
-  await talk(e => e.type === 'vaultdoor');
-  async function fillVault() {
-    const L = LQ.V1.L;
-    // The existing map check solves crate routes. Here the running game resolves socket and rune triggers.
-    const crates = w.ents.filter(e => e.type === 'block');
-    for (let k = 1; k <= L.n; k++) {
-      Object.assign(crates[k - 1], { tx: L.sockets[k].tx, ty: L.sockets[k].ty });
-      w.refresh(); await frame(); assert(L.filled[k]);
-    }
-    return L;
-  }
-  function stand(e) { Object.assign(w.p, { x: e.tx * 16 + 8, y: e.ty * 16 + 12 }); }
-  const firstVault = await fillVault();
-  stand(firstVault.answers[firstVault.next === 1 ? 2 : 1]);
-  await frame(); await drain(() => 0, untilIdle); assert(s().flags.vaultAttempted && !firstVault.answered);
-  s().tool = 'stamp'; near(w.ents.find(e => e.type === 'seal')); await press('e'); await drain(() => 0, untilIdle);
-  assert.notEqual(LQ.V1.L, firstVault); assert.equal(Object.keys(LQ.V1.L.filled).length, 0);
-  const afterReset = s().savvy;
-  const vault = await fillVault(); stand(vault.answers[vault.next]);
-  await frame(); await drain(() => 0, untilIdle); assert(vault.answered);
-  assert.equal(s().savvy, afterReset, 'reset cannot restore a first-attempt reward');
-  stand(w.ents.find(e => e.type === 'page'));
-  await frame(); await drain(() => 0, untilIdle); assert(s().flags.vaultDone && s().flags.page1);
-  LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle);
-  await quizCap('altamira', 2, () => talk(e => e.npc?.id === 'altamira')); assert.equal(s().quest, 7);
-  // Phase 2: the three fooled villagers and one paid shift.
-  assert(w.ents.some(e => e.type === 'cart'), 'Rowan\'s cart blocks the footbridge');
-  s().tool = 'compass'; near(w.ents.find(e => e.npc?.id === 'rowan')); await frame(30); await press('e'); await drain(() => 0, untilIdle);
-  assert(s().flags.fixRowan && !w.ents.some(e => e.type === 'cart'), 'the compass sets Rowan straight');
-  s().tool = 'stamp'; near(w.ents.find(e => e.type === 'bstall')); await frame(30); await press('e'); await drain(() => 0, untilIdle);
-  assert(s().flags.basilSeal && s().items.includes('breturn'), 'the stamp opens Basil\'s stall');
-  await talk(e => e.npc?.id === 'juno'); assert(s().flags.fixBasil && !s().items.includes('breturn') && s().quest === 7, 'Juno files Basil\'s return');
-  const beforeBroth = s().coins, tonics = s().flags.tonics || 0; await talk(e => e.type === 'bstall');
-  assert.equal(s().coins, beforeBroth - 10); assert.equal(s().flags.tonics, tonics + 1);
-  s().flags.lanternRent = true; s().tool = 'lantern'; Object.assign(w.p, { x: 11 * 16 + 8, y: 34 * 16 + 13 }); await frame(40); await drain(() => 0, untilIdle);
-  assert(s().flags.fixMaple && LQ.bazaarOff(), 'the lantern clears Granny Maple\'s porch');
-  delete s().flags.lanternRent;
+  await quizCap('brannock', 2, () => talk(e => e.npc?.id === 'brannock')); assert.equal(s().quest, 2);
+  // The first required stop: Pim has nothing to read until one paid shift is worked, and the tracker says so.
+  assert.equal(LQ.curQuest().target, 'shiftboard'); assert.match(LQ.curQuest().text, /Work a shift/);
+  await talk(e => e.npc?.id === 'pim'); assert.equal(s().quest, 2, 'Pim waits for the first shift'); assert(heard('Nothing to read yet'));
+  assert(LQ.sideJobs().some(j => j.title === 'Work a shift' && !j.done && j.note === '2 paid left'), 'the shift is on the side jobs list');
+  const pay0 = LQ.payBase(), full = jobs0 => jobs0.pay(99);
+  assert(full(LQ.jobs).gross === Math.round(LQ.career().pay * 1.5) && full(LQ.jobs).net >= (career === 'owner' ? 40 : pay0), 'a full shift pays about a payday or more');
   const jobs = LQ.jobs;
   const beforeShift = s().coins;
   // The first shift offers an untimed practice: no clock, three tasks, no pay.
@@ -340,6 +308,56 @@ async function talk(find, choose = () => 0) {
     assert.equal(LQ.loadSlot(1).coins, s().coins, 'pay is saved before closing the stub');
     await drain(() => 0, untilIdle);
   }
+  assert.equal(LQ.curQuest().target, 'pim', 'one paid shift clears the stop');
+  // The Quest tab lists this region's side jobs, Enter opens one, and green gems stand over the ones still open.
+  await press('j'); assert.equal(ui.menu.tab, 0); await press('Enter');
+  assert.equal(ui.menu.reading?.entry.title, LQ.sideJobs()[0].title, 'Enter opens a side job'); await frame(2);
+  await press('Escape'); await press('Escape'); assert(!ui.menu);
+  assert.equal(LQ.sideJobs().map(j => j.title).join(' | '), ['Work a shift', 'Light the Lantern Cave', 'Free three villagers', 'Find the hidden cache', 'Collect expert tips', 'Open the chests'].join(' | '));
+  assert(LQ.sideJobs().find(j => j.title === 'Light the Lantern Cave').done, 'a finished side job is ticked');
+  assert(LQ.sideJobs()[0].done && LQ.sideJobs()[0].note === '0 paid left', 'used-up shifts read as done for now');
+  assert(w.ents.filter(e => e.type === 'sidegem').length >= 8 && s().flags.sideTold, 'gems are placed and explained once');
+  // The W-4 link: the tax choice made with Brannock moves every later Chapter 1 payday.
+  assert.equal(LQ.w4Shift(), 0); assert(LQ.w4Shift(1) < 0 && LQ.w4Shift(2) > 0, 'extra withholding shrinks a payday, too little withholding swells it');
+  for (const id of ['pim', 'odette', 'sable', 'thorn', 'altamira']) await quizCap(id, 2, () => talk(e => e.npc?.id === id));
+  assert.equal(s().quest, 6); assert(s().flags.vaultGo);
+  await talk(e => e.type === 'vaultdoor');
+  async function fillVault() {
+    const L = LQ.V1.L;
+    // The existing map check solves crate routes. Here the running game resolves socket and rune triggers.
+    const crates = w.ents.filter(e => e.type === 'block');
+    for (let k = 1; k <= L.n; k++) {
+      Object.assign(crates[k - 1], { tx: L.sockets[k].tx, ty: L.sockets[k].ty });
+      w.refresh(); await frame(); assert(L.filled[k]);
+    }
+    return L;
+  }
+  function stand(e) { Object.assign(w.p, { x: e.tx * 16 + 8, y: e.ty * 16 + 12 }); }
+  const firstVault = await fillVault();
+  stand(firstVault.answers[firstVault.next === 1 ? 2 : 1]);
+  await frame(); await drain(() => 0, untilIdle); assert(s().flags.vaultAttempted && !firstVault.answered);
+  s().tool = 'stamp'; near(w.ents.find(e => e.type === 'seal')); await press('e'); await drain(() => 0, untilIdle);
+  assert.notEqual(LQ.V1.L, firstVault); assert.equal(Object.keys(LQ.V1.L.filled).length, 0);
+  const afterReset = s().savvy;
+  const vault = await fillVault(); stand(vault.answers[vault.next]);
+  await frame(); await drain(() => 0, untilIdle); assert(vault.answered);
+  assert.equal(s().savvy, afterReset, 'reset cannot restore a first-attempt reward');
+  stand(w.ents.find(e => e.type === 'page'));
+  await frame(); await drain(() => 0, untilIdle); assert(s().flags.vaultDone && s().flags.page1);
+  LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle);
+  await quizCap('altamira', 2, () => talk(e => e.npc?.id === 'altamira')); assert.equal(s().quest, 7);
+  // Phase 2: the three fooled villagers and one paid shift.
+  assert(w.ents.some(e => e.type === 'cart'), 'Rowan\'s cart blocks the footbridge');
+  s().tool = 'compass'; near(w.ents.find(e => e.npc?.id === 'rowan')); await frame(30); await press('e'); await drain(() => 0, untilIdle);
+  assert(s().flags.fixRowan && !w.ents.some(e => e.type === 'cart'), 'the compass sets Rowan straight');
+  s().tool = 'stamp'; near(w.ents.find(e => e.type === 'bstall')); await frame(30); await press('e'); await drain(() => 0, untilIdle);
+  assert(s().flags.basilSeal && s().items.includes('breturn'), 'the stamp opens Basil\'s stall');
+  await talk(e => e.npc?.id === 'juno'); assert(s().flags.fixBasil && !s().items.includes('breturn') && s().quest === 7, 'Juno files Basil\'s return');
+  const beforeBroth = s().coins, tonics = s().flags.tonics || 0; await talk(e => e.type === 'bstall');
+  assert.equal(s().coins, beforeBroth - 10); assert.equal(s().flags.tonics, tonics + 1);
+  s().flags.lanternRent = true; s().tool = 'lantern'; Object.assign(w.p, { x: 11 * 16 + 8, y: 34 * 16 + 13 }); await frame(40); await drain(() => 0, untilIdle);
+  assert(s().flags.fixMaple && LQ.bazaarOff(), 'the lantern clears Granny Maple\'s porch');
+  delete s().flags.lanternRent;
   const discounted = LQ.shopPrice(120);
   s().coins = discounted;
   await shop([`Saver's Credit Guidebook  -  ${discounted}`, "Buy Saver's Credit Guidebook", 'Leave']);
@@ -356,10 +374,12 @@ async function talk(find, choose = () => 0) {
   const hp = s().hp, bolt = LQ.parts.bolt(w, w.p.x + 8, w.p.y - 7, -74, 0);
   dispatch('keydown', 'e'); await frame(); dispatch('keyup', 'e');
   assert(!w.ents.includes(bolt) && s().hp === hp);
-  const failAudit = s().coins; LQ.script(LQ.audit); await drain(() => 1, untilIdle); assert.equal(s().coins, Math.max(0, failAudit - 60));
+  const failAudit = s().coins; LQ.script(LQ.audit); await drain(() => 1, untilIdle); assert.equal(s().coins, failAudit - LQ.auditFine(failAudit));
+  assert.deepEqual([30, 100, 400, 2000].map(LQ.auditFine), [30, 40, 60, 150], 'a failed audit costs 15% of coins, between 40 and 150');
+  assert.deepEqual([12, 150, 400, 5000].map(LQ.kit.faintCost), [12, 20, 40, 100], 'fainting costs 10% of coins, between 20 and 100');
   const firstAudit = Object.keys(s().auditHistory);
   assert.equal(firstAudit.length, 3); assert(firstAudit.every(k => !s().auditHistory[k].right));
-  const passAudit = s().coins; LQ.script(LQ.audit); await drain(() => 0, untilIdle); assert(s().coins > passAudit);
+  const passAudit = s().coins; LQ.script(LQ.audit); await drain(() => 0, untilIdle); assert(s().coins > passAudit && s().coins - passAudit <= 35 + 3 * 10, 'a passed audit pays 20 to 35 coins, plus quiz coins');
   assert.equal(Object.keys(s().auditHistory).length, 6, 'a second audit chooses unseen questions');
   assert(firstAudit.every(k => s().auditHistory[k].round === 1), 'misses stay off the immediate next audit');
   assert.deepEqual(LQ.loadSlot(1).auditHistory, s().auditHistory);
@@ -492,21 +512,26 @@ async function talk(find, choose = () => 0) {
   assert.equal(s().q2, 6);
   await talk(e => e.qid === 'boss2');
   assert(s().flags.page5 && s().items.includes('invoice2') && heard('Folded into Captain Loophole') && heard('a cellar in Paystub Village'), 'Loophole’s page and invoice are read out after the fight');
+  // The second required stop: Fathom sends the hero to the Bazaar to see what a last purchase would do. Buying is optional.
+  assert.equal(LQ.curQuest().target, 'trader'); assert.equal(LQ.curQuest().short, 'Check your last moves');
+  await talk(e => e.npc?.id === 'fathom'); assert.equal(s().q2, 7, 'Fathom waits for the last-moves stop'); assert(heard('The year is still open'));
+  s().coins = Math.max(s().coins, 400);
+  const lastTax = LQ.cur().total, lastCoins = s().coins;
+  await shop(['Leave']);
+  assert(s().flags.lastMoves2 && s().coins === lastCoins && LQ.cur().total === lastTax, 'the comparison buys nothing and changes nothing');
+  assert(heard('would take $') && heard('off your tax'), 'the trader names one affordable example with its tax cut');
+  assert.equal(LQ.curQuest().target, 'fathom');
+  await shop([/^Compare/, 'Leave']);
   await talk(e => e.npc?.id === 'fathom'); assert.equal(s().q2, 8);
   assert(s().flags.page6 && heard('Folded into your stamped joint return'), 'the filing page arrives when the return is stamped');
   await travel('canyon'); assert.equal(s().q3, 0);
+  assert(!LQ.sideJobs().some(j => j.title === 'Work a gig run'), 'the gig run is listed once a gig is chosen');
   assert(!w.R.exits.find(exit => exit.to === 'summit').open(s()));
-  for (const id of ['juniper', 'mesa', 'lupe', 'flint', 'dune', 'brick']) {
-    await talk(e => e.npc?.id === id, ch => ch.prompt === 'Which gig will you take?' ? ['nurse', 'owner', 'food'].indexOf(career) : 0);
-  }
-  assert.equal(s().q3, 6);
-  await house('house3');
-  for (const [x, solved] of [[3, false], [8, true]]) {
-    near(w.ents.find(e => e.type === 'seal' && e.tx === x));
-    LQ.kit.need('stamp'); LQ.kit.cool = 0; await press('e'); await frame(5);
-    assert.equal(!!s().flags.house3, solved);
-  }
-  await claimHouse('house3', 30, 0);
+  await talk(e => e.npc?.id === 'juniper', ch => ch.prompt === 'Which gig will you take?' ? ['nurse', 'owner', 'food'].indexOf(career) : 0);
+  // The third required stop: Mesa has nothing to count until one paid gig run is worked.
+  assert.equal(s().q3, 1); assert.equal(LQ.curQuest().target, 'gigboard');
+  await talk(e => e.npc?.id === 'mesa'); assert.equal(s().q3, 1, 'Mesa waits for the first gig run'); assert(heard('You have not earned a coin out here yet'));
+  assert.equal(LQ.money2.pay(99).earned, 60, 'a full gig run earns 60 coins');
   await talk(e => e.type === 'gigboard', () => 1);
   const gigGross = LQ.fin3().gigGross, runs = LQ.money2.totals().runs, gigCash = s().coins;
   near(w.ents.find(e => e.type === 'gigboard')); await press('Enter'); await press('Enter');
@@ -526,6 +551,17 @@ async function talk(find, choose = () => 0) {
   assert.equal(LQ.money2.totals().runs, runs + 1);
   assert.equal(s().coins - gigCash, LQ.money2.pay(gigRun.score).kept);
   assert.equal(LQ.fin3().gigGross, gigGross, 'practice payout stays out of Schedule C');
+  assert.equal(LQ.curQuest().target, 'mesa', 'one paid gig run clears the stop');
+  assert.equal(LQ.sideJobs().map(j => j.title).join(' | '), ['Work a gig run', 'Count the boxes in Slick\'s Stash', 'Sort the depot back room', 'Collect expert tips', 'Open the chests'].join(' | '));
+  for (const id of ['mesa', 'lupe', 'flint', 'dune', 'brick']) await talk(e => e.npc?.id === id);
+  assert.equal(s().q3, 6);
+  await house('house3');
+  for (const [x, solved] of [[3, false], [8, true]]) {
+    near(w.ents.find(e => e.type === 'seal' && e.tx === x));
+    LQ.kit.need('stamp'); LQ.kit.cool = 0; await press('e'); await frame(5);
+    assert.equal(!!s().flags.house3, solved);
+  }
+  await claimHouse('house3', 30, 0);
   {
     // Slick's Stash: the gift box springs an imp and does not count; the three income boxes open the strongroom.
     const w = LQ.world, stamp = async i => { s().tool = 'stamp'; LQ.kit.inv = 5; LQ.kit.cool = 0; near(w.ents.find(e => e.box === i)); await frame(6); await press('e'); await frame(4); };

@@ -116,8 +116,10 @@ const K = LQ.kit = {
     if (s.hp <= 0) LQ.script(() => K.faint(w));
     return true;
   },
+  // Fainting outside a home room costs a tenth of the coins in hand, at least 20 and at most 100.
+  faintCost: coins => Math.min(coins, LQ.clamp(Math.round(coins * .1), 20, 100)),
   async faint(w) {
-    const s = st(), home = w.room && w.room.def.home, lost = home ? 0 : Math.min(20, s.coins);   // `home` rooms cost nothing and wake you inside
+    const s = st(), home = w.room && w.room.def.home, lost = home ? 0 : K.faintCost(s.coins);   // `home` rooms cost nothing and wake you inside
     await LQ.fadeTo(1, .5); s.coins -= lost; s.hp = K.maxHp(); K.inv = 0;
     if (home) w.loadRoom(w.room.room, 'faint');
     else if (w.room) { w.room.def.leave?.(s); w.start(); w.p.dir = s.dir = 'down'; w.music(); }

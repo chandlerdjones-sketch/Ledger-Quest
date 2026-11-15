@@ -36,7 +36,7 @@ Ledger Quest (`~/Desktop/Ledger Quest/`, plain HTML and JS, about 5,300 lines, n
 
 ### 2. Hearts, combat, and avoidance (new `js/foes.js`)
 - Four hearts in the overworld, drawn like the battle hearts. Tonics heal.
-- At zero hearts you wake at the last Notary Lamp (checkpoint) and lose at most 20 coins. No progress is ever lost.
+- At zero hearts you wake at the last Notary Lamp (checkpoint) and lose a tenth of your coins (at least 20, at most 100, changed Nov 15). No progress is ever lost.
 - **Myth Wisp:** cannot be hit. Touching one costs coins ("it sold you a bad idea"). Avoid it or carry the Lantern.
 - **Scrap Imp:** chases you. Two Stamp hits. Drops coins.
 - **Red Tape Crawler** (Phase 3): must be blocked with the Shield, then hit.
@@ -146,7 +146,7 @@ What was built
 - `tools/check.js` and `tools/play-check.js`: the footbridge is shut by the cart and open without it, shift pay stays inside its cap for every career and tax choice, and the headless run fixes all three villagers, works a shift, and steers through the boss movement phase.
 
 Decisions and simplifications
-- Shift pay is capped at half a payday and limited to two paid shifts per quest step. More shifts are practice with no pay.
+- Shift pay is capped at one and a half paydays (raised Nov 15, when paydays were halved) and limited to two paid shifts per quest step. More shifts are practice with no pay.
 - The shift stub holds back tax by the player's own W-4 or estimate choice. Shift coins never enter `LQ.fin`, so the tax return does not change. Shift pay is pocket money, not part of the year's wages.
 - The Bazaar shows the discounted price on gear and supplies once Maple is helped. Gear retains its original value in the tax and savings model.
 - Granny Maple's porch wisp tolls nobody, which keeps the rule that enemies stay out of town.
@@ -330,7 +330,7 @@ Roadmap
 |---|---|---|
 | 1 | Story reveals, Gazette, audit limits, ending pages, small text fixes | Built and tested Nov 14, see below |
 | 2 | Pacing pass on the main path | Built for all four chapters Nov 14, at Chandler's request before his playtest. Waiting on that playtest |
-| 3 | Side jobs list in the Quest tab, one required hands-on beat per chapter, economy tuning | Not started. The economy numbers need Chandler's yes |
+| 3 | Side jobs list in the Quest tab, one required hands-on beat per chapter, economy tuning | Built Nov 15 with the numbers Chandler approved. See the batch 3 notes. Waiting on a playtest |
 | 4 | Boss stakes and the Murk fight | Not started. The boss restart rule needs Chandler's yes |
 | 5 | Sprites for Loophole and Slick, shorter title flow, backstory at the start, fast travel | Not started. Fast travel needs Chandler's yes |
 
@@ -427,3 +427,73 @@ Questions for the playtest, on top of the Chapter 1 ones
 - Do the filings in Chapters 2 to 4 feel right with one chapter question and the result?
 - Does Tamsin's shorter account lesson still land before the savings choice?
 - Do five myths feel right for Loophole, Slick and Glint?
+
+## Final polish, batch 3 notes: side jobs and money (Nov 15)
+Chandler started this batch before playtesting batch 2, and approved the numbers below before they were set.
+
+Side jobs list
+- The Quest tab's right-hand column now lists the optional work in the current region, under "Side jobs here". It used to repeat the gear list, which is still in the Items tab. Each row shows a tick and a count, and Enter opens a short description.
+- Village: work a shift, the Lantern Cave, the three fooled villagers, the hidden cache, expert tips, chests. Coast: the cottage cupboard, tips, chests. Canyon: a gig run, Slick's Stash, the depot back room, tips, chests. Summit: the lodge hearth, tips, chests.
+- The descriptions say what and roughly where. The exact directions are still the rumor the shops sell, and a bought rumor is shown inside its side job.
+- A small green gem floats over every side job that still has something to give: tip villagers, both job boards, the cave door, the house doors and the stash door. A one-time toast explains the gems.
+- The list and the gems live in the new file `js/sidejobs.js`.
+
+Three required stops, all built from content that already existed
+| Chapter | Stop | How it is enforced |
+|---|---|---|
+| 1 | Work one paid shift after signing the W-4 with Brannock and before Pim reads the first statement | Pim sends the hero to the shift board in one line. The tracker and its marker point at the board until a paid shift is worked |
+| 2 | See "last moves before you file" at the Driftwood Bazaar after Loophole and before Fathom | Fathom sends the hero to the trader in one line. The trader shows a page listing each unowned item that would cut this year's tax, its price, and the cut. Buying is optional |
+| 3 | Work one paid gig run after choosing a gig with Juniper and before Mesa counts the year | Mesa sends the hero to the gig board in one line |
+- Chapter 4 has no new stop. The sale clock and Marlowe's sell decisions are already on its path.
+- The last-moves page is also a free line in every shop menu ("Compare"), in every chapter.
+- The stops are tracker overrides, not new quest numbers, so the quest lists and old saves are unchanged. An old save sitting exactly on one of the three steps is asked to make the stop.
+
+Money, as approved
+| What | Before | Now |
+|---|---|---|
+| Payday at each quest step, Nurse / Fast food / Shop owner | 80 / 40 / about 95 | 40 / 20 / about 48 |
+| Household, gig and Chapter 4 add-ons to a payday | 50 / 40 / 90 | 25 / 20 / 45 |
+| A full-score shift, before tax | half a payday | one and a half paydays (60 / 30 / 72) |
+| A full-score gig run, earned | 40 | 60 |
+| Audit passed | 50 to 70 coins | 20 to 35 coins |
+| Audit failed | up to 60 coins | 15% of coins in hand, at least 40, at most 150 |
+| Fainting outside a home room | up to 20 coins | 10% of coins in hand, at least 20, at most 100 |
+| Underpayment penalty at filing (Chapters 1 to 3) | 60 | 120 (the Chapter 3 late lump sum went from 25 to 50) |
+- Quiz coins, tips, chests, boss rewards and gear prices did not change. The stock lift after each boss win is still 45% and was left alone again.
+
+The W-4 now moves Chapter 1 paydays
+- Before, the W-4 choice never changed the coins in a payday, so withholding extra was free coins at filing.
+- Now the choice moves each of the six paydays after it by the coins the same choice adds to or takes from the settlement at filing. `LQ.w4Shift` holds the rule and `tools/check.js` prints and checks it.
+- To make the two sides match, the Chapter 1 settlement now converts at 15 dollars a coin, the same as Chapters 2 to 4. It used to be 5.
+
+| Career and choice | Each payday | At filing | Net |
+|---|---|---|---|
+| Nurse, extra $40 withheld | 12 less | 69 more | 3 down |
+| Nurse, $8,000 of deductions claimed | 20 more | 118 less | 2 up |
+| Fast food, extra $40 withheld | 10 less (half-pay floor) | 70 more | 10 up |
+| Fast food, $8,000 of deductions claimed | 10 more | 57 less | 3 up |
+| Shop owner, overpaid estimates | 20 less | 120 more | even |
+| Shop owner, skipped estimates | 48 more | 400 less (the cap), plus the 120 penalty | 232 down |
+
+What a full run earns now
+Measured by running `tools/play-check.js` with a counter on every coin gain, and adding up only the main-path sources.
+
+| Career | Main path before | Main path now | Share of all gear it can buy before the ending |
+|---|---|---|---|
+| Nurse | about 5,600 | about 3,750 | 32% |
+| Fast food | about 4,350 | about 3,100 | 26% |
+| Shop owner | about 6,100 | about 3,750 | 30% |
+- The last 300 coins arrive with the restored Ledger, after there is anything left to buy, so the share counts income before that.
+- Side jobs are now the way to afford more. Tips pay 30 each (35 in all), chests 40, and a good shift or gig run pays about a payday.
+
+Checks
+- `tools/play-check.js` now plays all three stops: each villager's redirect, the tracker target, the stop clearing, and the last-moves page changing no coins and no tax. It also checks the side jobs list in the village and the canyon, the gems, the menu reader, the audit and fainting costs, and the new shift and gig caps. `tools/check.js` checks the W-4 link for every career. All pass for all three careers.
+- Seen in the browser (Nurse, on a finished save stepped back to each stop): the Quest tab column and the reader, the tracker and marker for the shift board and the gig board, Pim's and Mesa's redirects, a played shift and its pay stub, the last-moves page from the stop and from the shop menu, and the gems in the canyon. An older finished save loaded and resumed.
+- Not seen in the browser: the Fast food and Shop owner versions of the shift stop, the last-moves page with more than three rows, and the money numbers over a whole played chapter. The scripted run covers the logic for all three careers.
+
+Questions for the playtest
+- Does working one shift before Pim feel like part of the story or like a detour?
+- With paydays halved, do you want things you cannot yet afford? Is anything out of reach for too long?
+- Do the green gems help, or are there too many on screen?
+- Did the last-moves page make you buy something before filing?
+

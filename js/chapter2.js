@@ -142,9 +142,8 @@ const rcDoc = { lit: null, draw(c) {
 
 // ---------- quest scripts
 const advance2 = () => {
-  const s = st(); s.q2++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.QUESTS2[s.q2].short);
-  const c = LQ.career(), base = c.kind === 'se' ? c.pay - 35 + Math.floor(LQ.hash(s.day, 9, s.seed) * 90) : c.pay;
-  LQ.gain(0, base + 50 + (s.w4b === 1 ? 25 : s.w4b === 2 ? -25 : 0), 'Household payday'); LQ.tick();
+  const s = st(); s.q2++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.curQuest().short);
+  LQ.gain(0, LQ.payBase() + 25 + (s.w4b === 1 ? 12 : s.w4b === 2 ? -12 : 0), 'Household payday'); LQ.tick();
 };
 const FOUND = {
   rPoints: () => `In the drawer: your closing papers. You paid ${M(H.points)} in points, interest paid up front to get your loan. Points on a loan to buy your main home usually count as mortgage interest in the year you pay them.`,
@@ -341,7 +340,7 @@ async function qFathom() {
     `${owed ? 'You owe' : 'A refund of'} ${M(amt)}. ` + (owed ? '' : "Nothing on your forms mentioned Coral's credits, so you overpaid all year. It is your own money, lent to the kingdom at no interest.")][w]);
   let coins = LQ.clamp(Math.round(f.diff / 15), -350, 350);
   if (w === 0 && Math.abs(f.diff) < 1500) coins += 80;
-  if (f.diff <= -1000) coins -= 60;
+  if (f.diff <= -1000) coins -= 120;
   LQ.gain(60, coins, owed ? 'Tax settled' : 'Refund');
   await say(N.fathom, 'Filed, on time, with both signatures. A home, a marriage, and a child, and you understood what each one did to this page. That is rarer than you think.');
   ui.doc = null; LQ.give('return2'); s.q2 = 8; LQ.tick(); LQ.save();
@@ -410,7 +409,7 @@ LQ.BOSSES.loophole = {
     s.flags.boss2 = true; s.q2 = 7; LQ.give('medal2'); LQ.gain(50, 120, 'Captain Loophole sunk');
     LQ.tick(); if (s.prices && s.prices.LAMP != null) { s.prev.LAMP = s.prices.LAMP; s.prices.LAMP *= 1.45; s.gazette.unshift('The Old Lighthouse is safe again! Lantern Works relights the great lamp.'); }
   },
-  done: async () => { ui.toast('New quest: ' + LQ.QUESTS2[7].short); await say(null, 'The lighthouse lamp turns, steady and bright. One task remains: take your receipts and your new family to the Coast Tax Office and file.'); },
+  done: async () => { ui.toast('New quest: ' + LQ.curQuest().short); await say(null, 'The lighthouse lamp turns, steady and bright. One task remains: take your receipts and your new family to the Coast Tax Office and file.'); },
 };
 
 // ---------- villagers who teach expert moves
@@ -482,7 +481,7 @@ LQ.AUDIT_POOL.push(
 );
 
 LQ.CH2 = {
-  npcs: NPC_LIST, chests: CHESTS, begin, found, hunt: HUNT,
+  npcs: NPC_LIST, chests: CHESTS, tips: TIPS, begin, found, hunt: HUNT,
   spots: { rCart: [42, 9], rChapel: [6, 9], rSchool: [15, 23], rRaffle: [25, 18], rLight: [36, 28], rMedical: [4, 22] },
   coins: [[10, 10], [20, 11], [28, 10], [36, 11], [42, 10], [6, 20], [12, 21], [30, 20], [40, 21], [23, 5], [24, 23], [8, 28], [16, 28], [33, 28], [24, 33], [41, 28], [39, 33], [43, 35]],
   signs: [

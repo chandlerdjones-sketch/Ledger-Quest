@@ -149,8 +149,7 @@ const acctDoc = { hl: -1, draw(c) {
 // ---------- quest scripts
 const advance4 = () => {
   const s = st(); s.q4++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.QUESTS4[s.q4].short);
-  const c = LQ.career(), base = c.kind === 'se' ? c.pay - 35 + Math.floor(LQ.hash(s.day, 9, s.seed) * 90) : c.pay;
-  LQ.gain(0, base + 90, 'Payday and gig money'); LQ.tick();
+  LQ.gain(0, LQ.payBase() + 45, 'Payday and gig money'); LQ.tick();
 };
 
 async function begin() {
@@ -508,7 +507,7 @@ LQ.AUDIT_POOL.push(
 );
 
 LQ.CH4 = {
-  npcs: NPC_LIST, chests: CHESTS, begin,
+  npcs: NPC_LIST, chests: CHESTS, tips: TIPS, begin,
   coins: [[10, 20], [20, 21], [28, 20], [36, 21], [42, 20], [6, 30], [12, 31], [30, 30], [40, 31], [23, 14], [24, 35], [24, 40], [19, 9], [30, 6], [21, 4], [26, 4]],
   signs: [
     { tx: 22, ty: 13, fn: () => st().flags.boss4 ? 'THE PEAK. Quiet again. The view is free.' : 'THE PEAK. Beware of hot tips. If it sounds too good to be true, it is roaring.' },
