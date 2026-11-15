@@ -521,7 +521,8 @@ Attacks now guard the way to the pickup
 The Murk fight
 - Murk is a fifth boss on the existing system (`LQ.BOSSES.murk` in `js/backoffice.js`). The story is unchanged. When the hero strikes the Standing Order after Vell's reveal, Murk steps in and the fight starts. Winning returns the hero to the Back Office, and striking the order again plays the finale and the two ending pages as before.
 - His pattern is `forms`: walls of fine print slide across the field, each with one gap. Every other gap opens on the far side of the field from the hero. Two shards to collect.
-- His five attacks are sales pitches, not myths about the rules: it is too complicated for you, free help is a trap, one mistake and they take everything, a guaranteed refund for a share of it, sign without reading. The truths cover reading your own return, IRS Free File and VITA, amended returns (Form 1040-X) and notices by mail, the warning signs of a bad preparer, and being responsible for your own return. The final question asks what the Great Ledger is for.
+- His five attacks are sales pitches, not myths about the rules: it is too complicated for you, free help is a trap, one mistake and they take everything, a guaranteed refund for a share of it, sign without reading. The truths cover reading your own return, IRS Free File and VITA, amended returns (Form 1040-X) and what an IRS letter is, the warning signs of a bad preparer, and being responsible for your own return. The final question asks what the Great Ledger is for.
+- The pitches were checked on Nov 15 against IRS Topic 254, the IRS Free File and VITA pages, and the Form 1040-X instructions. One line that could not be sourced ("most notices are settled by mail") was reworded to what the IRS does say.
 - He has his own sprite (top hat, plum coat, a fan of invoices) in `js/art.js`.
 - A lost Murk fight wakes the hero at the Saffron Bazaar, and the valves stay shut.
 

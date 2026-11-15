@@ -81,7 +81,7 @@ async function finale(w) {
   LQ.save();
 }
 // The last fight. Murk has no myths about the tax rules. He sells fear of them, one pitch at a time.
-// Each truth was checked against the IRS pages on choosing a tax preparer, Free File, VITA and amended returns (Nov 2026).
+// Each truth was checked against IRS Topic 254 (choosing a preparer), the IRS Free File and VITA pages, and the Form 1040-X instructions (Nov 2026).
 const PITCHES = [
   { myth: 'Taxes are FAR too complicated for someone like you. Pay me and stop thinking!',
     opts: ['A return is a handful of lines, and I have filed four of them myself.', 'True. Only an expert can read a tax form.', 'It is safer not to look at my own numbers at all.'],
@@ -90,8 +90,8 @@ const PITCHES = [
     opts: ['IRS Free File and volunteer programs help many filers at no cost.', 'True. If it is free, it must be wrong.', 'Help only counts if it is expensive.'],
     truth: 'IRS Free File offers free software under an income limit, and volunteer sites such as VITA prepare returns free for people who qualify.' },
   { myth: 'One wrong number and they take EVERYTHING! Only I can keep you safe!',
-    opts: ['A mistake can be fixed with an amended return, and most notices are settled by mail.', 'True. One typo and the cottage is gone.', 'Never file, and nothing can go wrong.'],
-    truth: 'An honest mistake is fixed with an amended return, Form 1040-X. Most IRS letters ask about one number and are answered by mail.' },
+    opts: ['A mistake can be fixed with an amended return, and an IRS letter says exactly what to do.', 'True. One typo and the cottage is gone.', 'Never file, and nothing can go wrong.'],
+    truth: 'An honest mistake is fixed with an amended return, Form 1040-X. The IRS usually writes by mail first, and each letter names one issue and says what to do about it.' },
   { myth: 'I GUARANTEE the biggest refund in the kingdom! My fee is only a share of it!',
     opts: ['Nobody honest promises a refund before seeing my numbers, or charges a cut of it.', 'A bigger promise means a better preparer.', 'A share of the refund is the fairest fee there is.'],
     truth: 'A preparer who promises a big refund up front, or takes a percentage of it, is a warning sign. A refund is whatever my real numbers say.' },
