@@ -112,7 +112,7 @@ async function drain(select, end = () => !LQ.busy && !LQ.title.locked, limit = 2
       k.use = !!idle;
       await frame();
       if (takeHit && d.hits > hits) {
-        assert.equal(hp - LQ.kit.hp(), .25, 'a Chapter 1 bolt costs exactly one quarter heart');
+        assert.equal(hp - LQ.kit.hp(), .5, 'a Chapter 1 bolt costs exactly half a heart');
         chapterOneHit = true;
       }
       if (!LQ.battle.dodge) {
@@ -376,7 +376,7 @@ async function talk(find, choose = () => 0) {
   assert(!w.ents.includes(bolt) && s().hp === hp);
   const failAudit = s().coins; LQ.script(LQ.audit); await drain(() => 1, untilIdle); assert.equal(s().coins, failAudit - LQ.auditFine(failAudit));
   assert.deepEqual([30, 100, 400, 2000].map(LQ.auditFine), [30, 40, 60, 150], 'a failed audit costs 15% of coins, between 40 and 150');
-  assert.deepEqual([12, 150, 400, 5000].map(LQ.kit.faintCost), [12, 20, 40, 100], 'fainting costs 10% of coins, between 20 and 100');
+  assert.deepEqual([0, 12, 150, 400, 5000].map(LQ.kit.faintCost), [0, 12, 20, 40, 100], 'fainting costs 10% of coins, between 20 and 100, and nothing from an empty purse');
   const firstAudit = Object.keys(s().auditHistory);
   assert.equal(firstAudit.length, 3); assert(firstAudit.every(k => !s().auditHistory[k].right));
   const passAudit = s().coins; LQ.script(LQ.audit); await drain(() => 0, untilIdle); assert(s().coins > passAudit && s().coins - passAudit <= 35 + 3 * 10, 'a passed audit pays 20 to 35 coins, plus quiz coins');
@@ -632,7 +632,7 @@ async function talk(find, choose = () => 0) {
   assert.equal(s().q4, 7);
   await talk(e => e.qid === 'boss4');
   assert(s().flags.page11 && s().items.includes('invoice4') && heard('Q. Murk, Head Clerk of the Great Ledger'), 'the Dragon’s invoice names Murk out loud');
-  for (const id of ['baron', 'loophole', 'slick', 'glint']) assert.equal(LQ.BOSSES[id].myths().length, 5, id + ' fights with five myths');
+  for (const id of ['baron', 'loophole', 'slick', 'glint', 'murk']) assert.equal(LQ.BOSSES[id].myths().length, 5, id + ' fights with five myths');
   // Audits: one per visit to a region, none in a hunt, none after the last return.
   w.auditSeen = null; assert.equal(LQ.auditAllowed(w), true);
   w.auditSeen = w.R.id; assert.equal(LQ.auditAllowed(w), false, 'one audit per visit to a region');
@@ -727,6 +727,28 @@ async function talk(find, choose = () => 0) {
   await talk(e => e.type === 'greatdoor');
   assert.match(LQ.curQuest().text, /Standing Order/);
   await talk(e => e.who?.name === 'Head Clerk Murk', () => 1);
+  // The last fight. Murk steps in when the order is struck. Answer by the text of the right option, or of a wrong one.
+  const murkPick = wrong => ch => {
+    const K = LQ.BOSSES.murk, m = K.myths().find(x => x.myth === ch.prompt), opts = m ? m.opts : K.final().opts;
+    const i = ch.options.indexOf(opts[wrong && m ? 1 : 0]); return i >= 0 ? i : 0;
+  };
+  const strikeOrder = async select => { s().tool = 'stamp'; near(w.ents.find(e => e.type === 'seal' && e.tx === 9)); await frame(12); await press('e'); await frame(4); await drain(select, untilIdle, 6000); };
+  // First, lose it. Wrong answers cost half a heart each: one second wind at zero, and the next zero ends the fight.
+  s().coins = 300; s().hp = LQ.kit.maxHp();
+  await strikeOrder(ch => { if (LQ.scene === LQ.battle && LQ.kit.hp() > .5) s().hp = .5; return murkPick(true)(ch); });
+  assert(heard('Not one inch closer') && heard('That was your one second wind') && heard('This fight is lost'), 'a second wind, then a loss');
+  assert(!s().flags.murkDown && !s().flags.ledgerDone && s().flags.bossLosses === 1);
+  assert.equal(LQ.scene, w); assert.equal(w.room, null); assert.equal(s().region, 'village');
+  { const m = w.ents.find(e => e.npc?.id === 'merchant'); assert(Math.abs(w.p.x - (m.tx * 16 + 8)) <= 16 && Math.abs(w.p.y - (m.ty * 16 + 12)) <= 32, 'the hero wakes at the Saffron Bazaar'); }
+  assert.equal(s().hp, LQ.kit.maxHp()); assert.equal(s().coins, 300 - 30, 'the heal costs the fainting fee'); assert(heard('went down fighting Head Clerk Murk') && heard('30 coins for the meal'));
+  assert.equal(LQ.loadSlot(1).coins, s().coins, 'the loss is saved');
+  // Walk back, and win it. Murk is at full strength again, and the hero walks the gaps in the fine print.
+  await talk(e => e.type === 'homedoor'); Object.assign(w.p, { x: 8 * 16 + 8, y: 5 * 16 + 12 }); await frame(3); await drain(() => 0, untilIdle);
+  await talk(e => e.type === 'greatdoor'); assert.equal(w.room.room, 'backoffice');
+  await strikeOrder(murkPick(false));
+  assert(heard('Back again?') && s().flags.murkDown && !s().flags.ledgerDone, 'Murk is beaten and the order still stands');
+  assert(seenMoves.has('forms'), 'Murk ran his own movement pattern'); assert.equal(w.room.room, 'backoffice'); assert.equal(LQ.scene, w);
+  await talk(e => e.who?.name === 'Head Clerk Murk'); assert(heard('I am out of pitches'));
   await stampAt(e => e.type === 'seal' && e.tx === 9);
   assert(s().flags.ledgerDone && s().items.includes('greatledger')); assert(!w.ents.some(e => e.who?.name === 'Head Clerk Murk'));
   assert.equal(endingPages, 2, 'the twelve truths and the final record are both shown: ' + endingPages); assert(!ui.doc);

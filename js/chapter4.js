@@ -421,7 +421,7 @@ LQ.BOSSES.glint = {
   who: GLINT, label: 'GLINT, THE HOT-TIP DRAGON', kind: 'glint', move: 'fire', sky: ['#070a26', '#2c3f8a'], hill: '#3a4a7e', ground: ['#5a6ea8', '#7186c0'], fog: '240,200,90', bar: ['#d9a520', '#fff3b0'], ink: '#7a5a12',
   approach: 'Gold light pours over the ridge. Something enormous uncoils from a hoard of crumpled stock tips.',
   intro: ['PSSST. Hero. I am Glint. I have a tip for ye. A SURE thing. Everyone on this mountain is buying it. Ye would be a fool to miss out.', 'I know everything there is to know about gains. Ask anyone I have ruined.'],
-  taunt: 'HAR! Now ye are thinking like an investor. Buy high! Sell in a panic!', fogLine: 'The gold glare dazzles you.',
+  taunt: 'HAR! Now ye are thinking like an investor. Buy high! Sell in a panic!', gloat: 'HAR! Cooked through. Come back when ye have cooled off.', fogLine: 'The gold glare dazzles you.',
   myths: () => MYTHS4,
   final: () => {
     const f = LQ.fin4();

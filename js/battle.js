@@ -24,7 +24,7 @@ const MYTHS = [
     truth: 'Every coin of income is taxable, whether or not a 1099 ever arrives.' },
 ];
 const B = LQ.battle = {
-  cfg: null, bossHP: 7, maxHP: 7, fly: null, flash: 0, hurt: 0, slash: 0, scraps: 0, dead: 0, bubble: '', dodge: null, pos: { x: 38, y: 115 },
+  cfg: null, bossHP: 7, maxHP: 7, winds: 1, fly: null, flash: 0, hurt: 0, slash: 0, scraps: 0, dead: 0, bubble: '', dodge: null, pos: { x: 38, y: 115 },
   update(dt) { if (this.dodge) stepDodge(this, this.dodge, dt); },
   draw(g) {
     const t = LQ.time, W = LQ.BW, H = LQ.BH;
@@ -76,6 +76,9 @@ const B = LQ.battle = {
     const max = LQ.kit.maxHp(), hp = LQ.kit.hp();
     ui.panel(c, 30, 24, 54 + max * 40, 62); ui.text(c, 'HEARTS', 46, 34, '#ffe98a', F(11, true));
     for (let i = 0; i < max; i++) LQ.kit.heart(c, 48 + i * 40, 54, LQ.clamp(hp - i, 0, 1), 4);
+    // the one second wind: lit while it is still in hand
+    ui.panel(c, 92 + max * 40, 24, 162, 62); ui.text(c, 'SECOND WIND', 108 + max * 40, 34, '#ffe98a', F(11, true));
+    ui.text(c, this.winds > 0 ? 'Ready' : 'Used', 108 + max * 40, 54, this.winds > 0 ? '#7fd6a8' : '#6d7299', F(26));
     if (this.dodge && !ui.dlg) {
       const D = this.dodge, shield = D.M.shield && LQ.state.items.includes('shield');
       c.fillStyle = 'rgba(9,11,24,.92)'; c.fillRect(80, 100, 800, 34);
@@ -92,23 +95,31 @@ const B = LQ.battle = {
   },
 };
 // The movement phase: cross the field, dodge the boss's attack, and grab the pickup to earn your answer.
-// Every boss has its own pattern (`move` on its config). Each one warns before it hurts, a hit costs a quarter heart,
-// and after three hits or the time limit the pickup comes to you.
+// Every boss has its own pattern (`move` on its config). Each one warns before it hurts, a hit costs half a heart,
+// and after three hits or the time limit the pickup comes to you. Part of every pattern guards the way to the pickup,
+// so walking straight at it is not safe.
 //   bolts  (Mythmonger): myth bolts fly along lanes. The Standard Shield blocks them.
 //   beam   (Loophole):   the lighthouse lamp marks a strip of sand, then floods it with light. Step out of the strip.
 //   devils (Slick):      dust devils bounce around the field while you collect three cash slips.
 //   fire   (Glint):      the dragon flies to a lane and breathes fire along it, and drops hot tips from above.
+//   forms  (Murk):       walls of fine print slide across the field. Each has one gap to slip through.
 const FIELD = { x0: 18, x1: 196, y0: 122, y1: 174 };
-const HIT = 0.25, MISS = 0.5;
+const HIT = 0.5, MISS = 0.5;
 const MOVES = {
   bolts: { tip: 'Dodge the myth bolts. Reach the gold shard.', limit: 6, shield: true },
-  beam: { tip: 'Step out of the marked sand before the lamp flashes. Reach the shard.', limit: 8 },
+  beam: { tip: 'Step out of the marked sand before the lamp flashes. Grab both shards.', limit: 9, need: 2 },
   devils: { tip: 'Grab all 3 cash slips. Keep clear of the dust devils.', limit: 10, need: 3 },
   fire: { tip: 'Leave the glowing lane before the fire. Watch for falling tips.', limit: 8, shield: true },
+  forms: { tip: 'Slip through the gap in each wall of fine print. Grab both shards.', limit: 10, need: 2 },
 };
 const lanes = [0, 1, 2].map(i => FIELD.y0 + 9 + i * 17);   // three rows for the dragon's breath
 const laneOf = y => LQ.clamp(Math.round((y - lanes[0]) / 17), 0, 2);
-const placePickup = D => { D.sx = D.need - D.got > 1 ? 60 + Math.random() * 120 : 176; D.sy = FIELD.y0 + 6 + Math.random() * (FIELD.y1 - FIELD.y0 - 12); };
+const placePickup = D => {
+  D.sx = D.need - D.got > 1 ? 60 + Math.random() * 120 : 176; D.sy = FIELD.y0 + 6 + Math.random() * (FIELD.y1 - FIELD.y0 - 12);
+  // after the first slip, one dust devil turns toward each new one
+  const v = D.got && D.devils.length ? D.devils[D.got % D.devils.length] : null;
+  if (v) { const sp = Math.hypot(v.vx, v.vy), a = Math.atan2(D.sy - v.y, D.sx - v.x); v.vx = Math.cos(a) * sp; v.vy = Math.sin(a) * sp; }
+};
 function hitHero(B, D, block) {
   const st = LQ.state, P = B.pos;
   if (block && D.block) { LQ.audio.sfx('ok'); return; }
@@ -126,17 +137,19 @@ function stepDodge(B, D, dt) {
   if (D.kind === 'bolts') {
     if (D.next <= 0 && live) {
       D.next = D.gap; D.n++;
-      // every other bolt is aimed at where you stand; the rest sweep a random lane
-      const y = D.n % 2 ? P.y : FIELD.y0 + Math.random() * (FIELD.y1 - FIELD.y0);
+      // every other bolt is aimed at where you stand, every fourth guards the shard, and the rest sweep a random lane
+      const y = D.n % 2 ? P.y : D.n % 4 === 0 ? D.sy : FIELD.y0 + Math.random() * (FIELD.y1 - FIELD.y0);
       D.bolts.push({ x: 222, y: LQ.clamp(y, FIELD.y0, FIELD.y1), v: D.speed }); LQ.audio.sfx('move');
     }
     for (const b of D.bolts) { b.x -= b.v * dt; if (Math.abs(b.x - P.x) < 9 && Math.abs(b.y - P.y) < 8) { b.x = -99; hitHero(B, D, true); } }
     D.bolts = D.bolts.filter(b => b.x > -8);
   } else if (D.kind === 'beam') {
-    // a strip of sand is marked for `warn` seconds, then lit for a moment. Every other strip starts where you stand.
+    // a strip of sand is marked for `warn` seconds, then lit for a moment. Every other strip is laid where a hero walking
+    // straight at the shard will be when it lights, so the way through is to wait for the flash. The rest fall on you, or at random.
     if (D.next <= 0 && live) {
       D.next = D.gap; D.n++;
-      const w = 30, x = D.n % 2 ? P.x - w / 2 : FIELD.x0 + Math.random() * (FIELD.x1 - FIELD.x0 - w);
+      const w = 30, reach = 74 * (D.warn + .15), ahead = P.x + LQ.clamp(D.sx - P.x, -reach, reach);
+      const x = D.n % 2 ? ahead - w / 2 : D.n % 4 === 0 ? FIELD.x0 + Math.random() * (FIELD.x1 - FIELD.x0 - w) : P.x - w / 2;
       D.beams.push({ x: LQ.clamp(x, FIELD.x0 - 6, FIELD.x1 - w + 6), w, warn: D.warn, on: .4 }); LQ.audio.sfx('warn');
     }
     for (const b of D.beams) {
@@ -157,7 +170,8 @@ function stepDodge(B, D, dt) {
     // the dragon flies to a lane, the lane glows as a warning, then fire runs along it. Hot tips drop on a marked spot.
     if (D.next <= 0 && live) {
       D.next = D.gap; D.n++;
-      const mine = laneOf(P.y), lane = D.n % 3 === 2 ? (mine + 1 + Math.floor(Math.random() * 2)) % 3 : mine;
+      // two breaths in three follow your lane. The third takes the shard's lane, or another lane if you are already in it.
+      const mine = laneOf(P.y), shard = laneOf(D.sy), lane = D.n % 3 === 2 ? (shard !== mine ? shard : (mine + 1 + Math.floor(Math.random() * 2)) % 3) : mine;
       D.fires.push({ lane, warn: D.warn, on: .5 }); D.lane = lane; LQ.audio.sfx('warn');
       if (D.round >= 2 && D.n % 2 === 0) D.fires.push({ lane: (lane + 1) % 3, warn: D.warn + .15, on: .5 });
       if (D.n % 2 === 0) D.drops.push({ x: P.x, y: P.y, warn: D.warn + .2 });
@@ -169,6 +183,16 @@ function stepDodge(B, D, dt) {
     D.fires = D.fires.filter(f => f.on > 0);
     for (const c of D.drops) { c.warn -= dt; if (c.warn <= 0 && !c.done) { c.done = true; LQ.audio.sfx('stamp'); if (Math.abs(c.x - P.x) < 10 && Math.abs(c.y - P.y) < 8) hitHero(B, D); } }
     D.drops = D.drops.filter(c => c.warn > -.25);
+  }
+  else if (D.kind === 'forms') {
+    // a wall of fine print slides in from the right with one gap. Every other gap opens on the far side of the field from you.
+    if (D.next <= 0 && live) {
+      D.next = D.gap; D.n++;
+      const span = FIELD.y1 - FIELD.y0, far = P.y < FIELD.y0 + span / 2 ? FIELD.y1 - 11 : FIELD.y0 + 11;
+      D.walls.push({ x: 226, gy: D.n % 2 ? far : FIELD.y0 + 11 + Math.random() * (span - 22), v: Math.min(84, 62 + D.round * 5) }); LQ.audio.sfx('warn');
+    }
+    for (const wl of D.walls) { wl.x -= wl.v * dt; if (!wl.hit && Math.abs(wl.x - P.x) < 5 && Math.abs(P.y - wl.gy) > 11) { wl.hit = true; hitHero(B, D); } }
+    D.walls = D.walls.filter(wl => wl.x > 6);
   }
   // mercy: after three hits or the time limit, the pickup comes to you
   if (!live) { const dx = P.x - D.sx, dy = P.y - D.sy, d = Math.hypot(dx, dy) || 1; D.sx += dx / d * 60 * dt; D.sy += dy / d * 60 * dt; }
@@ -199,6 +223,13 @@ function drawDodge(g, B, D, t) {
       else { R(c.x - 7, c.y - 3, 14, 5, '#ffcf4a'); R(c.x - 3, c.y - 6, 6, 3, '#fff3b0'); }
     }
   }
+  if (D.kind === 'forms') for (const wl of D.walls) {
+    for (let y = FIELD.y0 - 16; y < FIELD.y1 + 2; y += 7) {
+      if (Math.abs(y + 3 - wl.gy) <= 13) continue;
+      R(wl.x - 4, y, 8, 6, wl.hit ? '#b9a9c9' : '#f6efd9'); R(wl.x - 3, y + 1, 5, 1, '#c93a8c'); R(wl.x - 3, y + 3, 6, 1, '#7a74b8');
+    }
+    R(wl.x - 5, wl.gy - 13, 10, 1, '#7fd6a8'); R(wl.x - 5, wl.gy + 11, 10, 1, '#7fd6a8');
+  }
   // the pickup: a gold truth shard, or a cash slip in the Gulch
   const sy = D.sy - 16 + Math.round(Math.sin(t * 5) * 2);
   R(D.sx - 5, D.sy - 1, 10, 3, 'rgba(4,3,16,.5)');
@@ -219,25 +250,50 @@ function lightDodge(B, D) {
   if (D.kind === 'beam') for (const b of D.beams) if (b.warn <= 0) LQ.fx.light(b.x + b.w / 2, 140, 46, '#fff3b0', .7);
   if (D.kind === 'devils') for (const v of D.devils) if (v.form <= 0) LQ.fx.light(v.x, v.y - 12, 12, '#ff8a3a', .4);
   if (D.kind === 'fire') for (const f of D.fires) if (f.warn <= 0) for (let x = 40; x < 200; x += 50) LQ.fx.light(x, lanes[f.lane], 26, '#ff8a3a', .6);
+  if (D.kind === 'forms') for (const wl of D.walls) LQ.fx.light(wl.x, wl.gy - 2, 12, '#7fd6a8', .5);
 }
 async function dodgePhase(round, myth) {
   const P = B.pos, fx = P.x, fy = P.y, K = B.cfg, kind = K.move === true ? 'bolts' : K.move, M = MOVES[kind];
   await LQ.tween(0.25, k => { P.x = fx + (38 - fx) * k; P.y = fy + (148 - fy) * k; });
   await new Promise(done => {
-    const D = { kind, M, myth, round, sx: 176, sy: 0, need: M.need || 1, got: 0, bolts: [], beams: [], devils: [], fires: [], drops: [], lane: 1,
-      next: kind === 'bolts' ? 0.5 : 0.9, n: 0, hits: 0, inv: 0, lost: 0, elapsed: 0, done,
-      gap: kind === 'bolts' ? Math.max(0.36, 0.62 - round * 0.035) : kind === 'beam' ? Math.max(0.7, 1.05 - round * 0.05) : Math.max(0.95, 1.4 - round * 0.06),
+    const D = { kind, M, myth, round, sx: 176, sy: 0, need: M.need || 1, got: 0, bolts: [], beams: [], devils: [], fires: [], drops: [], walls: [], lane: 1,
+      next: kind === 'bolts' ? 0.5 : kind === 'beam' ? 0.5 : kind === 'forms' ? 0.3 : 0.9, n: 0, hits: 0, inv: 0, lost: 0, elapsed: 0, done,
+      gap: kind === 'bolts' ? Math.max(0.36, 0.62 - round * 0.035) : kind === 'beam' ? Math.max(0.7, 1.05 - round * 0.05) : kind === 'forms' ? Math.max(0.85, 1.1 - round * 0.05) : Math.max(0.95, 1.4 - round * 0.06),
       warn: Math.max(0.6, 0.9 - round * 0.04), speed: Math.min(150, 92 + round * 8) };
     placePickup(D);
     if (kind === 'devils') for (let i = 0; i < (round >= 3 ? 3 : 2); i++) { const a = (.5 + Math.random()) * (Math.random() < .5 ? 1 : -1), v = Math.min(78, 50 + round * 4); D.devils.push({ x: 150 + i * 22, y: FIELD.y0 + 8 + i * 18, vx: -Math.cos(a) * v, vy: Math.sin(a) * v, form: .9 }); }
     B.dodge = D;
   });
 }
-// Hearts are the same hearts you carry in the world. At zero you never lose the fight: you catch your breath at two hearts.
-async function secondWind() {
-  const st = LQ.state; if (LQ.kit.hp() > 0) return;
-  await LQ.say(null, 'You steady your breathing and open your Tax Journal. Knowledge does not run out. Two hearts return.');
+B.dodgePhase = dodgePhase;   // exposed so a test can run one movement phase on its own
+// Hearts are the same hearts you carry in the world. The first time they run out in a fight you catch your breath at
+// two hearts. The second time the fight is lost. Returns true when it is lost.
+async function fallen() {
+  const st = LQ.state; if (LQ.kit.hp() > 0) return false;
+  if (B.winds <= 0) return true;
+  B.winds--;
+  await LQ.say(null, 'You steady your breathing and open your Tax Journal. Two hearts return. That was your one second wind.');
   st.hp = Math.min(LQ.kit.maxHp(), 2); LQ.audio.sfx('learn');
+  return false;
+}
+// A lost fight: the hero wakes at the region's shop. The shopkeeper mends every heart for the fainting fee, which is never
+// more than the hero has, so an empty purse heals for free. The boss is back at full strength.
+async function lose(K) {
+  const st = LQ.state, w = LQ.world;
+  B.bubble = ''; B.dodge = null;
+  await LQ.say(K.who, K.gloat || K.taunt);
+  await LQ.say(null, 'Your hearts are spent and the fog closes over you. This fight is lost.');
+  LQ.audio.stop(); await LQ.fadeTo(1, 0.6);
+  if (w.room) w.room.def.leave?.(st);
+  const keeper = LQ.REGIONS[st.region].content().npcs.find(n => n.id === 'merchant' || n.id === 'trader');
+  const fee = LQ.kit.faintCost(st.coins); st.coins -= fee; st.hp = LQ.kit.maxHp(); st.flags.bossLosses = (st.flags.bossLosses || 0) + 1;
+  w.start(); LQ.setScene(w);
+  const spot = [[0, 1], [-1, 1], [1, 1], [-1, 0], [1, 0], [0, 2]].map(([dx, dy]) => [(keeper.tx + dx) * 16 + 8, (keeper.ty + dy) * 16 + 12]).find(([x, y]) => w.canStand(x, y));
+  if (spot) Object.assign(w.p, { x: spot[0], y: spot[1], dir: 'up' });
+  st.px = w.p.x; st.py = w.p.y; st.dir = w.p.dir;
+  w.music(); LQ.save(); await LQ.fadeTo(0, 0.6);
+  await LQ.say(keeper, `Easy now. You went down fighting ${K.who.name}, and they carried you here. Eat. ` + (fee ? `That is ${fee} coins for the meal and the mending.` : 'Your purse is empty, so this one is on the house.'));
+  await LQ.say(keeper, `Every heart is full again. ${K.who.name} is back at full strength too. Go when you are ready.`);
 }
 async function strike(text) {
   LQ.audio.sfx('slash'); B.slash = 1; LQ.tween(0.35, k => { B.slash = 1 - k; });
@@ -250,7 +306,7 @@ LQ.BOSSES = {
     who: BARON, label: 'BARON BEFUDDLE', kind: 'baron', move: 'bolts', sky: ['#06051a', '#2a1458'], hill: '#150f30', ground: ['#1d1b40', '#3d3c80'], fog: '170,120,220', bar: ['#b06be0', '#d8b4ff'], ink: '#5a2a86',
     approach: 'The fog thickens. Something vast and smug turns to face you.',
     intro: ['Ahh, a fresh little taxpayer! I am Baron Befuddle, the Mythmonger. Everything this village believes about taxes, I whispered first.', 'Let us see how long YOUR head stays clear. Every myth you swallow will cost you.'],
-    taunt: 'Ha ha ha! Delicious. Believe it harder!', fogLine: 'The fog clouds your thoughts.',
+    taunt: 'Ha ha ha! Delicious. Believe it harder!', gloat: 'Down you go, little taxpayer. Sleep on it. The fog will keep.', fogLine: 'The fog clouds your thoughts.',
     myths: () => { const kind = LQ.career().kind; return MYTHS.filter(m => m.skip !== kind && (!m.only || m.only === kind)); },
     final: () => {
       const f = LQ.fin(), up = f.top === .12 ? .22 : .24;
@@ -271,7 +327,7 @@ LQ.BOSSES = {
 LQ.startBattle = async (id = 'baron') => {
   const st = LQ.state, K = LQ.BOSSES[id];
   await LQ.say(null, K.approach);
-  await LQ.fadeTo(1, 0.35); Object.assign(B, { cfg: K, bossHP: 7, fly: null, flash: 0, hurt: 0, slash: 0, scraps: 0, dead: 0, bubble: '', dodge: null, pos: { x: 38, y: 115 } });
+  await LQ.fadeTo(1, 0.35); Object.assign(B, { cfg: K, bossHP: 7, winds: 1, fly: null, flash: 0, hurt: 0, slash: 0, scraps: 0, dead: 0, bubble: '', dodge: null, pos: { x: 38, y: 115 } });
   const queue = K.myths().slice(), attempted = new Set(); let round = 0; B.maxHP = B.bossHP = queue.length + 1;
   ui.banner = null; LQ.setScene(B); LQ.audio.play(K.music || 'battle'); await LQ.fadeTo(0, 0.5);
   for (const ln of K.intro) await LQ.say(K.who, ln);
@@ -280,7 +336,7 @@ LQ.startBattle = async (id = 'baron') => {
     B.bubble = m.myth; LQ.audio.sfx('wrong'); B.scraps = 1; await LQ.tween(0.5, k => { B.scraps = 1 - k; }); B.scraps = 0;
     const first = !attempted.has(m);
     if (K.move && first) await dodgePhase(round++, m.myth);
-    await secondWind();
+    if (await fallen()) return lose(K);
     attempted.add(m);
     if (first) st.asked++;
     const order = LQ.shuffle([0, 1, 2]);
@@ -294,7 +350,7 @@ LQ.startBattle = async (id = 'baron') => {
       await LQ.say(K.who, K.taunt);
       await LQ.say(null, K.fogLine + ' The truth: ' + m.truth);
       queue.push(m);
-      await secondWind();
+      if (await fallen()) return lose(K);
     }
   }
   const fin = K.final();
@@ -305,7 +361,7 @@ LQ.startBattle = async (id = 'baron') => {
   LQ.audio.sfx('rumble'); LQ.shake(0.8); await LQ.tween(1.6, k => { B.dead = k; }); LQ.audio.stop(); LQ.audio.sfx('fanfare');
   await LQ.say(null, K.after);
   await K.win(); LQ.save();
-  await LQ.fadeTo(1, 0.4); LQ.world.start(); LQ.setScene(LQ.world); await LQ.fadeTo(0, 0.6);
+  await LQ.fadeTo(1, 0.4); if (K.back) K.back(LQ.world); else LQ.world.start(); LQ.setScene(LQ.world); await LQ.fadeTo(0, 0.6);
   await K.done();
 };
 })();

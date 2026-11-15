@@ -267,6 +267,20 @@ const bossRaw = (frame, kind) => {
   const c = mk(64, 64), g = c.getContext('2d');
   const blob = (x, y, r, col) => { g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); };
   const f = frame ? 1 : 0;
+  if (kind === 'murk') {
+    // Head Clerk Murk: a tall clerk in a plum coat and top hat, standing in his own fog with a fan of invoices
+    blob(20, 54 - f, 9, '#2a1430'); blob(44, 55 + f, 9, '#2a1430'); blob(32, 57, 11, '#2a1430');
+    R(g, 18, 30, 28, 25, '#4a1f4f'); R(g, 18, 30, 28, 1, '#7a3a80'); R(g, 30, 31, 4, 24, '#231a36');
+    for (let i = 0; i < 3; i++) R(g, 31, 35 + i * 6, 2, 2, '#ff4fb0');
+    R(g, 11, 32 + f, 7, 17, '#4a1f4f'); R(g, 46, 30 - f, 7, 13, '#4a1f4f'); R(g, 12, 48 + f, 5, 4, '#e2b184'); R(g, 47, 27 - f, 5, 4, '#e2b184');
+    blob(32, 22, 9, '#e2b184'); R(g, 24, 28, 16, 3, '#f6efd9');
+    R(g, 19, 12, 26, 3, '#1b1626'); R(g, 24, 0, 16, 13, '#1b1626'); R(g, 24, 9, 16, 2, '#ff4fb0');
+    R(g, 26, 18, 5, 1, '#3d2f24'); R(g, 34, 17, 5, 1, '#3d2f24'); R(g, 27 + f, 20, 3, 2, '#1b1626'); R(g, 35 + f, 20, 3, 2, '#1b1626');
+    R(g, 34, 19, 6, 1, '#ffcf4a'); R(g, 34, 23, 6, 1, '#ffcf4a'); R(g, 33, 20, 1, 3, '#ffcf4a'); R(g, 40, 20, 1, 3, '#ffcf4a');
+    R(g, 28, 26, 8, 1, '#7a3a2a'); R(g, 35, 25, 2, 1, '#7a3a2a');
+    for (let i = 0; i < 3; i++) { const x = 49 + i * 4, y = 16 - f - i * 2; R(g, x, y, 7, 11, '#f6efd9'); R(g, x + 1, y + 2, 4, 1, '#c93a8c'); R(g, x + 1, y + 4, 5, 1, '#7a74b8'); R(g, x + 1, y + 6, 3, 1, '#7a74b8'); }
+    return c;
+  }
   if (kind === 'loophole') {
     // Captain Loophole: a sea-green ghost in a tricorn hat, with a hook made of red tape
     blob(20, 52 - f, 9, '#14575a'); blob(44, 53 + f, 9, '#14575a'); blob(32, 55, 11, '#14575a');
@@ -323,7 +337,7 @@ const bossRaw = (frame, kind) => {
   R(g, 20, 38, 24, 6, '#231a36'); for (let i = 0; i < 6; i++) R(g, 21 + i * 4, i % 2 ? 41 : 38, 3, 3, '#f6efd9');
   return c;
 };
-const BOSS_GLOW = { baron: '#9b6bff', loophole: '#35f0e6', slick: '#ff8a3a', glint: '#ffcf4a' };
+const BOSS_GLOW = { baron: '#9b6bff', loophole: '#35f0e6', slick: '#ff8a3a', glint: '#ffcf4a', murk: '#ff4fb0' };
 LQ.bossSprite = (frame, kind = 'baron') => cached('boss|' + kind + frame, () => {
   const c = rim(grade(bossRaw(frame, kind), .3), [255, 255, 255], .3);
   c.lights = [{ x: 32, y: 36, r: 44, col: BOSS_GLOW[kind], a: .5 }, { x: 32, y: 30, r: 18, col: BOSS_GLOW[kind], a: .4 }];

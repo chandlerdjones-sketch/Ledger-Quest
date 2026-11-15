@@ -205,7 +205,7 @@ What was built
 | Glint | `fire` | The dragon flies to a lane and breathes fire along it, and drops hot tips on a marked spot | Blocks the fire |
 
 - The myth for the round stays on screen during the movement phase, so the dodge and the question are one beat.
-- Hearts are shared. The fight uses the same hearts as the world (`state.hp`), in quarter steps. A dodge hit costs a quarter heart (it used to cost coins), a wrong answer costs half a heart, and at zero the player gets two hearts back and the fight goes on. Whatever is left carries into the world and is saved.
+- (Changed Nov 15, see the batch 4 notes: a hit now costs half a heart, there is one second wind, and a fight can be lost.) Hearts are shared. The fight uses the same hearts as the world (`state.hp`), in quarter steps. A dodge hit costs a quarter heart (it used to cost coins), a wrong answer costs half a heart, and at zero the player gets two hearts back and the fight goes on. Whatever is left carries into the world and is saved.
 - `js/kit.js`: `kit.heart` draws partial hearts for both HUDs. Shops offer a Hot meal (8 coins, fills every heart) when the player is hurt, and Sit and rest (free, back to two hearts) when below two. Tonics are unchanged.
 - `js/adventure.js` (new): a free Notary Lamp beside each later boss (`LQ.ADV.lamps`), and Slick's Stash, a small dungeon in the red rock south-west of the creek bridge in Hustle Canyon. Cross a fog-bolt passage, then stamp the three strongboxes that hold income (cash fares with no form, online sales under the 1099-K threshold, tips) and leave the birthday gift. Stamping the gift springs a Scrap Imp. Reward: 40 coins and a tonic. It is optional, open from the start of Chapter 3, and has a rumor at the Trading Post. Flags: `stash3`, `stash3Chest`, `stashSeen`, `stashImp`.
 - `js/art.js`: Glint is redrawn as a dragon (beating wings, long neck, horned head with a snout, spade tail). In the fight Glint flies to the lane it is about to burn. Loophole drifts and Slick shivers.
@@ -331,7 +331,7 @@ Roadmap
 | 1 | Story reveals, Gazette, audit limits, ending pages, small text fixes | Built and tested Nov 14, see below |
 | 2 | Pacing pass on the main path | Built for all four chapters Nov 14, at Chandler's request before his playtest. Waiting on that playtest |
 | 3 | Side jobs list in the Quest tab, one required hands-on beat per chapter, economy tuning | Built Nov 15 with the numbers Chandler approved. See the batch 3 notes. Waiting on a playtest |
-| 4 | Boss stakes and the Murk fight | Not started. The boss restart rule needs Chandler's yes |
+| 4 | Boss stakes and the Murk fight | Built Nov 15 with the losing rule Chandler chose. See the batch 4 notes. Waiting on a playtest |
 | 5 | Sprites for Loophole and Slick, shorter title flow, backstory at the start, fast travel | Not started. Fast travel needs Chandler's yes |
 
 ## Final polish, batch 1 notes (Nov 14)
@@ -496,4 +496,56 @@ Questions for the playtest
 - With paydays halved, do you want things you cannot yet afford? Is anything out of reach for too long?
 - Do the green gems help, or are there too many on screen?
 - Did the last-moves page make you buy something before filing?
+
+## Final polish, batch 4 notes: boss stakes and the Murk fight (Nov 15)
+Chandler started this batch before playtesting batches 2 and 3.
+
+Losing a fight, as Chandler chose
+- A hit in the movement phase costs half a heart, up from a quarter. A wrong answer still costs half a heart.
+- Each fight has one second wind: the first time hearts reach zero, two come back. The fight screen shows whether it is ready or used.
+- The second time hearts reach zero the fight is lost. The hero wakes beside the region's shopkeeper (Saffron in the village, the trader elsewhere), who mends every heart. The boss is back at full strength and the hero has to walk back.
+- Chandler asked for the heal to cost something and was unsure about a player with no coins. Claude's call, open to change: the heal costs the normal fainting fee (10% of coins, at least 20, at most 100) and never more than the hero has, so an empty purse heals for free. `LQ.kit.faintCost` holds the rule.
+- The free Notary Lamp beside each boss is unchanged, so nobody has to start a fight hurt.
+- Each boss has a short line for a lost fight (`gloat`). Losses are counted in `flags.bossLosses`.
+
+Attacks now guard the way to the pickup
+| Boss | Change |
+|---|---|
+| Mythmonger | Every fourth bolt flies down the shard's lane |
+| Loophole | Two shards to collect. Every other strip of light is laid where a hero walking straight at the shard will be when it flashes |
+| Slick | After the first slip, one dust devil turns toward each new slip |
+| Glint | One breath in three takes the shard's lane |
+| Murk | New pattern, below |
+- The mercy rule is unchanged: after three hits or the time limit, the pickup comes to the hero.
+
+The Murk fight
+- Murk is a fifth boss on the existing system (`LQ.BOSSES.murk` in `js/backoffice.js`). The story is unchanged. When the hero strikes the Standing Order after Vell's reveal, Murk steps in and the fight starts. Winning returns the hero to the Back Office, and striking the order again plays the finale and the two ending pages as before.
+- His pattern is `forms`: walls of fine print slide across the field, each with one gap. Every other gap opens on the far side of the field from the hero. Two shards to collect.
+- His five attacks are sales pitches, not myths about the rules: it is too complicated for you, free help is a trap, one mistake and they take everything, a guaranteed refund for a share of it, sign without reading. The truths cover reading your own return, IRS Free File and VITA, amended returns (Form 1040-X) and notices by mail, the warning signs of a bad preparer, and being responsible for your own return. The final question asks what the Great Ledger is for.
+- He has his own sprite (top hat, plum coat, a fan of invoices) in `js/art.js`.
+- A lost Murk fight wakes the hero at the Saffron Bazaar, and the valves stay shut.
+
+How hard the movement phases are
+Measured by running each boss's movement phase 150 times per round with three simple scripted players. The numbers are hearts lost over a whole five-round fight, before any wrong answers. A hero has four hearts plus the two from the second wind.
+
+| Boss | Stands still | Walks straight at the pickup | Dodges with a simple rule |
+|---|---|---|---|
+| Mythmonger | 7.5 (lost) | 2.5 | 0 |
+| Loophole | 5.6 | 1.9 | 0 |
+| Slick | 5.0 | 2.4 | 1.5 |
+| Glint | 7.5 (lost) | 1.7 | 0.6 |
+| Murk | 7.5 (lost) | 2.0 | 0 |
+- Every pattern can be cleared untouched except the dust devils, which keep some luck in them.
+- These are scripts, not people. They show the patterns are fair and that standing still no longer works. They do not show how the fights feel.
+
+Checks
+- `tools/play-check.js` now loses the Murk fight on purpose (a second wind, then a loss), checks the hero wakes at the Saffron Bazaar with full hearts and the fee paid and saved, walks back, wins, and then stamps the order. It also checks the half-heart hit, that Murk has five pitches, and that his pattern ran. All three careers pass, with `tools/check.js`.
+- Seen in the browser: the Murk fight (walls, gaps, the second wind panel, his sprite, a question) and a lost fight ending at a shopkeeper with the fee taken.
+- Not seen in the browser: the changed patterns for the other four bosses, a second wind being used, and the win returning to the Back Office. The scripted run covers the last two.
+
+Questions for the playtest
+- Did you lose a fight, and did the walk back feel fair or like a punishment?
+- Is half a heart per hit right, or do fights now feel too tense for a tax game?
+- Are the gaps in Murk's fine print readable in time?
+- Does the Murk fight earn its place before the final stamp?
 
