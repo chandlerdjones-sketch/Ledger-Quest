@@ -154,8 +154,11 @@ async function talk(find, choose = () => 0) {
     assert(Math.abs(c.width / c.height - 16 / 9) < .01);
   }
   await press('Enter');
-  await drain(ch => 0, () => LQ.scene === LQ.world && untilIdle());
-  assert.equal(LQ.world.room.room, 'cottage1');
+  const menus = [], story = [];
+  await drain(ch => { menus.push(ch.options.join(' | ')); return 0; }, () => { if (LQ.scene === LQ.cutscene && LQ.cutscene.def && !story.includes(LQ.cutscene.i)) story.push(LQ.cutscene.i); return LQ.scene === LQ.world && untilIdle(); });
+  assert.equal(menus.join(' / '), 'New game | New game, skip the tutorial | Start at a later chapter | Load a backup file | Back', 'one menu between the slot and a new game');
+  assert.equal(story.join(), '0,1,2,3', 'the opening story plays all four panels'); assert(LQ.state.flags.cut1);
+  assert.equal(LQ.cutscene.SCENES.opening.panels.length, 4); assert.equal(LQ.world.room.room, 'cottage1');
   await press('j'); assert(ui.menu); for (let i = 0; i < 5; i++) await press('ArrowRight');
   await press('Escape'); assert(!ui.menu);
   const letter = LQ.world.ents.find(e => e.type === 'table');
@@ -478,6 +481,24 @@ async function talk(find, choose = () => 0) {
   assert.equal(status().count, 'Receipts 2/7'); assert.equal(w.ents.filter(e => e.rid).length, 5);
   await travel('village'); assert.match(status().hint, /Return to Shelter Coast/);
   await travel('coast');
+  // Fast travel from the Map tab: any visited region, outdoors only, arriving beside the shopkeeper.
+  {
+    const why = () => LQ.travelSpots().map(x => x.why).join(' | '), mapTab = async () => { await press('j'); for (let i = 0; i < 3; i++) await press('ArrowRight'); assert.equal(ui.menu.tab, 3); };
+    assert.equal(why(), ' | You are here | Not visited yet | Not visited yet');
+    await mapTab(); assert.equal(ui.menu.sel, 1, 'the Map tab opens on the region the hero is in');
+    await press('Enter'); assert(ui.menu && s().region === 'coast', 'Enter on the current region goes nowhere');
+    await press('ArrowDown'); await press('Enter'); assert(ui.menu && s().region === 'coast', 'an unvisited region stays shut');
+    await press('ArrowUp'); await press('ArrowUp'); assert.equal(ui.menu.sel, 0); await frame(2);
+    w.auditSeen = 'coast'; await press('Enter'); await drain(() => 0, untilIdle);
+    assert(!ui.menu && s().region === 'village' && w.auditSeen === null, 'fast travel is a new visit');
+    const near2 = id => { const k = w.ents.find(e => e.npc?.id === id); return Math.abs(w.p.x - (k.tx * 16 + 8)) <= 16 && Math.abs(w.p.y - (k.ty * 16 + 12)) <= 32 && w.canStand(w.p.x, w.p.y); };
+    assert(near2('merchant'), 'the hero arrives beside Saffron'); assert.equal(LQ.loadSlot(1).region, 'village');
+    await talk(e => e.type === 'homedoor'); assert.equal(why(), 'Step outside to travel | Step outside to travel | Step outside to travel | Step outside to travel');
+    await mapTab(); await press('ArrowDown'); await press('Enter'); assert(ui.menu && w.room, 'no fast travel from indoors'); await press('Escape');
+    LQ.script(() => w.exitRoom()); await drain(() => 0, untilIdle);
+    await mapTab(); assert.equal(ui.menu.sel, 0); await press('ArrowDown'); await press('Enter'); await drain(() => 0, untilIdle);
+    assert(s().region === 'coast' && near2('trader'), 'and back to the coast plaza');
+  }
   assert.equal(w.ents.filter(e => e.rid).length, 5);
   for (const e of w.ents.filter(e => e.rid)) await collect(e);
   assert.equal(status().count, 'Receipts 7/7'); assert.match(status().hint, /All lost receipts found/);
@@ -786,12 +807,23 @@ async function talk(find, choose = () => 0) {
   assert.equal(LQ.docs.settlementRow({ diff: 0, total: 100, withheld: 100 }).ask[1][0], 'It comes out exactly even');
   console.log('All 20 gear items, owner-only gear, save round-trip, retirement take-home and Saver’s Credit boundaries passed');
 
+  // A new game that skips the tutorial: the same single menu, the opening story, then the career cards.
+  {
+    LQ.deleteSlot(3); LQ.setScene(LQ.title);
+    while (LQ.title.sel !== 2) await press('ArrowDown');
+    await press('Enter');
+    await drain(ch => /is empty/.test(ch.prompt) ? 1 : 0, () => LQ.scene === w && untilIdle());
+    assert(s().flags.cut1 && !LQ.intro.active() && s().career && s().quest === 0 && s().coins === 20 && !w.room, 'skipping the tutorial lands in the village with a career');
+    assert.equal(LQ.travelSpots()[0].why, 'You are here');
+  }
   for (const chapter of [2, 3, 4]) {
     LQ.deleteSlot(3); LQ.setScene(LQ.title);
     while (LQ.title.sel !== 2) await press('ArrowDown');
     await press('Enter');
-    await drain(ch => ch.prompt === 'Where do you want to start?' ? chapter - 1 : 0,
+    // Two menus to a later chapter: the empty-slot menu, then the chapter list.
+    await drain(ch => /is empty/.test(ch.prompt) ? ch.options.indexOf('Start at a later chapter') : /^Start at which chapter/.test(ch.prompt) ? chapter - 2 : 0,
       () => LQ.scene === w && untilIdle());
+    assert(!s().flags.cut1, 'a skip-ahead start does not play the opening story');
     for (let i = 0; i < 2; i++) { await frame(12); await drain(() => 0, untilIdle); }
     const region = ['coast', 'canyon', 'summit'][chapter - 2];
     assert.equal(s().region, region); assert.equal(s()['q' + chapter], 0);

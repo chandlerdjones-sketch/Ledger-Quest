@@ -293,7 +293,14 @@ const formDoc = { rows: [], vals: [], cur: -1, stamp: 0, draw(c) {
   }
 } };
 
-LQ.drawWorldMap = (c, x, y, w, h, currentRegion) => {
+// Fast travel: where the Map tab can send the hero, and why not when it cannot.
+const SPOTS = [['village', 'Paystub Village', () => true], ['coast', 'Shelter Coast', s => s.q2 != null], ['canyon', 'Hustle Canyon', s => s.q3 != null], ['summit', 'Summit of Gains', s => s.q4 != null]];
+LQ.travelSpots = () => {
+  const s = st(), w = LQ.world;
+  return SPOTS.map(([id, name, seen]) => ({ id, name, why: LQ.intro?.active() ? 'Finish moving in first' : w.room ? 'Step outside to travel' : id === s.region ? 'You are here' : !seen(s) ? 'Not visited yet' : '' }));
+};
+// `sel` is the region picked on the Map tab. The chapter-complete pages leave it out.
+LQ.drawWorldMap = (c, x, y, w, h, currentRegion, sel) => {
   c.fillStyle = '#090a22'; c.fillRect(x, y, w, h); c.strokeStyle = '#6a4fe0'; c.lineWidth = 3; c.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
   for (let i = 0; i < 60; i++) { c.fillStyle = LQ.NEON[i % 3]; c.globalAlpha = .12 + .25 * Math.abs(Math.sin(LQ.time + i)); c.fillRect(x + 4 + LQ.hash(i, 1, 4) * (w - 12), y + 4 + LQ.hash(i, 2, 4) * (h - 10), 3, 3); c.globalAlpha = 1; }
   c.font = F(13, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = '#35f0e6'; c.fillText('THE LEDGERLANDS', x + w / 2, y + 14);
@@ -313,7 +320,9 @@ LQ.drawWorldMap = (c, x, y, w, h, currentRegion) => {
     c.font = F(18, true); c.textBaseline = 'middle'; c.fillStyle = open ? r[4] : '#6d7299'; c.fillText(open ? (r[6] ? 'OK' : '!') : '?', px, py + 2);
     c.textBaseline = 'top'; c.font = F(24); c.fillStyle = '#eef4ff'; c.fillText(r[0], px, py + 40, labelWidth);
     c.font = F(20); c.fillStyle = open ? '#7fd6a8' : '#6d7299'; c.fillText(open ? r[1] : r[1] + '  (locked)', px, py + 66, labelWidth);
-    if (here) { c.fillStyle = '#ffcf4a'; c.fillText('You are here: ' + r[0], x + w / 2, y + h - 22, w - 32); }
+    if (i === sel) { c.strokeStyle = '#ffe98a'; c.lineWidth = 3; for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { c.beginPath(); c.moveTo(px + sx * 46, py + sy * 30); c.lineTo(px + sx * 46, py + sy * 46); c.lineTo(px + sx * 30, py + sy * 46); c.stroke(); } }
+    if (sel == null && here) { c.fillStyle = '#ffcf4a'; c.fillText('You are here: ' + r[0], x + w / 2, y + h - 22, w - 32); }
+    if (i === sel) { const spot = LQ.travelSpots()[i]; c.fillStyle = spot.why ? '#ffcf4a' : '#7fd6a8'; c.fillText(spot.why ? (spot.why === 'You are here' ? 'You are here: ' + r[0] : r[0] + ': ' + spot.why) : 'Enter: travel to ' + r[0], x + w / 2, y + h - 22, w - 32); }
   });
 };
 

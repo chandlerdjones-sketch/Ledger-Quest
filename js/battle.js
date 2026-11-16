@@ -285,12 +285,9 @@ async function lose(K) {
   await LQ.say(null, 'Your hearts are spent and the fog closes over you. This fight is lost.');
   LQ.audio.stop(); await LQ.fadeTo(1, 0.6);
   if (w.room) w.room.def.leave?.(st);
-  const keeper = LQ.REGIONS[st.region].content().npcs.find(n => n.id === 'merchant' || n.id === 'trader');
   const fee = LQ.kit.faintCost(st.coins); st.coins -= fee; st.hp = LQ.kit.maxHp(); st.flags.bossLosses = (st.flags.bossLosses || 0) + 1;
   w.start(); LQ.setScene(w);
-  const spot = [[0, 1], [-1, 1], [1, 1], [-1, 0], [1, 0], [0, 2]].map(([dx, dy]) => [(keeper.tx + dx) * 16 + 8, (keeper.ty + dy) * 16 + 12]).find(([x, y]) => w.canStand(x, y));
-  if (spot) Object.assign(w.p, { x: spot[0], y: spot[1], dir: 'up' });
-  st.px = w.p.x; st.py = w.p.y; st.dir = w.p.dir;
+  const keeper = w.toPlaza();
   w.music(); LQ.save(); await LQ.fadeTo(0, 0.6);
   await LQ.say(keeper, `Easy now. You went down fighting ${K.who.name}, and they carried you here. Eat. ` + (fee ? `That is ${fee} coins for the meal and the mending.` : 'Your purse is empty, so this one is on the house.'));
   await LQ.say(keeper, `Every heart is full again. ${K.who.name} is back at full strength too. Go when you are ready.`);

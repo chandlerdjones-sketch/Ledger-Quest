@@ -332,7 +332,7 @@ Roadmap
 | 2 | Pacing pass on the main path | Built for all four chapters Nov 14, at Chandler's request before his playtest. Waiting on that playtest |
 | 3 | Side jobs list in the Quest tab, one required hands-on beat per chapter, economy tuning | Built Nov 15 with the numbers Chandler approved. See the batch 3 notes. Waiting on a playtest |
 | 4 | Boss stakes and the Murk fight | Built Nov 15 with the losing rule Chandler chose. See the batch 4 notes. Waiting on a playtest |
-| 5 | Sprites for Loophole and Slick, shorter title flow, backstory at the start, fast travel | Not started. Fast travel needs Chandler's yes |
+| 5 | Sprites for Loophole and Slick, shorter title flow, backstory at the start, fast travel | Built Nov 15 with the fast travel rule Chandler chose. See the batch 5 notes. Waiting on a playtest |
 
 ## Final polish, batch 1 notes (Nov 14)
 Scope: fixes and mixed messages. No tax math changed. No save fields changed.
@@ -549,4 +549,45 @@ Questions for the playtest
 - Is half a heart per hit right, or do fights now feel too tense for a tax game?
 - Are the gaps in Murk's fine print readable in time?
 - Does the Murk fight earn its place before the final stamp?
+
+## Final polish, batch 5 notes: presentation (Nov 15)
+The last batch of the approved plan. Chandler started it before playtesting batches 2 to 4.
+
+New boss sprites
+- Captain Loophole and Sidewinder Slick used to be the Mythmonger's round shape in other colors. Each now has its own outline in `js/art.js`.
+- Loophole is a tall sea ghost in a captain's coat that trails off into a curling wisp, with a tricorn hat, an eye patch, a rolled chart, and a raised hook of red tape.
+- Slick is a dust devil: a funnel of sand bands that twists under a wide hat, with sly eyes over a red bandana and a fist of unreported cash.
+- The same sprites stand in the world at each boss's arena. Murk got his own sprite in batch 4, and Glint already had one.
+
+Title flow
+- A new game used to take four menus: the slot, "New Game", the chapter list, and "Play the tutorial". It now takes two: the slot, then one menu.
+- That menu reads: New game, New game skip the tutorial, Start at a later chapter, Load a backup file, Back. Only the later-chapter line opens a second list.
+- The menu for a slot that already holds a save is unchanged.
+
+The Great Ledger story at the start
+- A new Chapter 1 game now opens with four story panels: the Great Ledger, the twelve torn pages, the fog, and a newcomer moving into a cottage in Paystub Village. It does not name Clerk Vell, because the landlord's letter in the cottage does that.
+- It uses the existing cutscene screen, with the same keys: Enter for the next panel, Esc to skip, N for narration.
+- The Chapter 2 recap is kept. A hero who saw the opening gets a two-panel version. Skip-ahead starts and older saves get the full four panels as before.
+- Fixed on the way: the cutscene screen kept the panel number from the last scene it played, which would have crashed a shorter scene played after a longer one.
+
+Fast travel, as Chandler chose
+- On the Map tab, Up and Down pick a region and Enter travels there. The tab opens on the region the hero is in.
+- Any region the hero has visited is allowed, including the one whose chapter is still being played. The hero arrives in the plaza beside the shopkeeper.
+- It is not available indoors or during the cottage tutorial, and the bottom line of the map says why.
+- Fast travel counts as a new visit for audits, the same as walking in by road. It opens nothing that walking does not already open.
+- `world.fastTravel` and `world.toPlaza` hold the rule. A lost boss fight uses the same `toPlaza`.
+
+Checks
+- `tools/play-check.js` now checks the single new-game menu, all four opening panels, the skip-the-tutorial start, the later-chapter start, and a fast travel round trip (the current region, an unvisited region, indoors, village and back). All three careers pass, with `tools/check.js`.
+- Seen in the browser: both new sprites next to the Mythmonger and Murk, the new title menu, the first and last opening panels, the Map tab with a region picked, and an arrival in the Shelter Coast plaza.
+- Not seen in the browser: the new sprites inside their own fights and arenas, the two-panel Chapter 2 recap, and the later-chapter menu. The scripted run covers the last two.
+
+Questions for the playtest
+- Do Loophole and Slick now read as their own characters at a glance?
+- Is the opening story the right length before the cottage, or does it delay the start?
+- Does fast travel make the roads between regions feel pointless?
+
+What is left after this batch
+- Nothing in the approved plan. Chandler's playtest of batches 2 to 5 comes next, then tuning from his notes, then Codex's final regression.
+- Still on the optional list: touch and portrait layout, a difficulty setting, a glossary, the Granny Maple and Index Ada quests, a different shape for the Chapter 3 hunt, and Chapters 5 and 6.
 

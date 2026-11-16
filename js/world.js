@@ -191,6 +191,24 @@ const world = LQ.world = {
     ui.showBanner(this.R.title, this.R.sub());
     if (this.R.arrive) await this.R.arrive();
   },
+  // Stand the hero beside this region's shopkeeper, in the plaza. Used after a lost boss fight and by fast travel.
+  toPlaza() {
+    const st = LQ.state, k = this.C.npcs.find(n => n.id === 'merchant' || n.id === 'trader');
+    const spot = k && [[0, 1], [-1, 1], [1, 1], [-1, 0], [1, 0], [0, 2]].map(([dx, dy]) => [(k.tx + dx) * T + 8, (k.ty + dy) * T + 12]).find(([x, y]) => this.canStand(x, y));
+    if (spot) Object.assign(this.p, { x: spot[0], y: spot[1], dir: 'up' });
+    st.px = this.p.x; st.py = this.p.y; st.dir = this.p.dir;
+    return k;
+  },
+  // Fast travel from the Map tab: straight to the plaza of a region the hero has already visited.
+  async fastTravel(to) {
+    const st = LQ.state;
+    await LQ.fadeTo(1, 0.4);
+    st.region = to; this.auditSeen = null;
+    this.start(); this.toPlaza(); this.music(); LQ.save();
+    await LQ.fadeTo(0, 0.5);
+    ui.showBanner(this.R.title, this.R.sub());
+    if (this.R.arrive) await this.R.arrive(this);
+  },
   // The save keeps the spot outside the door, so quitting inside a room is always safe.
   // Build a room fresh and step into it. `from` names where you came from, for rooms with more than one way in.
   loadRoom(id, from) {

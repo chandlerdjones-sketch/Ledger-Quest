@@ -103,12 +103,16 @@ const menuEntries = [
   () => LQ.sideJobs && !LQ.intro?.active() ? LQ.sideJobs() : [],
   () => LQ.state.journal.map(id => LQ.JOURNAL[id]),
   () => LQ.state.items.map(id => LQ.ITEMS[id]).concat(menuGear(), LQ.kit?.supplies() || []),
-  () => [],
+  () => LQ.travelSpots(),
   menuStocks,
   () => LQ.kit ? LQ.kit.page.rows() : [],
 ];
 const scrollStart = (sel, length, rows) => Math.max(0, Math.min(sel - Math.floor(rows / 2), length - rows));
-ui.openMenu = (tab = 0) => { ui.menu = { tab, sel: 0, selections: [0, 0, 0, 0, 0, 0], reading: null }; sfx('ok'); };
+// The Map tab opens on the region the hero is standing in.
+ui.openMenu = (tab = 0) => {
+  const here = Math.max(0, ['village', 'coast', 'canyon', 'summit'].indexOf(LQ.state.region));
+  ui.menu = { tab, sel: tab === 3 ? here : 0, selections: [0, 0, 0, here, 0, 0], reading: null }; sfx('ok');
+};
 ui.update = dt => {
   if (canShowToasts()) {
     for (const t of ui.toasts) t.t += dt;
@@ -141,6 +145,12 @@ ui.update = dt => {
       if (n) { m.sel = (m.sel + n + dir) % n; sfx('move'); }
     }
     if (m.tab === 5) { if (LQ.hit('ok')) LQ.kit.page.press(m); return; }
+    // The Map tab: Enter travels to the picked region, if the hero has been there and is outdoors.
+    if (m.tab === 3) {
+      const spot = LQ.travelSpots()[m.sel];
+      if (LQ.hit('ok') && spot) { if (spot.why) sfx('wrong'); else { ui.menu = null; sfx('ok'); LQ.script(() => LQ.world.fastTravel(spot.id)); } }
+      return;
+    }
     if (LQ.hit('ok') && m.tab < 3) {
       const entry = menuEntries[m.tab]()[m.sel];
       if (entry) { m.reading = { entry, offset: 0, maxOffset: 0 }; sfx('ok'); }
@@ -326,7 +336,7 @@ function drawMenu(c) {
       if (j.note) ui.text(c, j.note, bx + 760, yy + 2, col, F(21), 'right', 90);
     });
   } else if (m.tab === 1 || m.tab === 2) drawEntries(c, m, bx, by, bodyH);
-  else if (m.tab === 3) LQ.drawWorldMap(c, bx, by, 764, bodyH, st.region);
+  else if (m.tab === 3) LQ.drawWorldMap(c, bx, by, 764, bodyH, st.region, m.sel);
   else if (m.tab === 5) LQ.kit.page.draw(c, m, bx, by, bodyH);
   else {
     const known = menuStocks(), off = scrollStart(m.sel, known.length, 8), list = known.slice(off, off + 8);
@@ -367,7 +377,7 @@ function drawMenu(c) {
     if (st.gazette.length) ui.text(c, 'Gazette: ' + st.gazette[0], bx, end + 51, '#eef4ff', F(20), 'left', 764);
   }
   const hint = m.reading ? 'Esc: back to list    J: close' :
-    ['Up / Down: side jobs    Enter: read', 'Up / Down: notes    Enter: read', 'Up / Down: items    Enter: read', '', 'Up / Down: stocks    Buy or sell: talk to a broker', 'Up / Down: tools    Enter: equip or store'][m.tab];
+    ['Up / Down: side jobs    Enter: read', 'Up / Down: notes    Enter: read', 'Up / Down: items    Enter: read', 'Up / Down: pick a region    Enter: travel', 'Up / Down: stocks    Buy or sell: talk to a broker', 'Up / Down: tools    Enter: equip or store'][m.tab];
   const footer = m.reading ? hint : ['Left / Right: tabs', hint, 'J or Esc: close'].filter(Boolean).join('    ');
   ui.text(c, footer, x + w / 2, y + h - 32, '#c9cdea', F(21), 'center', 764);
 }
