@@ -185,10 +185,29 @@ const world = LQ.world = {
     const st = LQ.state;
     await LQ.fadeTo(1, 0.4);
     st.region = x.to; st.px = x.px; st.py = x.py; st.dir = x.dir;
+    this.auditSeen = null;   // a new visit: one more audit may find you here
     this.start(); this.music();
     await LQ.fadeTo(0, 0.5);
     ui.showBanner(this.R.title, this.R.sub());
     if (this.R.arrive) await this.R.arrive();
+  },
+  // Stand the hero beside this region's shopkeeper, in the plaza. Used after a lost boss fight and by fast travel.
+  toPlaza() {
+    const st = LQ.state, k = this.C.npcs.find(n => n.id === 'merchant' || n.id === 'trader');
+    const spot = k && [[0, 1], [-1, 1], [1, 1], [-1, 0], [1, 0], [0, 2]].map(([dx, dy]) => [(k.tx + dx) * T + 8, (k.ty + dy) * T + 12]).find(([x, y]) => this.canStand(x, y));
+    if (spot) Object.assign(this.p, { x: spot[0], y: spot[1], dir: 'up' });
+    st.px = this.p.x; st.py = this.p.y; st.dir = this.p.dir;
+    return k;
+  },
+  // Fast travel from the Map tab: straight to the plaza of a region the hero has already visited.
+  async fastTravel(to) {
+    const st = LQ.state;
+    await LQ.fadeTo(1, 0.4);
+    st.region = to; this.auditSeen = null;
+    this.start(); this.toPlaza(); this.music(); LQ.save();
+    await LQ.fadeTo(0, 0.5);
+    ui.showBanner(this.R.title, this.R.sub());
+    if (this.R.arrive) await this.R.arrive(this);
   },
   // The save keeps the spot outside the door, so quitting inside a room is always safe.
   // Build a room fresh and step into it. `from` names where you came from, for rooms with more than one way in.
@@ -243,7 +262,7 @@ const world = LQ.world = {
       if (LQ.rooms) LQ.rooms.tryPush(this, dx, dy, dt);
       if (!this.room) { st.px = p.x; st.py = p.y; st.dir = p.dir; }
       for (const x of R.exits || []) if (p.x >= x.x0 && p.x < x.x1 && p.y >= x.y0 && p.y < x.y1 && (!x.open || x.open(st))) { p.moving = false; p.frame = 0; LQ.script(() => x.leave ? this.exitRoom() : this.travel(x)); return; }
-      if (R.auditOK(st, this.zone)) {
+      if (R.auditOK(st, this.zone) && LQ.auditAllowed(this)) {
         st.auditDist = (st.auditDist || 0) + Math.hypot(p.x - oldX, p.y - oldY);
         if (st.auditDist > (st.auditNext || 2200)) { st.auditDist = 0; st.auditNext = 2200 + Math.random() * 2000; if (LQ.auditPool().length) { p.moving = false; p.frame = 0; LQ.script(LQ.audit); return; } }
       }

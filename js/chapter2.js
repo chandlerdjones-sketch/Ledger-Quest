@@ -48,7 +48,7 @@ Object.assign(LQ.JOURNAL, {
   mortgage: { title: 'Home mortgage interest', text: "Each mortgage payment is part interest and part principal. Only the interest can be deducted, only if you itemize, and only on up to $750,000 of home loan debt. Your lender reports the interest on Form 1098 each January. Principal and homeowner's insurance are never deductible." },
   salt: { title: 'State and local taxes', text: 'If you itemize, you can deduct the state and local taxes you paid: income tax (or sales tax instead) plus property tax. For 2026 the total is capped at $40,400, and the cap shrinks for incomes above $505,000.' },
   points: { title: 'Loan points', text: 'Points are interest you pay up front at closing to get a lower rate. Points on a loan to buy your main home can usually be deducted in full in the year you pay them, if you itemize. Points on a refinance are spread over the life of the loan. Keep your closing papers.' },
-  mfj: { title: 'Married filing jointly', text: "A married couple files one joint return or two separate ones. Jointly, the 2026 standard deduction is $32,200 and the brackets are twice as wide as a single filer's, up through the 35% bracket. If you are married on December 31, you are married for the whole tax year. Both spouses sign a joint return, and both are responsible for the whole bill." },
+  mfj: { title: 'Married filing jointly', text: "A married couple files one joint return or two separate ones. Jointly, the 2026 standard deduction is $32,200 and the brackets are twice as wide as a single filer's, up through the 35% bracket. If you are married on December 31, you are married for the whole tax year. Both spouses sign a joint return, and both are responsible for the whole bill. Filing separately usually costs more: it blocks the child care credit, the student loan interest deduction, and the education credits, and if one spouse itemizes, the other must too." },
   marriage: { title: 'Marriage bonus and penalty', text: "When two people with uneven incomes marry and file jointly, the higher earner's income spills into the lower earner's unused room in the low brackets, so together they pay less than they did as two singles. That is the marriage bonus. When both earn about the same, the tax barely changes. A penalty mostly shows up at very high incomes." },
   dependent: { title: 'Who is a qualifying child', text: 'A qualifying child is your son, daughter, stepchild, foster child, sibling, or a child of one of them, who lives with you for more than half the year, is under 19 (or under 24 and a full-time student), and does not pay more than half of their own support. A baby born at any point in the year counts for the whole year. Pets never count.' },
   ctc: { title: 'Child Tax Credit', text: 'For 2026 the Child Tax Credit is up to $2,200 for each qualifying child under 17 who has a Social Security number. It is a credit, so it comes straight off your tax. Up to $1,700 of it can be refunded even if you owe no tax. It starts to shrink above $400,000 of income for joint filers and $200,000 for everyone else.' },
@@ -142,9 +142,8 @@ const rcDoc = { lit: null, draw(c) {
 
 // ---------- quest scripts
 const advance2 = () => {
-  const s = st(); s.q2++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.QUESTS2[s.q2].short);
-  const c = LQ.career(), base = c.kind === 'se' ? c.pay - 35 + Math.floor(LQ.hash(s.day, 9, s.seed) * 90) : c.pay;
-  LQ.gain(0, base + 50 + (s.w4b === 1 ? 25 : s.w4b === 2 ? -25 : 0), 'Household payday'); LQ.tick();
+  const s = st(); s.q2++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.curQuest().short);
+  LQ.gain(0, LQ.payBase() + 25 + (s.w4b === 1 ? 12 : s.w4b === 2 ? -12 : 0), 'Household payday'); LQ.tick();
 };
 const FOUND = {
   rPoints: () => `In the drawer: your closing papers. You paid ${M(H.points)} in points, interest paid up front to get your loan. Points on a loan to buy your main home usually count as mortgage interest in the year you pay them.`,
@@ -176,9 +175,8 @@ async function begin() {
 async function qMarlowe() {
   const b = LQ.fin(0), mine = b.kind === 'w2' ? b.wages : b.profit;
   await say(N.marlowe, 'There you are! Coral has already buried one of your boots on the beach. Welcome home.');
-  await say(N.marlowe, `I earn ${M(H.spWages)} a year building ships at the Tidewater yard. With your ${M(mine)}, this household brings in ${M(mine + H.spWages)}. And three things changed this year that the taxman cares about: we bought a home, we are getting married, and Coral lives with us.`);
-  await say(N.marlowe, 'Every one of those can save us real money, if we keep the paperwork. And I am hopeless with paper. I have dropped half our receipts around town already.');
-  await say(N.marlowe, 'Start at the Tidewater Bank, south-west of the plaza. Banker Brine has our mortgage papers. Here, a housewarming gift from my crew.');
+  await say(N.marlowe, `I earn ${M(H.spWages)} a year building ships at the Tidewater yard. With your ${M(mine)}, this household brings in ${M(mine + H.spWages)}. And three things changed this year that the taxman cares about: a home, a wedding, and Coral.`);
+  await say(N.marlowe, 'Each one can save us real money if we keep the paperwork, and I have dropped half our receipts around town already. Start at the Tidewater Bank, south-west of the plaza. Banker Brine has our mortgage papers. Here, a gift from my crew.');
   LQ.gain(0, 60, 'Housewarming gift'); advance2();
 }
 async function qBrine() {
@@ -189,18 +187,15 @@ async function qBrine() {
   await ask(N.brine, `Your loan payments this year came to ${M(tot)}. If you itemize your deductions, how much of that can count?`,
     [`Only the interest: ${M(H.interest)}`, `All of it: ${M(tot)}`, `Only the principal: ${M(H.principal)}`],
     { wrong: ['Principal is you buying your own house. Nobody gets a deduction for that.', 'The other way around. Interest is the cost of borrowing, and that is the part that counts.'] });
-  mortDoc.hl = 'int';
-  await say(N.brine, `Right. ${M(H.interest)} of interest. The rule covers interest on up to ${M(TX.mortgageDebtLimit)} of home loan debt, so yours counts in full.`);
-  mortDoc.hl = 'tax';
-  await say(N.brine, `Now Box 10. I collect your property tax with each payment and pass it on to the province: ${M(H.propTax)} this year. Property tax and province income tax together are called state and local taxes. They are deductible too, up to a cap of ${M(TX.saltCap)} for 2026.`);
+  mortDoc.hl = 'int'; await LQ.wait(0.7); mortDoc.hl = 'tax';
+  await say(N.brine, `Right. ${M(H.interest)} of interest, the cost of borrowing. Now Box 10. I collect your property tax and pass it on to the province: ${M(H.propTax)} this year. Property tax and province income tax together are state and local taxes, deductible up to a cap of ${M(TX.saltCap)}.`);
   mortDoc.hl = null;
   await ask(N.brine, 'One cost on this page is never deductible on your own home. Which one?', ["Homeowner's insurance", 'Mortgage interest', 'Property tax'],
     { wrong: ['Interest is the big one. It counts if you itemize.', 'Property tax counts as a state and local tax.'] });
   mortDoc.hl = 'pts';
-  await say(N.brine, `Last thing. Box 6 is blank on my copy. At closing you paid points, which is interest paid up front to get a better rate: 1% of the loan, ${M(H.points)}. Points on a loan to buy your main home usually count in the year you pay them. But only with the closing papers to prove it, and Marlowe took those home.`);
+  await say(N.brine, `Last thing. At closing you paid points, interest paid up front for a better rate: ${M(H.points)}. Points on a loan for your main home usually count in the year you pay them, but only with the closing papers, and Marlowe took those home.`);
   ui.doc = null; s.rcpt.r1098 = true; s.rcpt.rProp = true; LQ.learn('mortgage'); LQ.learn('salt'); LQ.give('deed');
-  await say(N.brine, `Here are your Form 1098 and your property tax bill. Two receipts down. Marlowe tells me ${HUNT.length} more are scattered around Shelter Coast. Watch for a sparkle on the ground, and try the sea chest beside your cottage door.`);
-  await say(N.brine, 'But hear this before you get excited. Some receipts only help if you itemize. Bring what you find to the Records Hall later and we will compare. For now: you have a wedding to get to! Officiant Pearl is waiting at the chapel.');
+  await say(N.brine, `Here are your Form 1098 and your property tax bill: two receipts down. ${HUNT.length} more are scattered around Shelter Coast. Watch for a sparkle on the ground, and try the sea chest by your cottage door. Now go. You have a wedding to get to, and Officiant Pearl is waiting at the chapel.`);
   advance2();
   LQ.REGIONS.coast.addReceipts(LQ.world, s);
 }
@@ -214,18 +209,17 @@ async function qPearl() {
   await ask(N.pearl, 'You married in midsummer. For taxes, how much of this year were you married?', ['The whole year. Status is set on December 31', 'Only the months after the wedding', 'None of it. It starts next year'],
     { wrong: ['Taxes do not split the year. Your status on the last day covers all of it.', 'Married by December 31 means married for the whole tax year.'] });
   const x = LQ.finSplit(), j = x.joint; splitDoc.lit = -1; ui.doc = splitDoc;
-  await say(N.pearl, `Married couples choose between two banners. Filing jointly: one return, a ${M(STD.mfj)} standard deduction, and brackets twice as wide as a single filer's. Filing separately: two returns, with ${M(STD.mfs)} each.`);
-  await say(N.pearl, "I worked out both for your household. Do not worry about the credit lines yet. Nanny Dory will explain Coral's credits. Just compare the totals at the bottom.");
+  await say(N.pearl, `Married couples choose between two banners. Jointly: one return, a ${M(STD.mfj)} standard deduction, and brackets twice as wide. Separately: two returns, with ${M(STD.mfs)} each. I worked out both for your household. Compare the totals at the bottom.`);
   await ask(N.pearl, `Jointly, your household's tax comes to ${M(x.jointTotal)}. Separately, ${M(x.sepTotal)}. How will you file?`,
     [`Jointly. It saves us ${M(x.sepTotal - x.jointTotal)}`, 'Separately, to keep our money apart', 'One of each: I file jointly, Marlowe separately'],
     { wrong: ['Filing separately does not keep your money apart. It only changes the tax math, and here it costs you more.', 'A couple has to choose together. Both joint, or both separate.'] });
   splitDoc.lit = 0;
   const lost = (x.lostOt ? `your overtime deduction (${M(x.lostOt)}) and ` : '') + `the child care credit (${M(x.lostCare)})`;
-  await say(N.pearl, `Good. Filing separately would cost you ${lost}. Couples who file separately also lose the student loan interest deduction and the education credits, and if one of them itemizes, the other must too.`);
+  await say(N.pearl, `Good. Filing separately would cost you ${lost}.`);
   if (x.bonus > 50) await say(N.pearl, `And here is a wedding gift from the tax code. As two single people, your income tax would have been ${M(x.singles)}. On a joint return it is ${M(j.tax)}. That ${M(x.bonus)} is a marriage bonus. ` + (isOwner()
     ? 'Yours comes from the business income deduction. Alone, it was held down by your own small taxable income. Joined with Marlowe\'s wages, your whole profit earns the full 20%.'
     : "It shows up when one spouse earns more than the other. The higher earner's income fills the lower earner's unused room in the low brackets."));
-  else await say(N.pearl, `One more thing. As two single people, your income tax would have been ${M(x.singles)}. On a joint return it is ${M(j.tax)}. No change, because your two incomes sit in the same brackets and the joint brackets are exactly twice the single ones. Couples with uneven incomes get a marriage bonus. Your savings come from the credits instead.`);
+  else await say(N.pearl, `One more thing. As two single people, your income tax would have been ${M(x.singles)}. On a joint return it is ${M(j.tax)}. No change, because your two incomes sit in the same brackets. Couples with uneven incomes get a marriage bonus. Your savings come from the credits instead.`);
   ui.doc = null; LQ.learn('mfj'); LQ.learn('marriage'); LQ.give('rings');
   await say(N.pearl, 'One warning with my blessing. On a joint return you both sign, and you are both responsible for every line. Now go and eat cake. Then see Nanny Dory at the nursery about Coral.');
   advance2();
@@ -234,7 +228,6 @@ async function qDory() {
   const s = st(), f = LQ.fin2({ itemize: false, child: false, noGifts: true }), top = f.top, care = Math.round(TX.careRate * TX.careMaxOne);
   await say(N.dory, "You must be Coral's new stepparent! She has told all of us. Twice. She spends her days here at Little Limpets while you two work.");
   await say(N.dory, 'Now that you and Marlowe are married, Coral is your stepchild, and for taxes a stepchild counts exactly like a son or daughter. She is under 17, she lives with you for more than half the year, and she has a Social Security number. That makes her a qualifying child.');
-  await say(N.dory, 'Worth knowing for the next one: a baby born on December 31 counts for the whole year, just like a wedding on December 31.');
   creditDoc.show = 0; ui.doc = creditDoc;
   await ask(N.dory, `Coral brings a ${M(TX.ctc)} Child Tax Credit. Your top bracket is ${pct(top)}. Which would you rather have?`,
     [`A ${M(TX.ctc)} credit. It cuts my tax by ${M(TX.ctc)}`, `A ${M(TX.ctc)} deduction. That cuts my tax by ${M(TX.ctc)} too`, 'Either. They are worth the same'],
@@ -246,19 +239,18 @@ async function qDory() {
     { wrong: ['If only. The credit stops counting at the limit.', 'That limit is for two or more children. Coral is one.'] });
   s.rcpt.rCare = true; s.child = true; creditDoc.show = 2; LQ.audio.sfx('coin');
   await say(N.dory, `At your household's income the rate is ${pct(TX.careRate)}, so the credit is ${pct(TX.careRate)} of ${M(TX.careMaxOne)}: ${M(care)}. Here is my statement, with the nursery's tax ID on it. No provider ID, no credit. And a married couple has to file jointly to claim it.`);
-  await say(N.dory, `Together, Coral's two credits take ${M(TX.ctc + care)} off your tax. Not bad for someone who still eats sand.`);
   ui.doc = null; LQ.learn('dependent'); LQ.learn('ctc'); LQ.learn('carecredit'); LQ.give('toyboat');
-  await say(N.dory, 'One job left before you celebrate. Your paychecks still think you are single with no children. Harbormaster Stone runs payroll at the shipyard, up in the north-east. Go and fix your W-4s.');
+  await say(N.dory, `Together, Coral's two credits take ${M(TX.ctc + care)} off your tax. Not bad for someone who still eats sand. One job left: your paychecks still think you are single with no children. Harbormaster Stone runs payroll at the shipyard, up in the north-east. Go and fix your W-4s.`);
   advance2();
 }
 async function qStone() {
   const s = st(), own = isOwner();
   await say(N.stone, "So you are Marlowe's better half. I run payroll for the shipyard, and Marlowe's W-4 still says single, no children. " + (own ? 'You run your own shop, so you have no W-4 at all. You have quarterly estimates. We need to look at both together.' : 'I would bet yours does too.'));
   w4bDoc.pick = 0; ui.doc = w4bDoc;
-  await say(N.stone, `Here is the trap for married couples. A W-4 only knows what you write on it. Tick "married filing jointly" and nothing else, and the employer assumes that paycheck is the only income in the house. That one job gets the whole ${M(STD.mfj)} deduction and the wide joint brackets.`);
-  await say(N.stone, own ? "So Marlowe's pay would be taxed as if your shop did not exist. And if you then cut your estimates because \"Marlowe's job covers us\", the gap would be enormous."
-    : 'When both of you do that, the deduction and the low brackets get counted twice. Too little comes out of both paychecks, and April brings a bill.');
-  await say(N.stone, 'The fix is Step 2(c). When both spouses earn, both tick the box. Then Step 3 is where the Child Tax Credit goes, on one form only. Or let the IRS Tax Withholding Estimator do the work. It is free, it takes both incomes and your credits, and it tells you what to write.');
+  await say(N.stone, 'Here is the trap for married couples. Tick "married filing jointly" and nothing else, and the employer assumes that paycheck is the only income in the house. ' + (own
+    ? 'Marlowe\'s pay would be taxed as if your shop did not exist, and if you then cut your estimates, the gap would be enormous.'
+    : `Do that on both forms, and the ${M(STD.mfj)} deduction and the low brackets get counted twice. Too little comes out, and April brings a bill.`));
+  await say(N.stone, 'The fix is Step 2(c): when both spouses earn, both tick the box, and the Child Tax Credit goes in Step 3 on one form only. Or let the free IRS Tax Withholding Estimator work it out from both incomes and your credits.');
   const p = await choose(N.stone, 'How will your household pay its tax through the year?', own
     ? ['Run the Estimator together, and size my estimates to match', 'Marlowe ticks "married" and claims Coral. I skip my estimates', 'Marlowe ticks Step 2(c), claims nothing. I pay estimates as before']
     : ['Run the IRS Estimator together and write what it says', 'Each fill one in alone: married, claim Coral, nothing else', 'Both tick Step 2(c) and claim nothing extra'], i => { w4bDoc.pick = i; });
@@ -274,25 +266,26 @@ async function qStone() {
 }
 async function qTallow() {
   const s = st(), n = HUNT.filter(got).length;
-  await say(N.tallow, 'Receipts! Put them on the table. All of them. Let us see what you have.');
+  const opening = 'Receipts! Put them on the table. All of them.';
   rcDoc.lit = null; ui.doc = rcDoc;
   if (n < HUNT.length) {
+    await say(N.tallow, opening + ' Let us see what you have.');
     const a = await choose(N.tallow, `I count ${n} of the ${HUNT.length} lost receipts. More paper might change the answer.`, ['Decide with what I have', 'Keep hunting first']);
     if (a === 1) { ui.doc = null; return say(N.tallow, 'Sensible. Watch for the sparkle. I will be here.'); }
   }
   const f = LQ.fin2();
-  await say(N.tallow, `Two shields, and you may carry only one. The standard deduction for a joint return is ${M(STD.mfj)}. Or you itemize: add up your mortgage interest, your state and local taxes, and your gifts to charity.`);
-  await say(N.tallow, `Your state and local taxes come to ${M(f.saltRaw)}. For this household, ${M(f.salt)} goes into the itemized total after the cap.`);
-  await say(N.tallow, f.gifts ? `Your cash gifts come to ${M(f.gifts)}, and here the law keeps two rulebooks. Carry the standard shield, and up to ${M(TX.charityJoint)} of cash gifts counts on top of it. Itemize, and only the part above 0.5% of your income counts: ${M(f.gifts)} minus ${M(f.giftFloor)} leaves ${M(f.giftItem)}.`
-    : `You brought no gift receipts. For the record, the law keeps two rulebooks. With the standard shield, up to ${M(TX.charityJoint)} of cash gifts counts on top of it. Itemized, only the part above 0.5% of your income counts.`);
+  await say(N.tallow, (n < HUNT.length ? '' : opening + ' ') + `Two shields, and you may carry only one: the standard deduction for a joint return, ${M(STD.mfj)}, or your itemized pile of mortgage interest, state and local taxes, and gifts to charity.`
+    + (f.salt < f.saltRaw ? ` Your state and local taxes are capped, so ${M(f.salt)} of the ${M(f.saltRaw)} counts.` : ''));
+  await say(N.tallow, 'Gifts follow two rulebooks. ' + (f.gifts ? `Carry the standard shield, and up to ${M(TX.charityJoint)} of cash gifts counts on top of it. Itemize, and only the part above 0.5% of your income counts: ${M(f.gifts)} minus ${M(f.giftFloor)} leaves ${M(f.giftItem)}.`
+    : `With the standard shield, up to ${M(TX.charityJoint)} of cash gifts counts on top of it. Itemized, only the part above 0.5% of your income counts. You brought no gift receipts.`));
   const item = f.better === 'item', equal = f.itemized === f.stdTotal;
   await say(N.tallow, 'Try three examples. Put mortgage interest in Itemize: it lowers the income that gets taxed. Put eligible daycare in Credit: the credit comes off the tax bill itself. Put a raffle ticket in Leave Out: it buys a chance to win and gives you neither break.');
   await LQ.depth.receipts(N.tallow);
   const gap = Math.abs(f.itemized - f.stdTotal), left = HUNT.length - HUNT.filter(got).length;
   await say(N.tallow, (equal ? 'Both options deduct the same amount. We will use the standard deduction for now.'
     : `${item ? 'Itemizing' : 'Taking the standard deduction'} lowers your taxable income by ${M(gap)} more.`)
-    + (left ? ' Receipts you find before filing could change the comparison.' : ''));
-  await say(N.tallow, `And remember what a deduction is worth: its amount times your tax rate. A ${M(1000)} deduction at ${pct(f.top)} saves ${M(1000 * f.top)}. Never spend a coin just to deduct it.`);
+    + (left ? ' Receipts you find before filing could change the comparison.' : '')
+    + ` And remember what a deduction is worth: its amount times your tax rate. A ${M(1000)} deduction at ${pct(f.top)} saves ${M(1000 * f.top)}. Never spend a coin just to deduct it.`);
   ui.doc = null; LQ.learn('itemize2'); LQ.learn('charity2'); LQ.learn('writeoff'); LQ.give('folder');
   await LQ.depth.activityPage(4, N.tallow);
   await say(N.tallow, 'Speaking of which. Have you heard the bell at the Old Lighthouse? Someone out there is selling "secret write-offs" to my neighbors, and they are buying. The tide is going out. Go and see.');
@@ -302,26 +295,22 @@ async function qTallow() {
 
 function rows2(f) {
   const R = [], own = f.kind === 'se', b = f.b, J = TX.brackets.mfj, add = (label, val, o) => R.push(Object.assign({ label, val }, o));
-  if (!own) add('Your wages  (W-2, Box 1)', b.box1, { ask: ['A joint return starts with both incomes. Yours first.', [`My W-2 Box 1: ${M(b.box1)}`, `My take-home pay: ${M(b.netYear)}`, `Our mortgage interest: ${M(H.interest)}`],
-    ['The return starts from what you earned, before anything came out.', 'That is a deduction. Income comes first.']] });
+  // Two questions on this return: where Coral's credit goes, and the result. The other lines fill themselves in.
+  if (!own) add('Your wages  (W-2, Box 1)', b.box1);
   else {
-    add('Your business net profit', b.profit, { ask: ['A joint return starts with both incomes. Yours first.', [`Net profit: ${M(b.profit)}`, `Total sales: ${M(b.sales)}`, `Our mortgage interest: ${M(H.interest)}`],
-      ['Profit, not sales. Business expenses come off first.', 'That is a deduction. Income comes first.']] });
+    add('Your business net profit', b.profit);
     add('Half of self-employment tax', b.half, { sign: '-' });
   }
   add("Marlowe's wages  (W-2, Box 1)", f.spBox1, { note: f.sp401 ? `Marlowe's Box 1 is ${M(f.sp401)} below the salary. That is the 401(k) Anchor at work.` : `Both incomes, one return. Together: ${M(f.income)}.` });
   const sav = f.adj - (own ? b.half : 0);
   if (sav) add(own ? 'Retirement and HSA savings' : 'HSA deduction', sav, { sign: '-', note: `Your savings gear comes off next: ${M(sav)}.` });
   add(f.itemize ? 'Itemized deductions' : f.giftStd ? 'Standard deduction + gifts' : 'Standard deduction', f.ded, { sign: '-',
-    ask: [`The deduction line. Itemized, your receipts total ${M(f.itemized)}. The standard deduction${f.giftStd ? ' plus your cash gifts' : ''} comes to ${M(f.stdTotal)}. Which goes on the return?`,
-      f.itemize ? [`Itemized: ${M(f.itemized)}`, `Standard: ${M(f.stdTotal)}`, 'Both of them'] : [`Standard: ${M(f.stdTotal)}`, `Itemized: ${M(f.itemized)}`, 'Both of them'], ['Carry the larger shield.', 'One or the other. Never both.']] });
-  if (f.ot) add('Overtime deduction', f.ot, { sign: '-', note: `Your overtime deduction: ${M(f.ot)}. Married couples can only take it on a joint return.` });
+    note: f.itemize ? `Your itemized receipts come to ${M(f.itemized)}, more than the standard deduction, so they go on the return.`
+      : `The standard deduction${f.giftStd ? ' plus your cash gifts' : ''} comes to ${M(f.stdTotal)}, and your itemized receipts do not beat it, so it goes on the return.` });
+  if (f.ot) add('Overtime deduction', f.ot, { sign: '-' });
   if (own) add('Business income deduction', f.qbi, { sign: '-', note: `The business income deduction takes off ${M(f.qbi)}.` });
-  add('Taxable income', f.taxable, { ask: ['Taxable income. Both incomes, minus every deduction above. What is left?', [M(f.taxable), M(f.income), M(f.taxable + f.ded)],
-    ['The deductions have to come off.', 'The big deduction line has to come off too.']] });
-  add('Income tax  (joint brackets)', f.tax, { ask: [`The tax on ${M(f.taxable)}. The joint ledges: 10% up to ${M(J[1][0])}, then 12% up to ${M(J[2][0])}, then 22%.`, [M(f.tax), M(f.taxable * f.top), M(LQ.taxOn(f.taxable).total)],
-    [`That is ${pct(f.top)} of everything. The first ${M(J[1][0])} is taxed at only 10%.`, 'That is what a single filer would pay. The joint ledges are twice as wide.']],
-    note: 'Ledge by ledge, on the wider joint mountain.' });
+  add('Taxable income', f.taxable);
+  add('Income tax  (joint brackets)', f.tax, { note: `Taxable income of ${M(f.taxable)}, taxed ledge by ledge on the wider joint mountain: ${M(f.tax)}.` });
   if (own) add('Self-employment tax', f.se, { sign: '+', note: `Self-employment tax still applies to your shop's profit: ${M(f.se)}. Marriage does not change it.` });
   if (f.ctc) add('Child Tax Credit', f.ctc, { sign: '-', ask: ["Coral's Child Tax Credit. Where does it go?", [`Straight off the tax: ${M(f.ctc)}`, 'Off our income, like a deduction', 'Nowhere. A stepchild does not count'],
     ['A credit comes off the tax itself.', 'A stepchild counts exactly like a son or daughter.']] });
@@ -333,14 +322,13 @@ function rows2(f) {
 }
 async function qFathom() {
   const s = st(), f = LQ.fin2(), rows = rows2(f), owed = f.diff < 0, amt = Math.abs(f.diff), FD = D.formDoc;
-  await say(N.fathom, 'The lighthouse is quiet, and the whole coast is talking about who quieted it. Welcome to the Coast Tax Office. Last year you filed alone. This year the form has two names on it.');
   Object.assign(FD, { rows, vals: [], cur: 0, stamp: 0 }); ui.doc = FD;
-  await say(N.fathom, 'Same Form 1040, same heart. Income, minus deductions, is taxable income. Then the tax, minus credits, minus what you already paid. You fill it in. I only hold the stamp.');
+  await say(N.fathom, 'The lighthouse is quiet, and the whole coast is talking about who quieted it. Welcome to the Coast Tax Office. Same Form 1040 as last year, but with two names on it. You fill it in. I only hold the stamp.');
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i]; FD.cur = i;
     if (r.ask) await ask(N.fathom, r.ask[0], r.ask[1], { wrong: r.ask[2] });
     FD.vals[i] = r.val; LQ.audio.sfx('coin');
-    if (r.note) await say(N.fathom, r.note); else if (!r.ask) await LQ.wait(0.35);
+    if (r.note) await say(N.fathom, r.note); else if (!r.ask) await LQ.wait(0.7);
   }
   FD.cur = -1;
   await LQ.wait(0.4); LQ.audio.sfx('stamp'); LQ.shake(0.25); await LQ.tween(0.35, k => { FD.stamp = k; });
@@ -352,7 +340,7 @@ async function qFathom() {
     `${owed ? 'You owe' : 'A refund of'} ${M(amt)}. ` + (owed ? '' : "Nothing on your forms mentioned Coral's credits, so you overpaid all year. It is your own money, lent to the kingdom at no interest.")][w]);
   let coins = LQ.clamp(Math.round(f.diff / 15), -350, 350);
   if (w === 0 && Math.abs(f.diff) < 1500) coins += 80;
-  if (f.diff <= -1000) coins -= 60;
+  if (f.diff <= -1000) coins -= 120;
   LQ.gain(60, coins, owed ? 'Tax settled' : 'Refund');
   await say(N.fathom, 'Filed, on time, with both signatures. A home, a marriage, and a child, and you understood what each one did to this page. That is rarer than you think.');
   ui.doc = null; LQ.give('return2'); s.q2 = 8; LQ.tick(); LQ.save();
@@ -392,15 +380,9 @@ const MYTHS2 = [
   { myth: 'Bought a house? Then ye MUST itemize! Every homeowner does!',
     opts: ['Only if my itemized total beats the standard deduction.', 'True. Owning a home means itemizing.', 'Homeowners get both deductions.'],
     truth: 'Add it up every year. Many homeowners still do better with the standard deduction.' },
-  { myth: 'Married? File SEPARATELY and keep yer treasure apart! It always saves!',
-    opts: ['It usually costs more, and it blocks credits like the child care credit.', 'True. Separate returns keep money separate.', 'Married couples have to file separately.'],
-    truth: 'Filing separately changes the tax math, not who owns the money. It rarely wins.' },
   { myth: 'Claim the dog! Claim the parrot! Anything that eats at yer table is a dependent!',
     opts: ['Pets never count. A dependent is a qualifying child or relative.', 'True, if the pet lives with me all year.', 'Only parrots. They can talk.'],
     truth: 'A dependent is a person who passes the tests, and to earn the Child Tax Credit the child needs a Social Security number.' },
-  { myth: 'A giant refund means ye BEAT the taxman!',
-    opts: ['It means I overpaid all year. I aim for close to even.', 'True. The bigger the refund, the bigger the win.', 'Refunds are a bonus for married couples.'],
-    truth: 'A refund is your own money coming back, with no interest.' },
   { myth: 'Pay yer daycare in cash, keep no papers, and claim the credit anyway!',
     opts: ["No. The credit needs the provider's name and tax ID on my return.", 'True. Nobody checks daycare.', 'Cash payments earn a double credit.'],
     truth: 'No provider ID, no credit. And no records means no defense if anyone asks.' },
@@ -412,7 +394,7 @@ LQ.BOSSES.loophole = {
   who: LOOPHOLE, label: 'CAPTAIN LOOPHOLE', kind: 'loophole', move: 'beam', sky: ['#040d22', '#0f3a5a'], hill: '#081f30', ground: ['#2e2a58', '#4a4480'], fog: '120,220,210', bar: ['#1f8a86', '#8fe6da'], ink: '#14575a',
   approach: 'A bell clangs. From the lamp room drifts a shape in a tricorn hat, trailing treasure maps.',
   intro: ['ARRR! A customer! Captain Loophole, purveyor of secret write-offs. Every map I sell leads to buried deductions the taxman does not want ye to find!', 'Half this coast has bought one already. Let us see if YE can resist a bargain.'],
-  taunt: 'Har har har! Sold! That will be one map, no refunds.', fogLine: 'The sea mist muddles your thinking.',
+  taunt: 'Har har har! Sold! That will be one map, no refunds.', gloat: 'Overboard with ye! The tide will carry you home.', fogLine: 'The sea mist muddles your thinking.',
   myths: () => MYTHS2,
   final: () => {
     const f = LQ.fin2(), cr = f.ctc + f.care, after = f.tax - cr;
@@ -427,7 +409,7 @@ LQ.BOSSES.loophole = {
     s.flags.boss2 = true; s.q2 = 7; LQ.give('medal2'); LQ.gain(50, 120, 'Captain Loophole sunk');
     LQ.tick(); if (s.prices && s.prices.LAMP != null) { s.prev.LAMP = s.prices.LAMP; s.prices.LAMP *= 1.45; s.gazette.unshift('The Old Lighthouse is safe again! Lantern Works relights the great lamp.'); }
   },
-  done: async () => { ui.toast('New quest: ' + LQ.QUESTS2[7].short); await say(null, 'The lighthouse lamp turns, steady and bright. One task remains: take your receipts and your new family to the Coast Tax Office and file.'); },
+  done: async () => { ui.toast('New quest: ' + LQ.curQuest().short); await say(null, 'The lighthouse lamp turns, steady and bright. One task remains: take your receipts and your new family to the Coast Tax Office and file.'); },
 };
 
 // ---------- villagers who teach expert moves
@@ -499,7 +481,7 @@ LQ.AUDIT_POOL.push(
 );
 
 LQ.CH2 = {
-  npcs: NPC_LIST, chests: CHESTS, begin, found, hunt: HUNT,
+  npcs: NPC_LIST, chests: CHESTS, tips: TIPS, begin, found, hunt: HUNT,
   spots: { rCart: [42, 9], rChapel: [6, 9], rSchool: [15, 23], rRaffle: [25, 18], rLight: [36, 28], rMedical: [4, 22] },
   coins: [[10, 10], [20, 11], [28, 10], [36, 11], [42, 10], [6, 20], [12, 21], [30, 20], [40, 21], [23, 5], [24, 23], [8, 28], [16, 28], [33, 28], [24, 33], [41, 28], [39, 33], [43, 35]],
   signs: [
@@ -508,7 +490,7 @@ LQ.CH2 = {
     { tx: 25, ty: 26, text: 'THE PIER. Mind the gulls.' },
     { tx: 43, ty: 9, fn: () => st().q2 >= 8 ? 'EAST ROAD to Hustle Canyon. The road is open. Chapter 3 begins there.' : 'EAST ROAD to Hustle Canyon. Closed until your joint return is filed.' },
     { tx: 39, ty: 29, fn: () => st().flags.boss2 ? 'THE OLD LIGHTHOUSE. Lit again, and quiet.' : 'THE OLD LIGHTHOUSE. Cut off at high tide. Do not buy maps from strangers.' },
-    { tx: 26, ty: 13, fn: () => 'THE HARBOR GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Prices react tomorrow.)' + (st().flags.boss2 ? '' : ' Standing notice: Lantern Works will relight the great lamp if the lighthouse is ever made safe.') },
+    { tx: 26, ty: 13, fn: () => 'THE HARBOR GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Already in today\'s price.)' + (st().flags.boss2 ? '' : ' Standing notice: Lantern Works will relight the great lamp if the lighthouse is ever made safe.') },
   ],
   talk: async id => {
     const q = QUEST_FN[id];

@@ -160,6 +160,18 @@ const ART = {
   },
 };
 const SCENES = {
+  // Shown once, when a new game starts in Chapter 1.
+  opening: { music: 'story', panels: [
+    { art: 'book', text: 'Long ago, the Great Ledger held the plain truth about money. Anyone could read it.' },
+    { art: 'torn', text: 'Then twelve pages were torn out and scattered across the Ledgerlands.' },
+    { art: 'fog', text: 'Where a page went missing, fog rolled in. People started believing strange things about taxes.' },
+    { art: 'fog', text: 'Nobody knows who tore them out. Tonight, a newcomer moves into a cottage in Paystub Village.' },
+  ] },
+  // The Chapter 2 recap for a hero who saw the opening. Skip-ahead starts and older saves get the full `coast` scene.
+  coastShort: { music: 'story', panels: [
+    { art: 'torn', text: 'Twelve pages were torn from the Great Ledger, and fog rolled in wherever one went missing.' },
+    { art: 'coast', text: 'You brought three pages home. Nine are still out there. The next ones are here, on Shelter Coast.' },
+  ] },
   coast: { flag: 'cut2', music: 'story', panels: [
     { art: 'book', text: 'Long ago, the Great Ledger held the plain truth about money. Anyone could read it.' },
     { art: 'torn', text: 'Then twelve pages were torn out and scattered across the Ledgerlands.' },
@@ -195,17 +207,18 @@ const CUT = LQ.cutscene = {
     ui.text(c, (CUT.i + 1) + ' / ' + P.length, 878, 482, '#c9cdea', F(20), 'right');
     ui.text(c, 'Enter: next    Esc: skip    N: narration ' + (N.on ? 'on' : 'off'), 82, 482, '#35f0e6', F(21), 'left', 700);
   },
-  async play(id) {
+  // `back` is the scene to return to. It is the world unless the game has not started yet.
+  async play(id, back = LQ.world) {
     const def = SCENES[id]; if (!def) return;
-    await LQ.fadeTo(1, 0.4); ui.banner = null; CUT.def = def; LQ.setScene(CUT); LQ.audio.play(def.music); await LQ.fadeTo(0, 0.5);
+    await LQ.fadeTo(1, 0.4); ui.banner = null; CUT.def = def; CUT.i = 0; CUT.t = 0; LQ.setScene(CUT); LQ.audio.play(def.music); await LQ.fadeTo(0, 0.5);
     await new Promise(done => { CUT.done = done; CUT.show(0); });
-    await LQ.fadeTo(1, 0.4); CUT.def = null; LQ.setScene(LQ.world); await LQ.fadeTo(0, 0.5);
+    await LQ.fadeTo(1, 0.4); CUT.def = null; LQ.setScene(back); await LQ.fadeTo(0, 0.5);
   },
 };
 const coast = LQ.REGIONS.coast, arrive0 = coast.arrive;
 coast.arrive = async w => {
   const s = st();
-  if (s.q2 == null && !s.flags.cut2) { s.flags.cut2 = true; await CUT.play('coast'); }
+  if (s.q2 == null && !s.flags.cut2) { s.flags.cut2 = true; await CUT.play(s.flags.cut1 ? 'coastShort' : 'coast'); }
   if (arrive0) return arrive0(w);
 };
 })();

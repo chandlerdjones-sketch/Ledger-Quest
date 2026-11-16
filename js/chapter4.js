@@ -62,7 +62,7 @@ Object.assign(LQ.JOURNAL, {
   washsale4: { title: 'The wash sale rule', text: 'If you sell at a loss and buy the same or a substantially identical investment within 30 days before or after the sale, the loss is disallowed for now. For a replacement in a taxable account, the disallowed loss generally raises the new shares’ basis. A replacement in an IRA or Roth IRA can disallow the loss without raising the basis. Check purchases on both sides of the sale.' },
   stack4: { title: 'How gains stack', text: 'On the return, your ordinary income fills the brackets first. Long-term gains and qualified dividends sit on top of it and are taxed at their own rates. A large long-term gain never raises the rate on your wages.' },
   zero4: { title: 'The 0% zone', text: 'For 2026, long-term gains and qualified dividends are taxed at 0% as long as your taxable income stays at or under $98,900 on a joint return, or $49,450 for a single filer. Above that the rate is 15%, and 20% only above $613,700 on a joint return.' },
-  accounts4: { title: 'Four kinds of account', text: 'In a taxable brokerage account, dividends and interest can be taxable each year. Selling shares can create a reportable gain or loss. A traditional 401(k) or IRA takes money before tax, grows untaxed, and is taxed as income when you take it out. A Roth takes money after tax, grows untaxed, and offers tax-free qualified withdrawals. An HSA is untaxed going in, growing, and coming out for medical costs.' },
+  accounts4: { title: 'Four kinds of account', text: 'In a taxable brokerage account, dividends and interest can be taxable each year. Selling shares can create a reportable gain or loss. A traditional 401(k) or IRA takes money before tax, grows untaxed, and is taxed as income when you take it out. A Roth takes money after tax, grows untaxed, and offers tax-free qualified withdrawals. An HSA is untaxed going in, growing, and coming out for medical costs. The 2026 limits are $24,500 for a 401(k) and $7,500 for an IRA.' },
   location4: { title: 'What goes where', text: 'Hold investments that throw off a lot of taxable income every year, such as bonds and high-dividend funds, inside tax-sheltered accounts. Hold broad index funds you plan to keep for years in the taxable account, where they are taxed lightly. The same investments can cost less in tax just by sitting in the right account.' },
   tip4Reinvest: { title: 'Tip: reinvested dividends', text: 'Every reinvested dividend buys new shares and adds to your basis. If you forget them when you sell, you pay tax on the same money twice.' },
   tip4B: { title: 'Tip: check your 1099-B', text: 'Form 1099-B lists each sale and the basis your broker has on record. For shares that were inherited, gifted, or moved from another broker, that basis may be missing or wrong. Correct it on Form 8949.' },
@@ -149,8 +149,7 @@ const acctDoc = { hl: -1, draw(c) {
 // ---------- quest scripts
 const advance4 = () => {
   const s = st(); s.q4++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.QUESTS4[s.q4].short);
-  const c = LQ.career(), base = c.kind === 'se' ? c.pay - 35 + Math.floor(LQ.hash(s.day, 9, s.seed) * 90) : c.pay;
-  LQ.gain(0, base + 90, 'Payday and gig money'); LQ.tick();
+  LQ.gain(0, LQ.payBase() + 45, 'Payday and gig money'); LQ.tick();
 };
 
 async function begin() {
@@ -167,8 +166,7 @@ async function qMarlowe() {
   await say(N.marlowe, 'We also have the two positions we bought ourselves last year. Glacier Goldworks has done well. Avalanche Airships has not. On top of that, the family index fund pays dividends and the savings account pays interest.');
   await ask(N.marlowe, `Glacier Goldworks is up ${M(GL.gain)} and we have not sold a share. How much tax do we owe on that gain so far?`, ['None. A gain is taxed when we sell', `Tax on ${M(GL.gain)}, every year it stays up`, 'Half now and half when we sell'],
     { wrong: ['A price going up is not income yet. Nothing is owed until we sell.', 'There is no halfway. The tax arrives with the sale.'] });
-  await say(N.marlowe, 'That is what the broker told me too. And here is the part I only learned this week. In real life nobody takes the tax at the counter. Every sale in the year is written down, and it is all settled on Schedule D when we file.');
-  await say(N.marlowe, 'So that is how it works for us from now on. Until we file, the brokers in every town will record what you sell and take nothing. One more thing: on the form, each coin of gain or loss from an exchange counts as ' + M(LQ.COIN_USD) + '.');
+  await say(N.marlowe, 'Right. And in real life nobody takes the tax at the counter. Every sale in the year is written down and settled on Schedule D when we file. So until we file, the brokers in every town will record what you sell and take nothing. On the form, each coin of gain or loss counts as ' + M(LQ.COIN_USD) + '.');
   LQ.learn('realize4'); LQ.give('chestkey');
   await say(N.marlowe, "Start with Assayer Garnet at the Assay House, in the north-west corner. She can tell us what Opal's shares are really worth to us. Here, Opal left a little spending money too.");
   LQ.gain(0, 80, "From Opal's chest"); advance4();
@@ -183,8 +181,7 @@ async function qGarnet() {
   await ask(N.garnet, `You sell for ${M(OPAL.sold)}. What is your taxable gain?`, [`${M(OPAL.gain)}. My basis is the value on the day she died`, `${M(OPAL.sold - OPAL.paid)}. The sale minus what Opal paid`, `${M(OPAL.sold)}. I paid nothing, so all of it`],
     { wrong: ["That would be right for a gift made while she was alive. An inheritance is treated differently.", 'An heir does not start from zero. Look at the highlighted line.'] });
   basisDoc.show = 2; LQ.audio.sfx('coin');
-  await say(N.garnet, `${M(OPAL.gain)}. Here the basis resets to what Opal’s shares were worth when she died. Our gain is the rise since then. If the shares had fallen during Opal’s lifetime, the reset could have lowered the basis.`);
-  await say(N.garnet, `This sale counts as long-term even if you sell right away. If Opal had given you the shares while alive, you would generally use her ${M(OPAL.paid)} basis to figure a gain. If the stock had dropped before the gift, a separate rule would apply when figuring a loss.`);
+  await say(N.garnet, `${M(OPAL.gain)}. An heir's basis resets to what the shares were worth when Opal died, so our gain is only the rise since then. And a sale of inherited shares counts as long-term even if you sell right away.`);
   s.inv.lt += OPAL.gain; ui.doc = null; LQ.learn('basis4'); LQ.learn('stepup4'); LQ.give('basisbook');
   LQ.gain(0, 60, 'Inherited shares sold');
   await say(N.garnet, `Sold, and ${M(OPAL.gain)} of long-term gain is written in your record. Now, your Glacier Goldworks shares. Before you touch them, talk to Timekeeper Frost at the Clock Tower next door. With those, the calendar matters.`);
@@ -226,7 +223,7 @@ async function qBirch() {
   await ask(N.birch, 'The dividends were reinvested and you never saw a coin. Are they taxable this year?', ['Yes. Dividends are taxed in the year they are paid', 'No. Not until I sell the fund', 'Only if I spend them'],
     { wrong: ['Reinvesting does not delay the tax. The dividend was paid to you, and then it bought more shares.', 'Spending has nothing to do with it. Paid is paid.'] });
   divDoc.hl = 0;
-  await say(N.birch, 'Taxed this year. The good news is twofold. Each reinvested dividend adds to your basis, so you are not taxed on it again when you sell. And yours are qualified dividends, which are taxed at the long-term gain rates. For most common shares, hold them more than 60 days in the 121-day window around the ex-dividend date. The payer also has to qualify.');
+  await say(N.birch, 'Taxed this year. Two pieces of good news. Each reinvested dividend adds to your basis, so it is not taxed again when you sell. And yours are qualified dividends, taxed at the long-term gain rates.');
   divDoc.hl = 1;
   await say(N.birch, LQ.has('munis')
     ? `Your Muni Bond Lantern moved your savings into municipal bonds. The ${M(INT)} is tax-exempt interest on Form 1099-INT. Ordinary bank interest would be taxed like wages.`
@@ -289,15 +286,11 @@ async function qCirrus() {
 }
 async function qTamsin() {
   const s = st(), own = isOwner(), pre = own ? 'a pre-tax Solo 401(k)' : 'the pre-tax 401(k) at work';
-  await say(N.tamsin, 'Welcome to Base Camp. Before anyone climbs, I check their ropes. For an investor, the ropes are accounts. The same investment can cost you very different amounts of tax depending on which account holds it.');
-  acctDoc.hl = 0; ui.doc = acctDoc;
-  await say(N.tamsin, 'The taxable brokerage account is the one you have been using. Money goes in after tax. Dividends and interest are taxed every year, and gains are taxed when you sell.');
-  acctDoc.hl = 1;
-  await say(N.tamsin, `Pre-tax 401(k) contributions and deductible traditional IRA contributions lower your income today. Taxes on those contributions and their earnings wait until you withdraw them. The 2026 limits are ${M(TX.k401Limit)} for a 401(k) and ${M(TX.iraLimit)} for an IRA.`);
+  await say(N.tamsin, 'Welcome to Base Camp. Before anyone climbs, I check their ropes. For an investor, the ropes are accounts: the same investment can cost very different amounts of tax depending on which account holds it.');
+  acctDoc.hl = 0; ui.doc = acctDoc; await LQ.wait(0.6); acctDoc.hl = 1;
+  await say(N.tamsin, 'The taxable brokerage account is the one you have been using: money goes in after tax, dividends and interest are taxed every year, and gains when you sell. A pre-tax 401(k) or traditional IRA lowers your income today, and the tax waits until you withdraw.');
   acctDoc.hl = 2;
-  await say(N.tamsin, 'A Roth is the mirror image. Money goes in after tax, with no deduction today. Inside, nothing is taxed. Qualified withdrawals are tax-free, growth and all.');
-  acctDoc.hl = 3;
-  await say(N.tamsin, 'And the HSA, if you have a high-deductible health plan. Untaxed going in, untaxed growing, and untaxed coming out for medical costs. Nothing else gets all three.');
+  await say(N.tamsin, 'A Roth is the mirror image: no deduction today, and qualified withdrawals are tax-free, growth and all. An HSA, if you have a high-deductible health plan, is untaxed going in, growing, and coming out for medical costs. Nothing else gets all three.');
   acctDoc.hl = -1;
   await ask(N.tamsin, 'Which account uses after-tax money and offers tax-free qualified withdrawals?', ['A Roth', 'A traditional 401(k)', 'A taxable brokerage account'],
     { wrong: ['Traditional accounts are untaxed going in and taxed coming out.', 'A taxable account is taxed going in and then again every year.'] });
@@ -311,7 +304,6 @@ async function qTamsin() {
     `Pre-tax. That takes ${M(SAVE)} off this year's income and cuts your tax bill by about ${M(cut)} right now. The kingdom will collect when you take it out in retirement, at whatever your rate is then.`,
     `The taxable account. It works, and the money stays easy to reach. But its dividends will be taxed every year and its gains when you sell, where a Roth or a 401(k) would have sheltered them. That flexibility can help if you need the money before retirement.`][p]);
   if (p < 2) LQ.gain(10, 0, 'Sheltered savings');
-  await say(N.tamsin, 'Last knot. What you hold where matters too. Things that throw off taxable income every year, like bonds and high-dividend funds, belong inside the sheltered accounts. Broad index funds you will hold for years do fine in the taxable account.');
   LQ.learn('accounts4'); LQ.learn('location4'); LQ.give('ropes');
   await say(N.tamsin, 'Your ropes are sound. Which is good, because something on the peak has been roaring out hot stock tips all week, and half the town has emptied its savings to chase them. The ice wall on the peak trail has just come down. Go carefully.');
   await LQ.world.clear('gate', '#dbe5ef', 'North of town, the ice wall across the peak trail cracks and falls away.');
@@ -332,16 +324,15 @@ const prefOpts = f => [`${M(f.prefTax)}: ${M(f.at0)} at 0% and ${M(f.at15)} at 1
 function rows4(f) {
   const R = [], own = f.kind === 'se', add = (label, val, o) => R.push(Object.assign({ label, val }, o));
   add(own ? "Marlowe's wages  (W-2, Box 1)" : 'Wages  (both W-2s, Box 1)', f.wages);
-  add(own ? 'Business profit  (shop + gig)' : 'Business profit  (Schedule C)', f.biz, { note: `Schedule C, the same as last year: ${M(f.biz)} of net profit.` });
-  add('Interest and dividends', f.int + f.qd, f.int ? { ask: [`Your savings paid ${M(f.int)} of interest and your shares paid ${M(f.qd)} of qualified dividends. Both go on this line. Which one gets the lower long-term rates?`, ['The qualified dividends', 'The interest', 'Both of them'],
-    ['Interest is taxed like wages.', 'Only the qualified dividends. Interest is taxed like wages.']] } : { note: `Your municipal bond interest is free of federal tax, so only the ${M(f.qd)} of qualified dividends goes here.` });
+  // Two questions on this return: the tax on the stacked gains, and the result. The other lines fill themselves in.
+  add(own ? 'Business profit  (shop + gig)' : 'Business profit  (Schedule C)', f.biz);
+  add('Interest and dividends', f.int + f.qd, f.int ? undefined : { note: `Your municipal bond interest is free of federal tax, so only the ${M(f.qd)} of qualified dividends goes here.` });
   add('Capital gain or loss  (Schedule D)', f.capLine, { note: capNote(f) });
-  add('Adjustments  (half SE tax, savings)', f.adj, { sign: '-', note: `Half of your self-employment tax, plus your savings` + (f.acct ? `, including the ${M(f.acct)} you put away pre-tax this year` : '') + `: ${M(f.adj)}.` });
+  add('Adjustments  (half SE tax, savings)', f.adj, Object.assign({ sign: '-' }, f.acct ? { note: `Your adjustments include the ${M(f.acct)} you put away pre-tax this year.` } : {}));
   add(f.itemize ? 'Itemized deductions' : f.giftStd ? 'Standard deduction + gifts' : 'Standard deduction', f.ded, { sign: '-' });
   const od = f.ot + f.qbi;
   add(f.ot ? 'Overtime + business income deductions' : 'Business income deduction', od, { sign: '-' });
-  add('Taxable income', f.taxable, { ask: ['Taxable income. Everything above with no sign, minus every line with a minus sign. What is left?', [M(f.taxable), M(f.agi), M(f.taxable + od)],
-    ['The deduction lines still have to come off.', 'The last deduction line comes off too.']] });
+  add('Taxable income', f.taxable);
   add('Tax on wages and business income', f.ordTax, { note: `Of your taxable income, ${M(f.ord)} is ordinary income. It climbs the joint ledges first: ${M(f.ordTax)}.` });
   add('Tax on long-term gains, dividends', f.prefTax, { ask: [`Stacked on top: ${M(f.pref)} of long-term gains and qualified dividends. The 0% zone ends at ${M(ZERO)} of taxable income. What is the tax on them?`, prefOpts(f),
     ['Long-term gains and qualified dividends have their own rates. Use the stack.', f.at15 ? 'Above the 0% zone they are taxed at 15%.' : 'Check where your ordinary income ends. The gains sit under the line.']] });
@@ -353,14 +344,13 @@ function rows4(f) {
 }
 async function qAlpen() {
   const s = st(), f = LQ.fin4(), rows = rows4(f), owed = f.diff < 0, amt = Math.abs(f.diff), FD = D.formDoc;
-  await say(N.alpen, 'The roaring has stopped, and people are coming down off the peak looking sheepish. Welcome to the Summit Tax Office. You have the thickest folder I have seen this year.');
   Object.assign(FD, { rows, vals: [], cur: 0, stamp: 0 }); ui.doc = FD;
-  await say(N.alpen, 'One Form 1040, as always. Wages on top. Schedule C for the gig. Then the new lines: interest, dividends, and Schedule D for everything you sold. You fill it in. I hold the stamp.');
+  await say(N.alpen, 'The roaring has stopped, and people are coming down off the peak looking sheepish. One Form 1040, as always, with new lines this year: interest, dividends, and Schedule D for everything you sold. You fill it in. I hold the stamp.');
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i]; FD.cur = i;
     if (r.ask) await ask(N.alpen, r.ask[0], r.ask[1], { wrong: r.ask[2] });
     FD.vals[i] = r.val; LQ.audio.sfx('coin');
-    if (r.note) await say(N.alpen, r.note); else if (!r.ask) await LQ.wait(0.35);
+    if (r.note) await say(N.alpen, r.note); else if (!r.ask) await LQ.wait(0.7);
   }
   FD.cur = -1;
   await LQ.wait(0.4); LQ.audio.sfx('stamp'); LQ.shake(0.25); await LQ.tween(0.35, k => { FD.stamp = k; });
@@ -411,18 +401,12 @@ async function ending4(f) {
 // ---------- the peak
 const GLINT = { name: 'Glint' };
 const MYTHS4 = [
-  { myth: 'Yer shares went UP! Ye owe tax on every coin of it, this very minute, sold or not!',
-    opts: ['A gain is taxed when I sell, not while I hold.', 'True. Rising prices are taxed every year.', 'True, but only on Fridays.'],
-    truth: 'Nothing is owed on a gain until the investment is sold.' },
   { myth: 'One big gain will SHOVE all yer wages into a higher bracket! Sell nothing, ever!',
     opts: ['Long-term gains stack on top. My wages are taxed as before.', 'True. A gain raises the rate on everything.', 'True, unless I sell at night.'],
     truth: 'Ordinary income fills the brackets first, and gains sit on top at their own rates.' },
   { myth: 'Sell at a loss, buy it back the same afternoon, and CLAIM the loss! Free deduction!',
     opts: ['That is a wash sale. The loss is disallowed for now.', 'True. Nobody checks the dates.', 'True, if I use a different broker.'],
     truth: 'Buy back within 30 days and the loss is added to the new basis instead.' },
-  { myth: 'Reinvested dividends are INVISIBLE! No cash in yer claw, no tax!',
-    opts: ['Dividends are taxed the year they are paid, reinvested or not.', 'True. Reinvested money is not income.', 'True, for the first ten years.'],
-    truth: 'They are taxed when paid, and each one adds to my basis.' },
   { myth: 'Hold it a year? BAH! A gain is a gain! The taxman takes the same either way!',
     opts: ['Held more than a year, a gain gets the lower long-term rates.', 'True. Holding longer changes nothing.', 'True. Short-term gains are taxed less.'],
     truth: 'Short-term gains are taxed like wages. Long-term gains are taxed at 0%, 15%, or 20%.' },
@@ -437,7 +421,7 @@ LQ.BOSSES.glint = {
   who: GLINT, label: 'GLINT, THE HOT-TIP DRAGON', kind: 'glint', move: 'fire', sky: ['#070a26', '#2c3f8a'], hill: '#3a4a7e', ground: ['#5a6ea8', '#7186c0'], fog: '240,200,90', bar: ['#d9a520', '#fff3b0'], ink: '#7a5a12',
   approach: 'Gold light pours over the ridge. Something enormous uncoils from a hoard of crumpled stock tips.',
   intro: ['PSSST. Hero. I am Glint. I have a tip for ye. A SURE thing. Everyone on this mountain is buying it. Ye would be a fool to miss out.', 'I know everything there is to know about gains. Ask anyone I have ruined.'],
-  taunt: 'HAR! Now ye are thinking like an investor. Buy high! Sell in a panic!', fogLine: 'The gold glare dazzles you.',
+  taunt: 'HAR! Now ye are thinking like an investor. Buy high! Sell in a panic!', gloat: 'HAR! Cooked through. Come back when ye have cooled off.', fogLine: 'The gold glare dazzles you.',
   myths: () => MYTHS4,
   final: () => {
     const f = LQ.fin4();
@@ -523,12 +507,12 @@ LQ.AUDIT_POOL.push(
 );
 
 LQ.CH4 = {
-  npcs: NPC_LIST, chests: CHESTS, begin,
+  npcs: NPC_LIST, chests: CHESTS, tips: TIPS, begin,
   coins: [[10, 20], [20, 21], [28, 20], [36, 21], [42, 20], [6, 30], [12, 31], [30, 30], [40, 31], [23, 14], [24, 35], [24, 40], [19, 9], [30, 6], [21, 4], [26, 4]],
   signs: [
     { tx: 22, ty: 13, fn: () => st().flags.boss4 ? 'THE PEAK. Quiet again. The view is free.' : 'THE PEAK. Beware of hot tips. If it sounds too good to be true, it is roaring.' },
     { tx: 21, ty: 22, text: 'SUMMIT OF GAINS. North-west: the Assay House and the Clock Tower. North-east: the Summit Bank and the Avalanche Station. South-west: the Summit Lodge and Base Camp. South-east: the Summit Tax Office. In the plaza: the Summit Outfitter and the Summit Exchange. South: the trail down to Hustle Canyon.' },
-    { tx: 26, ty: 23, fn: () => 'THE SUMMIT GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Prices react tomorrow.)' + (st().flags.boss4 ? '' : ' Standing notice: Glacier Goldworks will send its crews back up if the peak is ever made safe.') },
+    { tx: 26, ty: 23, fn: () => 'THE SUMMIT GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Already in today\'s price.)' + (st().flags.boss4 ? '' : ' Standing notice: Glacier Goldworks will send its crews back up if the peak is ever made safe.') },
     { tx: 22, ty: 41, text: 'SOUTH TRAIL to Hustle Canyon.' },
   ],
   talk: async id => {

@@ -28,9 +28,9 @@ const J = LQ.jobs = {
   G: null, KINDS, BOARD: [6, 24],
   // paid shifts left before the next quest step
   left(s = st()) { return s.flags.shiftQ === stepKey(s) ? Math.max(0, 2 - (s.flags.shiftN || 0)) : 2; },
-  // Gross scales with the score and is capped at half a payday. Tax comes out by the player's own choice.
+  // Gross scales with the score and tops out at one and a half paydays. Tax comes out by the player's own choice.
   pay(score) {
-    const c = LQ.career(), f = LQ.fin(), cap = Math.round(c.pay / 2), gross = Math.round(cap * Math.min(1, score / KINDS[c.id].target));
+    const c = LQ.career(), f = LQ.fin(), cap = Math.round(c.pay * 1.5), gross = Math.round(cap * Math.min(1, score / KINDS[c.id].target));
     const fed = Math.round(gross * f.per / f.gross), fica = f.kind === 'w2' ? Math.round(gross * (f.ss + f.med) / f.gross) : 0;
     return { gross, fed, fica, net: Math.max(0, gross - fed - fica), cap };
   },
@@ -166,7 +166,7 @@ const J = LQ.jobs = {
   // the shift board by the Work Hall
   addBoard(w, s) {
     const [tx, ty] = J.BOARD;
-    w.ents.push({ type: 'board', tx, ty, solid: true, base: ty * T + 15,
+    w.ents.push({ type: 'board', qid: 'shiftboard', tx, ty, solid: true, base: ty * T + 15,
       use: () => LQ.script(async () => {
         if (s.quest < 2 || s.w4 == null) return LQ.say(null, 'The shift board. A note is pinned to it: "Shifts are posted once your tax payments are set up. See Foreman Brannock."');
         const c = LQ.career(), n = J.left(s);
@@ -178,6 +178,7 @@ const J = LQ.jobs = {
         R(g, x + 2, y + 4, 2, 11, '#2c2e5c'); R(g, x + 12, y + 4, 2, 11, '#2c2e5c'); R(g, x, y - 8, 16, 13, '#3a2a1c'); R(g, x + 1, y - 7, 14, 11, '#6a4526');
         R(g, x + 3, y - 5, 4, 5, '#e6eaff'); R(g, x + 9, y - 4, 4, 5, on ? '#ffcf4a' : '#8a8a96'); R(g, x + 4, y + 1, 6, 2, '#e6eaff');
         if (on) LQ.fx.light(x + 8, y - 2, 14, '#ffcf4a', .3 + .1 * Math.sin(tm * 3));
+        if (w.questTarget() === 'shiftboard') g.drawImage(LQ.prop('mark'), x + 5, y - 24 + Math.round(Math.sin(tm * 6) * 2));
       } });
   },
 };

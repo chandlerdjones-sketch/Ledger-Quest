@@ -9,7 +9,7 @@ global.LQ = { ui: { toast: noop, wrap: () => [], text: noop, panel: noop, choice
 const base = () => ({ quest: 9, w4: 0, savvy: 0, coins: 500, asked: 0, first: 0, journal: [], items: [], season: 'summer', chests: {}, coinsGot: {}, flags: { married: true }, career: 'nurse', streak: 0, gear: [], tips: {},
   lossBank: 0, region: 'canyon', q2: 8, rcpt: {}, w4b: 0, wh2: null, child: true, q3: 0, gig: null, est3: null, q4: null, inv: null, hold4: null, harv4: null, acct4: null });
 LQ.state = base();
-for (const f of ['taxdata', 'economy', 'household', 'chapter1', 'audit', 'battle', 'chapter2', 'chapter3', 'chapter4', 'world', 'coast', 'canyon', 'summit', 'kit', 'foes', 'rooms', 'vaults1', 'jobs', 'depth', 'adventure', 'money', 'intro', 'backoffice', 'flavor'])
+for (const f of ['taxdata', 'economy', 'household', 'chapter1', 'audit', 'battle', 'chapter2', 'chapter3', 'chapter4', 'world', 'coast', 'canyon', 'summit', 'kit', 'foes', 'rooms', 'vaults1', 'jobs', 'depth', 'adventure', 'money', 'sidejobs', 'intro', 'backoffice', 'flavor'])
   vm.runInThisContext(fs.readFileSync(dir + '/js/' + f + '.js', 'utf8'), { filename: f + '.js' });
 let bad = 0; let fail = m => { bad++; console.log('  FAIL: ' + m); };
 const M = LQ.money, TX = LQ.TAX;
@@ -125,14 +125,27 @@ console.log('== Adventure');
   const open = reach(LQ.REGIONS.village, LQ.CH1, [24, 37], mid);
   if (!open.seen[12][30]) fail('village: the east footbridge does not reach the north bank');
   if (!open.seen[F.porch[1] + 1][F.porch[0]]) fail('village: cannot stand by Granny Maple\'s porch');
-  // Shift pay: capped at half a payday, never more out than in, for every career and every tax choice.
+  // Shift pay: capped at one and a half paydays, never more out than in, for every career and every tax choice.
   if (String(LQ.jobs.BOARD) !== String(F.board)) fail('jobs: the shift board is not where the village keeps a tile clear');
   for (const career of ['nurse', 'food', 'owner']) for (const w4 of [0, 1, 2]) for (const score of [0, 3, 8, 40]) {
-    Object.assign(LQ.state, { career, w4, gear: [] }); const p = LQ.jobs.pay(score), cap = Math.round(LQ.CAREERS[career].pay / 2);
+    Object.assign(LQ.state, { career, w4, gear: [] }); const p = LQ.jobs.pay(score), cap = Math.round(LQ.CAREERS[career].pay * 1.5);
     if (p.gross > cap || p.gross < 0 || p.net > p.gross || p.net < 0 || p.fed < 0 || p.gross - p.fed - p.fica !== p.net && p.net !== 0) fail(`jobs: bad shift pay for ${career} w4 ${w4} score ${score}: ${JSON.stringify(p)}`);
     if (score === 40 && p.gross !== cap) fail(`jobs: a full shift should pay the cap for ${career}`);
   }
   LQ.state.flags = {}; if (LQ.jobs.left() !== 2) fail('jobs: a new quest step should offer two paid shifts');
+  // The W-4 link: what a tax choice adds to the six Chapter 1 paydays, the same choice takes back at filing (15 dollars a coin).
+  // Rounding and the half-pay floor may leave a few coins either way. No choice may ever turn a profit of more than ten.
+  for (const career of ['nurse', 'food', 'owner']) {
+    Object.assign(LQ.state, { career, w4: 0, gear: [] }); const pay = LQ.CAREERS[career].pay, even = Math.round(LQ.fin(0).diff / 15);
+    if (LQ.w4Shift(0) !== 0) fail('w4 link: the plain choice should not move a payday');
+    for (const w4 of [1, 2]) {
+      const shift = LQ.w4Shift(w4), back = Math.max(-400, Math.round(LQ.fin(w4).diff / 15)) - even, net = 6 * shift + back;
+      console.log(`  w4 link ${career} choice ${w4}: ${shift > 0 ? '+' : ''}${shift} a payday (base ${pay}), ${back > 0 ? '+' : ''}${back} at filing, net ${net}`);
+      if (shift * back > 0) fail(`w4 link: ${career} choice ${w4} moves paydays and the settlement the same way`);
+      if (net > 10) fail(`w4 link: ${career} choice ${w4} turns a profit of ${net} coins`);
+      if (pay + shift < pay / 2 || shift > pay) fail(`w4 link: ${career} choice ${w4} moves a payday too far`);
+    }
+  }
   console.log('  fooled villagers and shift pay checked');
 }
 // Flood fill inside a room. `open` lists part characters to treat as walkable.

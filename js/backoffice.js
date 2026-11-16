@@ -49,6 +49,7 @@ async function vellTalk() {
   await say(VELL, 'One thing is left. His Standing Order is nailed to the press. While it stands, the fog is still for sale. Face it and press E. An honest mark will void it.');
 }
 async function murkTalk() {
+  if (st().flags.murkDown) return say(MURK, 'I am out of pitches. Do what you came to do.');
   await say(MURK, 'Quillon Murk, Head Clerk. You have been costing me customers. Befuddle, Loophole, Slick, the Dragon: all paid up, and all out of business.');
   await say(MURK, 'I never told one lie. I only took the plain pages away and sold what grew in the gap. People pay well to stay confused, and better to be rescued.');
   const a = await LQ.choose(MURK, 'Put the stamp down, and a tenth of every crate is yours. Well?', ['Keep the stamp in hand', 'Ask what the tenth is worth']);
@@ -58,6 +59,12 @@ async function murkTalk() {
 async function finale(w) {
   const s = st(); if (s.flags.ledgerDone) return;
   if (!s.flags.vellFree) return say(null, 'Talk to Clerk Vell before you stamp the Standing Order.');
+  // Murk will not let the order be struck while he still has something to sell.
+  if (!s.flags.murkDown) {
+    await say(MURK, s.flags.murkMet ? 'Back again? The price of that order has only gone up.' : 'Not one inch closer. That order is my whole business, and I have never lost a sale.');
+    s.flags.murkMet = true;
+    return LQ.startBattle('murk');
+  }
   sfx('stamp'); LQ.shake(.5); w.burst(B.press.tx * T + 8, B.press.ty * T + 8, '#ffcf4a', 30, 70);
   await say(null, 'VOID. The Standing Order curls under the mark. The supplier’s name comes into focus on the invoices: "Q. MURK, HEAD CLERK."');
   sfx('rumble'); LQ.shake(.4);
@@ -68,13 +75,84 @@ async function finale(w) {
   if (B.murk) { w.remove(B.murk); B.murk = null; w.refresh(); }
   LQ.give('greatledger'); LQ.gain(100, 300, 'The Great Ledger restored'); sfx('fanfare');
   await say(VELL, 'The fog was never magic. It was missing pages. Now anyone can read what you learned the hard way: how pay is taxed, what counts, and what a promise of easy money is worth.');
+  LQ.save();
+  await ending(w);
   ui.showBanner('THE GREAT LEDGER IS WHOLE', 'Twelve pages. Twelve truths.');
   LQ.save();
+}
+// The last fight. Murk has no myths about the tax rules. He sells fear of them, one pitch at a time.
+// Each truth was checked against IRS Topic 254 (choosing a preparer), the IRS Free File and VITA pages, and the Form 1040-X instructions (Nov 2026).
+const PITCHES = [
+  { myth: 'Taxes are FAR too complicated for someone like you. Pay me and stop thinking!',
+    opts: ['A return is a handful of lines, and I have filed four of them myself.', 'True. Only an expert can read a tax form.', 'It is safer not to look at my own numbers at all.'],
+    truth: 'Income, deductions, tax, payments. I can read every line of my own return.' },
+  { myth: 'Free help is a TRAP! Good tax help always costs a fortune!',
+    opts: ['IRS Free File and volunteer programs help many filers at no cost.', 'True. If it is free, it must be wrong.', 'Help only counts if it is expensive.'],
+    truth: 'IRS Free File offers free software under an income limit, and volunteer sites such as VITA prepare returns free for people who qualify.' },
+  { myth: 'One wrong number and they take EVERYTHING! Only I can keep you safe!',
+    opts: ['A mistake can be fixed with an amended return, and an IRS letter says exactly what to do.', 'True. One typo and the cottage is gone.', 'Never file, and nothing can go wrong.'],
+    truth: 'An honest mistake is fixed with an amended return, Form 1040-X. The IRS usually writes by mail first, and each letter names one issue and says what to do about it.' },
+  { myth: 'I GUARANTEE the biggest refund in the kingdom! My fee is only a share of it!',
+    opts: ['Nobody honest promises a refund before seeing my numbers, or charges a cut of it.', 'A bigger promise means a better preparer.', 'A share of the refund is the fairest fee there is.'],
+    truth: 'A preparer who promises a big refund up front, or takes a percentage of it, is a warning sign. A refund is whatever my real numbers say.' },
+  { myth: 'Just SIGN here. No need to read it. I will keep your copy safe!',
+    opts: ['I read my return before I sign it, I keep a copy, and a paid preparer signs it too.', 'Signing a blank return saves everyone time.', 'If someone else prepared it, the mistakes are theirs alone.'],
+    truth: 'I answer for what is on my return, whoever prepared it. I read it, I keep a copy, and a paid preparer has to sign it as well.' },
+];
+LQ.BOSSES.murk = {
+  who: MURK, label: 'HEAD CLERK MURK', kind: 'murk', move: 'forms', sky: ['#0a0616', '#2e1038'], hill: '#1a0d24', ground: ['#1d1430', '#4a2a5c'], fog: '255,79,176', bar: ['#c93a8c', '#ff9ad2'], ink: '#4a1f4f',
+  approach: 'Murk steps between you and the press. Fog pours out of his sleeves and the shelves fall away.',
+  intro: ['You have a stamp. I have a sales pitch for every fear a taxpayer ever had. Let us see which of us runs out first.', 'Mind the fine print on your way over. Every clause you trip on goes on your bill.'],
+  taunt: 'Sold! Fear is the easiest thing in the world to sell.', gloat: 'And that is the sale. Do come again.', fogLine: 'The fine print swims in front of your eyes.',
+  myths: () => PITCHES,
+  final: () => ({ bubble: 'ENOUGH! Without the fog, what is left for people to BUY? Tell me what your precious Ledger is even FOR!', prompt: 'End it:',
+    opts: ['So anyone can read the rules for themselves.', 'So clerks can charge for the answers.', 'So nobody ever has to file again.'],
+    wrong: ['That was your business. It was never the purpose.', 'The Ledger explains filing. It excuses nobody from it.'],
+    strike: 'It is there so anyone can read the rules for themselves. That is the one thing you cannot sell.' }),
+  lastWords: 'People WANT the fog... they paid for it... they always... pay...',
+  after: 'The fog drains out of the room. Murk is only a clerk in a tall hat, with nothing left to sell.',
+  win: async () => { st().flags.murkDown = true; LQ.gain(60, 0, 'Head Clerk Murk is out of pitches'); },
+  back: w => { w.loadRoom('backoffice', 'murk'); w.music(); },
+  done: async () => say(null, 'The Standing Order is still nailed to the press. Face it and press E with the Truth Stamp.'),
+};
+
+// The last two pages of the game: the twelve truths side by side, then the player's own record.
+const TRUTHS = () => ['Tax is counted ledge by ledge, never all at once.', 'A refund is your own money coming home.', 'Know your own numbers, and no myth can sell you a fear.']
+  .concat([4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => LQ.depth.PAGES[n].truth));
+async function ending(w) {
+  const s = st(), D = LQ.docs, F = LQ.F, truths = TRUTHS();
+  await LQ.fadeTo(1, .5); ui.toasts = []; LQ.audio.play('title');
+  ui.doc = { draw(c) {
+    D.paper(c, 70, 16, 820, 470, 'THE GREAT LEDGER', 'Whole again');
+    c.textBaseline = 'top'; c.font = F(21);
+    truths.forEach((t, i) => {
+      const y = 62 + i * 34;
+      c.textAlign = 'right'; c.fillStyle = '#1f6f5c'; c.fillText(String(i + 1), 118, y);
+      c.textAlign = 'left'; c.fillStyle = '#15122e'; ui.wrap(c, t, 730).slice(0, 2).forEach((ln, k) => c.fillText(ln, 134, y + k * 16 - (ui.wrap(c, t, 730).length > 1 ? 7 : 0)));
+    });
+  } };
+  await LQ.fadeTo(0, .6); await LQ.pressOk();
+  const left = Object.keys(LQ.JOURNAL).length - s.journal.length;
+  ui.doc = { draw(c) {
+    D.paper(c, 130, 30, 700, 440, 'LEDGER QUEST', 'The end');
+    c.textAlign = 'center'; c.textBaseline = 'top'; c.font = F(20, true); c.fillStyle = '#1f6f5c'; c.fillText(LQ.rank().toUpperCase(), 480, 80);
+    const L = (i, a, b, o) => D.line(c, 170, 118 + i * 30, 620, a, b, Object.assign({ size: 24 }, o));
+    L(0, 'Ledger Pages brought home', '12 of 12', D.GREEN); L(1, 'Right on the first try', s.first + ' of ' + s.asked);
+    L(2, 'Savvy', String(s.savvy)); L(3, 'Audits faced', String(s.audits || 0));
+    L(4, 'Net worth', String(LQ.netWorth()), D.GREEN); L(5, 'Journal entries', s.journal.length + ' of ' + Object.keys(LQ.JOURNAL).length);
+    c.font = F(24); c.textAlign = 'center'; c.fillStyle = '#15122e';
+    ['The fog is gone, and the pages are back where anyone can read them.', 'Thank you for playing.', '',
+      left > 0 ? 'The towns stay open. ' + left + ' journal entries are still out there with the villagers.' : 'You filled the whole Tax Journal. There is nothing left to hide from you.']
+      .forEach((ln, i) => c.fillText(ln, 480, 318 + i * 28, 640));
+    c.font = F(20); c.fillStyle = '#5a5490'; c.fillText('Educational game. US federal figures for tax year ' + LQ.TAX.year + '. Not tax advice.', 480, 434, 640);
+  } };
+  await LQ.pressOk();
+  await LQ.fadeTo(1, .3); ui.doc = null; w.music(); await LQ.fadeTo(0, .8);
 }
 
 LQ.ROOMS.backoffice = {
   title: 'THE BACK OFFICE', sub: 'Behind the tall door', music: 'mountain', home: true, exitTo: 'cellar1',
-  from: { cellar1: [10, 12, 'up'], faint: [2, 12, 'up'] },
+  from: { cellar1: [10, 12, 'up'], faint: [2, 12, 'up'], murk: [9, 7, 'up'] },
   rows() {
     B = { gate: null, murk: null };
     // Spare wall rows above and below let the camera scroll, so the HUD never sits on top of the press or the valves.

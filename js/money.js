@@ -13,7 +13,7 @@ const WORDS = {
   seller: { stock: 'Pots', hint: 'You are selling at the market. Press Space by a waiting customer to sell a pot. Press Space at the back crate to bring out three more.', cost: 'Clay and stall fees' },
   scribe: { stock: 'Letters', hint: 'You are writing for hire. Press Space by a waiting client to hand over a letter. Press Space at the back desk to write three more.', cost: 'Ink and paper' },
 };
-const GIG = { cap: 40, target: 10, costRate: .25, BOARD: [26, 22] };
+const GIG = { cap: 60, target: 10, costRate: .25, BOARD: [26, 22] };
 const stepKey = s => [s.quest, s.q2, s.q3, s.q4].join('|');
 const Mny = LQ.money2 = {
   GIG,
@@ -72,7 +72,7 @@ const canyon = LQ.REGIONS.canyon, build0 = canyon.build;
 canyon.build = () => { const m = build0(), [x, y] = GIG.BOARD; m.solid[y][x] = false; m.trees = m.trees.filter(t => !(t.x === x && t.y === y)); return m; };
 wrapSpawn('canyon', (w, s) => {
   const [tx, ty] = GIG.BOARD;
-  w.ents.push({ type: 'gigboard', tx, ty, solid: true, base: ty * T + 15,
+  w.ents.push({ type: 'gigboard', qid: 'gigboard', tx, ty, solid: true, base: ty * T + 15,
     use: () => LQ.script(async () => {
       if (!s.gig) return LQ.say(null, 'The gig board. Every notice says the same thing: "Pick a line of work at the Guild Hall first."');
       const n = Mny.left(s), gig = LQ.GIGS[s.gig];

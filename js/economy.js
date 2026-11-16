@@ -5,15 +5,15 @@ const st = () => LQ.state;
 
 // ---------- careers
 LQ.CAREERS = {
-  nurse: { id: 'nurse', name: 'Nurse', kind: 'w2', wages: 83200, ot: 6000, pays: 26, pay: 80, work: 'Willowbrook Infirmary', diff: 'Normal',
+  nurse: { id: 'nurse', name: 'Nurse', kind: 'w2', wages: 83200, ot: 6000, pays: 26, pay: 40, work: 'Willowbrook Infirmary', diff: 'Normal',
     look: { hair: '#3a2a1c', long: 1, shirt: '#2fa39a', pants: '#2a7d76', trim: '#e8fbf8' },
-    lines: ['Steady paycheck plus overtime', 'Income reaches the 22% ledge', 'Perk: the overtime deduction'] },
-  food: { id: 'food', name: 'Fast Food Worker', kind: 'w2', wages: 31200, ot: 0, pays: 26, pay: 40, work: 'the Griddle Goblin', diff: 'Tight budget',
+    lines: ['Steady paycheck plus overtime', 'Higher pay, higher top tax rate', 'Perk: the overtime deduction'] },
+  food: { id: 'food', name: 'Fast Food Worker', kind: 'w2', wages: 31200, ot: 0, pays: 26, pay: 20, work: 'the Griddle Goblin', diff: 'Tight budget',
     look: { hair: '#7a4a2a', shirt: '#d9463e', pants: '#3a3550', trim: '#f3d24a', hat: 'cap', hatColor: '#d9463e' },
-    lines: ['Hourly pay, every coin counts', 'Low brackets, small tax bill', "Perk: the Saver's Credit"] },
-  owner: { id: 'owner', name: 'Small Business Owner', kind: 'se', sales: 96000, expenses: 44000, pays: 4, pay: 95, work: 'your candle shop', diff: 'Hard',
+    lines: ['Hourly pay, every coin counts', 'Low brackets, small tax bill', 'Perk: a credit for saving'] },
+  owner: { id: 'owner', name: 'Small Business Owner', kind: 'se', sales: 96000, expenses: 44000, pays: 4, pay: 48, work: 'your candle shop', diff: 'Hard',
     look: { hair: '#231a36', shirt: '#3d9a5a', pants: '#5a4630', trim: '#f1e3bd' },
-    lines: ['No paycheck. You are the boss', 'Pay both halves of payroll tax', 'Perk: write-offs, 20% deduction'] },
+    lines: ['No paycheck. You are the boss', 'You pay your own payroll taxes', 'Perk: business write-offs'] },
 };
 LQ.career = () => LQ.CAREERS[st().career] || LQ.CAREERS.food;
 LQ.has = id => st().gear.includes(id);
@@ -142,6 +142,17 @@ LQ.finSplit = () => {
   return { joint: j, sepTax: taxP + taxS, sepTotal: taxP + taxS - TX.ctc + j.se, jointTotal: j.total, lostCare: j.care, lostOt: j.ot, singles, bonus: singles - j.tax };
 };
 LQ.cur = () => st().flags.married ? LQ.fin2() : LQ.fin();
+
+// ---------- paydays
+// Coins for one payday. Shop profits swing with the season.
+LQ.payBase = () => { const s = st(), c = LQ.career(); return c.kind === 'se' ? c.pay - 17 + Math.floor(LQ.hash(s.day, 9, s.seed) * 36) : c.pay; };
+// Chapter 1: the W-4 or estimate choice moves each of the six paydays that follow it, by the coins the same choice
+// adds to or takes from the settlement at filing (15 dollars a coin). A refund is the hero's own money coming back.
+LQ.w4Shift = (w4 = st().w4 || 0) => {
+  if (!w4) return 0;
+  const c = LQ.career();
+  return LQ.clamp(Math.round((LQ.fin(0).withheld - LQ.fin(w4).withheld) / 15 / 6), -Math.round(c.pay / 2), c.pay);
+};
 
 // ---------- points
 LQ.gain = (savvy, coins, why) => {
@@ -290,16 +301,19 @@ function makeNews() {
   s.news = { id: pick.id, pct: (up ? 1 : -1) * (.12 + LQ.hash(s.day, 5, s.seed) * .12), text: up ? pick.up : pick.down };
   s.gazette.unshift(s.news.text); s.gazette = s.gazette.slice(0, 4);
 }
-// One market day. News printed yesterday moves its stock today.
+// One market day. The Gazette explains today's move, so the news is already in the price when you read it.
+// The day after a headline can go either way, which means reading the news gives no edge.
 LQ.tick = () => {
   const s = st(); if (!s.prices) return; s.day++;
+  const old = s.news;
+  makeNews();
   LQ.STOCKS.forEach((x, i) => {
     if (s.prices[x.id] == null) return;
     let r = x.drift + (LQ.hash(s.day, i, s.seed) - .5) * 2 * x.vol;
     if (s.news && s.news.id === x.id) r += s.news.pct;
+    if (old && old.id === x.id) r += (LQ.hash(s.day, 6, s.seed) - .5) * .12;
     s.prev[x.id] = s.prices[x.id]; s.prices[x.id] = Math.max(2, s.prices[x.id] * (1 + r));
   });
-  makeNews();
 };
 LQ.shares = id => (st().lots && st().lots[id] || []).reduce((a, l) => a + l.n, 0);
 LQ.portfolio = () => st().prices ? LQ.STOCKS.reduce((a, x) => a + (st().prices[x.id] == null ? 0 : LQ.shares(x.id) * LQ.price(x.id)), 0) : 0;
@@ -366,10 +380,10 @@ LQ.broker = async who => {
   if (!s.flags.brokerSeen) {
     s.flags.brokerSeen = true;
     await LQ.say(who, (s.region === 'coast' ? 'A word on how this works.' : 'Welcome to ' + LQ.EXCHANGE_NAME[s.region] + '.') + ' This is a taxable brokerage account. Buy a share, and you own a slice of a real local business.');
-    await LQ.say(who, 'Two rules of the road. One: the Gazette on the notice board prints news a day before prices react, so read it. Two: when you sell for a gain, the taxman takes a cut. Hold for more than a year and you may get a lower rate.');
+    await LQ.say(who, 'Two rules of the road. One: the Gazette on the notice board says why a price moved today. By the time you read it, that news is already in the price, and nobody knows tomorrow. If you would rather not guess, the index fund owns a slice of everything. Two: when you sell for a gain, the taxman takes a cut. Hold for more than a year and you may get a lower rate.');
     LQ.learn('brokerage');
   }
-  await LQ.say(who, "Today's Gazette: " + (s.news ? s.news.text : 'No news.') + ' Prices react tomorrow.');
+  await LQ.say(who, "Today's Gazette: " + (s.news ? s.news.text : 'No news.') + ' That is already in today\'s price.');
   for (;;) {
     brokerDoc.sel = 0; ui.doc = brokerDoc;
     const i = await LQ.choose(who, 'Which one?', list.map(x => x.id + '  ' + x.name).concat('Leave'), k => { brokerDoc.sel = k; });

@@ -147,9 +147,8 @@ const slipDoc = { draw(c) {
 
 // ---------- quest scripts
 const advance3 = () => {
-  const s = st(); s.q3++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.QUESTS3[s.q3].short);
-  const c = LQ.career(), base = c.kind === 'se' ? c.pay - 35 + Math.floor(LQ.hash(s.day, 9, s.seed) * 90) : c.pay;
-  LQ.gain(0, base + 50 + (s.gig ? 40 : 0), s.gig ? 'Payday and gig money' : 'Household payday'); LQ.tick();
+  const s = st(); s.q3++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.curQuest().short);
+  LQ.gain(0, LQ.payBase() + 25 + (s.gig ? 20 : 0), s.gig ? 'Payday and gig money' : 'Household payday'); LQ.tick();
 };
 const FOUND = {
   xSupply: () => `A receipt for ${M(SL.xSupply.amt)} of supplies for the gig. Ordinary, necessary, and all of it counts.`,
@@ -194,7 +193,7 @@ async function qJuniper() {
   }
   ui.doc = null; s.gig = IDS[pick]; LQ.audio.sfx('stamp');
   await say(N.juniper, gig().welcome);
-  await say(N.juniper, 'One warning for your journal. If you mean to make a profit and you work at it regularly, it is a business. If it is only for fun, it is a hobby: the income is still taxed, and you cannot deduct a single expense. Treat this like a business and keep records from the first day.');
+  await say(N.juniper, 'One warning. Work at it regularly to make a profit, and it is a business. Do it only for fun, and it is a hobby: the income is still taxed, and no expense counts. So keep records from the first day.');
   LQ.learn('gig3'); LQ.give('gigsign');
   await say(N.juniper, 'A year of work goes by fast out here. When the payments have come in, take them next door to Teller Mesa at the 1099 Depot. Here is a little something to get you started.');
   LQ.gain(0, 60, 'Guild welcome'); advance3();
@@ -218,7 +217,6 @@ async function qMesa() {
   await say(N.mesa, G.id === 'driver' ? `One trap with your form. A 1099-K shows the gross: ${M(21000)}, before Trailhail kept its ${M(4200)} commission. You report the gross and then deduct the commission as an expense. Skip that step and you pay tax on money you never held.`
     : G.id === 'seller' ? 'And if you ever do cross the line and a 1099-K arrives, remember that it shows the gross, before the Bazaar Board kept its fees. You report the gross and deduct the fees as an expense.'
     : 'When the forms arrive in January, check each one against your own records. If a client reports the wrong amount, ask them to correct it before you file. The kingdom matches what they sent against what you report.');
-  await LQ.quiz(N.mesa, 'A customer pays you in cash and no form is ever sent. What do you do?', ['Report it as income anyway', 'Leave it off. No form, no tax', 'Report half, to be fair'], 'All business income goes on the return.');
   ui.doc = null; LQ.learn('f1099'); LQ.learn('allincome'); LQ.give('forms1099');
   await say(N.mesa, `Now the better half of the story. You are taxed on profit, not on what came in. Bookkeeper Lupe at the Ledger Shack, across the road to the north-east, will show you what comes off.`);
   advance3();
@@ -237,15 +235,13 @@ async function qLupe() {
     { wrong: ['Buying it on a Tuesday does not make it a business cost. It has to be for the business.', 'No permission needed. The test is whether the cost is ordinary and necessary in your trade.'] });
   schedDoc.hl = 1;
   await say(N.lupe, COSTS[G.id]());
-  await say(N.lupe, G.id === 'driver' ? 'And hear this twice. The drive from your home to a regular workplace is commuting, and commuting never counts. Only the miles on a job do, and only with a log written at the time.'
-    : 'If you ever drive for the business, the same care applies. Business miles count, with a log written at the time. Commuting never does.');
+  if (G.id === 'driver') await say(N.lupe, 'And hear this twice. The drive from your home to a regular workplace is commuting, and commuting never counts. Only the miles on a job do, and only with a log written at the time.');
   await ask(N.lupe, `You use one phone for the gig and for the family, about half and half. The bill is ${M(SL.xPhone.amt)} a year. How much can the business deduct?`, [`The business half: ${M(SL.xPhone.counts)}`, `All ${M(SL.xPhone.amt)}. I need a phone to work`, 'Nothing. It is a personal phone'],
     { wrong: ['Only the share used for the business counts.', 'Mixed use is fine. You deduct the business share and keep a note of how you worked it out.'] });
   schedDoc.hl = 2;
-  await say(N.lupe, `With the costs in your books so far, your profit is ${M(G.gross - G.cost)}. But I hear you dropped more slips than you filed. ${HUNT.length} of them are scattered around the canyon. Watch for a sparkle on the ground.`);
-  await say(N.lupe, 'A word of warning. Not every slip you find will count. Some costs feel like business and are not. Tallyman Brick will go through them with you later.');
+  await say(N.lupe, `With the costs in your books so far, your profit is ${M(G.gross - G.cost)}. But you dropped more slips than you filed: ${HUNT.length} are scattered around the canyon. Watch for a sparkle on the ground. Not every one will count, and Tallyman Brick will sort them with you later.`);
   ui.doc = null; LQ.learn('expenses3'); LQ.learn('mileage3'); LQ.give('books3');
-  await say(N.lupe, 'Before that, there is a bill nobody warned you about. Assayer Flint, at the Assay Office just east of here, weighs it out for every newcomer.');
+  await say(N.lupe, 'First, there is a bill nobody warned you about. Assayer Flint, at the Assay Office just east of here, weighs it out for every newcomer.');
   advance3();
   LQ.REGIONS.canyon.addSlips(LQ.world, s);
 }
@@ -258,13 +254,11 @@ async function qFlint() {
   await ask(N.flint, 'So what is the self-employment tax rate?', ['15.3%: both halves', '7.65%: the same as on a paycheck', '10%: the first bracket'],
     { wrong: ['That is only the worker half. Nobody is paying the other half for you now.', 'That is an income tax rate. This is a separate tax, on top of income tax.'] });
   seDoc.show = 1; LQ.audio.sfx('wrong');
-  await say(N.flint, `15.3%, applied to 92.35% of your net profit. On ${M(f.biz)} that is ${M(f.se)}. It is owed on top of income tax, and it is owed once your net self-employment earnings reach ${M(TX.seMinimum)}, even if your income tax comes to nothing.`);
-  if (!own) await say(N.flint, `Of that, ${M(f.seGig)} is brand new this year, and no paycheck withholding covers it. This is the number that surprises people in April.`);
+  await say(N.flint, `15.3%, applied to 92.35% of your net profit. On ${M(f.biz)} that is ${M(f.se)}, owed on top of income tax.` + (own ? '' : ` ${M(f.seGig)} of it is brand new this year, and no paycheck withholding covers it. This is the number that surprises people in April.`));
   await ask(N.flint, 'There is one mercy. How much of the self-employment tax can you deduct from your income?', [`Half of it: ${M(f.half)}`, `All of it: ${M(f.se)}`, 'None of it'],
     { wrong: ['Only half. It mirrors the half an employer would have paid.', 'There is a deduction. Think of the half an employer normally covers.'] });
   seDoc.show = 2; LQ.audio.sfx('coin');
-  await say(N.flint, `Half: ${M(f.half)}. It comes off your income before the brackets, whether or not you itemize.`);
-  await say(N.flint, `And a second mercy. Most people with business profit can deduct 20% of it from taxable income. For you that is ${M(f.qbi)} this year. It lowers income tax only. Self-employment tax does not budge.`);
+  await say(N.flint, `Half: ${M(f.half)}. It comes off your income before the brackets, whether or not you itemize. And a second mercy: most people with business profit can deduct 20% of it from taxable income, ${M(f.qbi)} for you this year. That one lowers income tax only.`);
   ui.doc = null; LQ.learn('setax3'); LQ.learn('qbi3'); LQ.give('seslip');
   await say(N.flint, 'Now you know the size of the bill. The next question is when to pay it. Quartermaster Dune at the Quarter Station, south-west of the plaza, runs the calendar.');
   advance3();
@@ -276,8 +270,7 @@ async function qDune() {
   await say(N.dune, `Tax is pay-as-you-go. The gig adds about ${M(f0.gigBill)} to your household's bill: income tax plus self-employment tax. The kingdom wants it in four estimated payments, sent with Form 1040-ES.`);
   await ask(N.dune, 'The first three are due April 15, June 15, and September 15. When is the fourth?', ['January 15 of the next year', 'December 31', 'April 15, with the return'],
     { wrong: ['Close, but you get two more weeks. It is in January.', 'By April the year is long over. The fourth payment is due in January.'] });
-  await say(N.dune, `January 15. If you expect to owe ${M(TX.estMinimum)} or more at filing, check whether withholding meets the safe harbor. Missing a required payment can cost you, quarter by quarter.`);
-  await say(N.dune, 'There is a safe harbor. The usual targets are 90% of this year\'s tax or 100% of last year\'s. Pay enough on time and you can avoid a penalty even if you owe something in April.');
+  await say(N.dune, "January 15. Miss a required payment and a penalty builds, quarter by quarter. There is a safe harbor: pay in 90% of this year's tax or 100% of last year's, on time, and you avoid the penalty even if you owe something in April.");
   const p = await choose(N.dune, 'How will you pay the tax on your gig?', [`Four payments of about ${M(f0.quarter)}, each on its due date`, 'Skip the estimates and settle up in April', 'One big payment in January for the whole year'], i => { estDoc.pick = i; });
   s.est3 = p; LQ.audio.sfx('stamp');
   const f = LQ.fin3({ est: p });
@@ -310,20 +303,18 @@ async function qBrick() {
 
 function rows3(f) {
   const R = [], own = f.kind === 'se', G = f.G, b = f.b, add = (label, val, o) => R.push(Object.assign({ label, val }, o));
-  add(own ? "Marlowe's wages  (W-2, Box 1)" : 'Wages  (both W-2s, Box 1)', f.wages, { note: own ? `Marlowe's Box 1: ${M(f.wages)}.` : `Your Box 1 plus Marlowe's: ${M(f.wages)}. The day jobs go on the return the same as last year.` });
-  add(own ? 'Business profit  (shop + gig)' : 'Business profit  (Schedule C)', f.biz, { ask: [own ? 'Now the businesses. Which number moves from Schedule C to the return?' : 'Now the gig. Which number moves from Schedule C to the return?',
-    [`Net profit: ${M(f.biz)}`, `Everything customers paid: ${M((own ? b.sales : 0) + f.gigGross)}`, `Only gig income that came with a form: ${M(G.formed)}`],
-    ['That is before expenses. You are taxed on profit.', 'Every coin counts, form or no form, and then the expenses come off.']] });
-  add('Half of self-employment tax', f.half, { sign: '-', note: `Half of your self-employment tax comes off your income: ${M(f.half)}.` });
+  // Two questions on this return: the Schedule SE line, and the result. The other lines fill themselves in.
+  add(own ? "Marlowe's wages  (W-2, Box 1)" : 'Wages  (both W-2s, Box 1)', f.wages);
+  add(own ? 'Business profit  (shop + gig)' : 'Business profit  (Schedule C)', f.biz, { note: `Schedule C carries your net profit onto the return: ${M(f.biz)}. Profit, not everything customers paid, and every coin of it whether a form arrived or not.` });
+  add('Half of self-employment tax', f.half, { sign: '-' });
   const other = f.adj - f.half;
   if (other) add('HSA and retirement savings', other, { sign: '-', note: `Your savings gear comes off next: ${M(other)}.` });
   add(f.itemize ? 'Itemized deductions' : f.giftStd ? 'Standard deduction + gifts' : 'Standard deduction', f.ded, { sign: '-',
     note: f.itemize ? `This year your itemized pile, ${M(f.itemized)}, beats the standard deduction.` : `No loan points this year, so your itemized pile is only ${M(f.itemized)}. The standard deduction wins. You check again every year.` });
   if (f.ot) add('Overtime deduction', f.ot, { sign: '-' });
-  add('Business income deduction', f.qbi, { sign: '-', note: `The business income deduction: about 20% of your business profit, ${M(f.qbi)}.` });
-  add('Taxable income', f.taxable, { ask: ['Taxable income. Everything you earned, minus every line with a minus sign. What is left?', [M(f.taxable), M(f.agi), M(f.taxable + f.qbi)],
-    ['The big deduction lines still have to come off.', 'The business income deduction comes off too.']] });
-  add('Income tax  (joint brackets)', f.tax, { note: 'Ledge by ledge on the joint mountain, exactly as before.' });
+  add('Business income deduction', f.qbi, { sign: '-' });
+  add('Taxable income', f.taxable);
+  add('Income tax  (joint brackets)', f.tax);
   add('Self-employment tax  (Schedule SE)', f.se, { sign: '+', ask: [`Schedule SE. Your business profit is ${M(f.biz)}. What goes on this line?`,
     [`${M(f.se)}: 15.3% of 92.35% of the profit`, `${M(f.half)}: only my own half`, 'Nothing. Paycheck withholding covers it'],
     ['Self-employed people pay both halves. The half you deducted earlier only lowered your income.', 'Paycheck withholding covers paychecks. Nobody withheld anything from your gig.']] });
@@ -335,14 +326,13 @@ function rows3(f) {
 }
 async function qSage() {
   const s = st(), f = LQ.fin3(), rows = rows3(f), owed = f.diff < 0, amt = Math.abs(f.diff), FD = D.formDoc, e = s.est3 || 0;
-  await say(N.sage, 'The Gulch has gone quiet, and my counter has a line out the door for the first time in months. Welcome to the Canyon Tax Office.');
   Object.assign(FD, { rows, vals: [], cur: 0, stamp: 0 }); ui.doc = FD;
-  await say(N.sage, 'Same Form 1040 as ever. A gig adds two schedules to it. Schedule C carries your profit onto the income lines, and Schedule SE adds its own tax near the bottom. You fill it in. I hold the stamp.');
+  await say(N.sage, 'The Gulch has gone quiet, and my counter has a line out the door for the first time in months. Same Form 1040 as ever, with two schedules added: Schedule C carries your profit onto the income lines, and Schedule SE adds its own tax near the bottom. You fill it in. I hold the stamp.');
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i]; FD.cur = i;
     if (r.ask) await ask(N.sage, r.ask[0], r.ask[1], { wrong: r.ask[2] });
     FD.vals[i] = r.val; LQ.audio.sfx('coin');
-    if (r.note) await say(N.sage, r.note); else if (!r.ask) await LQ.wait(0.35);
+    if (r.note) await say(N.sage, r.note); else if (!r.ask) await LQ.wait(0.7);
   }
   FD.cur = -1;
   await LQ.wait(0.4); LQ.audio.sfx('stamp'); LQ.shake(0.25); await LQ.tween(0.35, k => { FD.stamp = k; });
@@ -353,8 +343,8 @@ async function qSage() {
     `${owed ? 'You owe' : 'A refund of'} ${M(amt)}. The tax was paid, but in one lump in January. The penalty is figured quarter by quarter, so a small one applies for the three quarters you skipped.`][e]);
   let coins = LQ.clamp(Math.round(f.diff / 15), -350, 350);
   if (e === 0 && Math.abs(f.diff) < 1500) coins += 80;
-  if (e === 1 && f.diff <= -TX.estMinimum) coins -= 60;
-  if (e === 2) coins -= 25;
+  if (e === 1 && f.diff <= -TX.estMinimum) coins -= 120;
+  if (e === 2) coins -= 50;
   LQ.gain(60, coins, owed ? 'Tax settled' : 'Refund');
   await say(N.sage, 'Filed, with every coin of the gig on it. Plenty of people out here cannot say the same.');
   ui.doc = null; LQ.give('return3'); s.q3 = 8; LQ.tick(); LQ.save();
@@ -389,12 +379,6 @@ const MYTHS3 = [
   { myth: 'No form, no income! If nobody mailed ye a 1099, the kingdom never has to know!',
     opts: ['All income is taxable, with or without a form.', 'True. Only income on a form counts.', 'True, as long as it was paid in cash.'],
     truth: 'The thresholds decide who sends paperwork. They never decide what is taxed.' },
-  { myth: "It is only SIDE money! Side money ain't real income!",
-    opts: ['Side income is income, and it owes self-employment tax too.', 'True. Only my main job is taxed.', 'True, if it is under $10,000.'],
-    truth: 'Gig profit goes on the same return as wages, and self-employment tax starts at $400 of net earnings.' },
-  { myth: 'Write off EVERYTHING! Yer lunch, yer boots, yer dog! It is all business now!',
-    opts: ['Only costs that are ordinary and necessary for the business count.', 'True. A business owner can deduct anything.', 'Only the dog, as a guard dog.'],
-    truth: 'Personal costs stay personal. Mixed costs count only for their business share.' },
   { myth: 'Estimated taxes are for SUCKERS! Settle up in April like everybody else!',
     opts: ['Tax is pay-as-you-go. Skipping the quarters brings a penalty.', 'True. April is the only deadline.', 'Estimates are only for big companies.'],
     truth: 'Four payments: April, June, September, and January. Miss them and the penalty builds quarter by quarter.' },
@@ -412,7 +396,7 @@ LQ.BOSSES.slick = {
   who: SLICK, label: 'SIDEWINDER SLICK', kind: 'slick', move: 'devils', sky: ['#12061a', '#7a1f5a'], hill: '#3a1230', ground: ['#452443', '#6a3a62'], fog: '230,170,90', bar: ['#c9781c', '#f6d08a'], ink: '#7a3a12',
   approach: 'A hot wind spins the dust into a shape with a hat, a bandana, and a fistful of unreported cash.',
   intro: ['Well, well. A working stiff with a tax form. Name is Slick. I teach folks in this canyon how to keep what they earn. All of it. Off the books.', 'Every word I say, somebody down here believes. Let us see if ye are any smarter.'],
-  taunt: 'Heh heh heh. That is the spirit. Cash only, friend.', fogLine: 'The dust gets in your eyes.',
+  taunt: 'Heh heh heh. That is the spirit. Cash only, friend.', gloat: 'Nothing personal, friend. Come back when you can keep up.', fogLine: 'The dust gets in your eyes.',
   myths: () => MYTHS3,
   final: () => {
     const f = LQ.fin3(), own = f.kind === 'se';
@@ -498,7 +482,7 @@ LQ.AUDIT_POOL.push(
 );
 
 LQ.CH3 = {
-  npcs: NPC_LIST, chests: CHESTS, begin, found, hunt: HUNT,
+  npcs: NPC_LIST, chests: CHESTS, tips: TIPS, begin, found, hunt: HUNT,
   spots: { xSupply: [42, 9], xPhone: [6, 9], xLicense: [15, 23], xMeal: [25, 18], xLunch: [36, 29], xBoots: [4, 22], xFine: [44, 23] },
   coins: [[10, 10], [20, 11], [28, 10], [36, 11], [42, 10], [6, 20], [12, 21], [30, 20], [40, 21], [23, 5], [24, 23], [12, 30], [20, 31], [28, 33], [24, 29], [34, 29], [36, 34], [43, 33]],
   signs: [
@@ -506,7 +490,7 @@ LQ.CH3 = {
     { tx: 21, ty: 22, text: 'HUSTLE CANYON. North-west: the Hustle Hall and the 1099 Depot. North-east: the Ledger Shack and the Assay Office. South-west: the Quarter Station and the Tally House. South-east: the Canyon Tax Office. In the plaza: the Trading Post and the Canyon Exchange. West: the road home to Shelter Coast.' },
     { tx: 25, ty: 24, text: 'RATTLE CREEK. The bridge is sound. The Gulch beyond it is another matter.' },
     { tx: 38, ty: 28, fn: () => st().flags.boss3 ? 'OFF-THE-BOOKS GULCH. Quiet now. Receipts welcome.' : 'OFF-THE-BOOKS GULCH. Cash only. No questions. No forms.' },
-    { tx: 26, ty: 13, fn: () => 'THE CANYON GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Prices react tomorrow.)' + (st().flags.boss3 ? '' : ' Standing notice: Dust Devil Couriers will reopen the south route if the Gulch is ever made safe.') },
+    { tx: 26, ty: 13, fn: () => 'THE CANYON GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Already in today\'s price.)' + (st().flags.boss3 ? '' : ' Standing notice: Dust Devil Couriers will reopen the south route if the Gulch is ever made safe.') },
   ],
   talk: async id => {
     const q = QUEST_FN[id];

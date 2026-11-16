@@ -56,8 +56,8 @@ LQ.JOURNAL = {
   selfEmp: { title: 'Self-employment tax', text: 'When you work for yourself, you are the employee and the employer, so you pay both halves of Social Security and Medicare: 15.3% on 92.35% of your net profit. You may deduct half of it. You are taxed on profit (sales minus business expenses), so every legitimate expense you track lowers the bill.' },
   w2: { title: 'Form W-2', text: 'Each January your employer sends a W-2 that sums up the year. Box 1 is the wages you report on your return. Box 2 is the federal income tax already withheld. You need it to file.' },
   records: { title: 'Year-end records (1099)', text: 'Clients may send Form 1099-NEC showing what they paid you. But you must report all of your business income, whether or not a form arrives. Your own books are the real record.' },
-  status: { title: 'Filing status', text: 'Your status sets your standard deduction and your brackets. It depends on your real situation on the last day of the year: Single, Married Filing Jointly, Married Filing Separately, Head of Household, or Qualifying Surviving Spouse.' },
-  deduction: { title: 'Standard vs. itemized', text: 'A deduction lowers the income that gets taxed. You take the standard deduction (2026: $16,100 single, $32,200 married filing jointly, $24,150 head of household) or the total of your itemized deductions, whichever is larger. Most people take the standard deduction.' },
+  status: { title: 'Filing status', text: 'Your status sets your standard deduction and your brackets. It depends on your real situation on the last day of the year: Single, Married Filing Jointly, Married Filing Separately, Head of Household, or Qualifying Surviving Spouse. Marry on any day of the year, even December 31, and you count as married for the whole year.' },
+  deduction: { title: 'Standard vs. itemized', text: 'A deduction lowers the income that gets taxed. You take the standard deduction (2026: $16,100 single, $32,200 married filing jointly, $24,150 head of household) or the total of your itemized deductions, whichever is larger. Most people take the standard deduction. A deduction is not a credit: a credit comes straight off the tax bill, dollar for dollar.' },
   overtime: { title: 'Overtime deduction', text: 'For 2025 through 2028 you can deduct qualified overtime required by federal labor law: the extra "half" in time-and-a-half, up to $12,500 for a single filer. It works even if you take the standard deduction, and it starts shrinking above $150,000 of income. Social Security and Medicare still apply.' },
   qbi: { title: 'Business income deduction', text: 'Many small business owners can deduct up to 20% of their qualified business income. For most small shops it is 20% of the smaller of your business profit or your taxable income. You do not need to itemize to take it.' },
   brackets: { title: 'Marginal tax brackets', text: 'Income is taxed in layers. For a single filer in 2026, the first $12,400 of taxable income is taxed at 10%, the next slice up to $50,400 at 12%, then 22% up to $105,700, and so on up to 37%. Only the dollars inside a layer get that layer\'s rate.' },
@@ -293,7 +293,14 @@ const formDoc = { rows: [], vals: [], cur: -1, stamp: 0, draw(c) {
   }
 } };
 
-LQ.drawWorldMap = (c, x, y, w, h, currentRegion) => {
+// Fast travel: where the Map tab can send the hero, and why not when it cannot.
+const SPOTS = [['village', 'Paystub Village', () => true], ['coast', 'Shelter Coast', s => s.q2 != null], ['canyon', 'Hustle Canyon', s => s.q3 != null], ['summit', 'Summit of Gains', s => s.q4 != null]];
+LQ.travelSpots = () => {
+  const s = st(), w = LQ.world;
+  return SPOTS.map(([id, name, seen]) => ({ id, name, why: LQ.intro?.active() ? 'Finish moving in first' : w.room ? 'Step outside to travel' : id === s.region ? 'You are here' : !seen(s) ? 'Not visited yet' : '' }));
+};
+// `sel` is the region picked on the Map tab. The chapter-complete pages leave it out.
+LQ.drawWorldMap = (c, x, y, w, h, currentRegion, sel) => {
   c.fillStyle = '#090a22'; c.fillRect(x, y, w, h); c.strokeStyle = '#6a4fe0'; c.lineWidth = 3; c.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
   for (let i = 0; i < 60; i++) { c.fillStyle = LQ.NEON[i % 3]; c.globalAlpha = .12 + .25 * Math.abs(Math.sin(LQ.time + i)); c.fillRect(x + 4 + LQ.hash(i, 1, 4) * (w - 12), y + 4 + LQ.hash(i, 2, 4) * (h - 10), 3, 3); c.globalAlpha = 1; }
   c.font = F(13, true); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = '#35f0e6'; c.fillText('THE LEDGERLANDS', x + w / 2, y + 14);
@@ -313,26 +320,28 @@ LQ.drawWorldMap = (c, x, y, w, h, currentRegion) => {
     c.font = F(18, true); c.textBaseline = 'middle'; c.fillStyle = open ? r[4] : '#6d7299'; c.fillText(open ? (r[6] ? 'OK' : '!') : '?', px, py + 2);
     c.textBaseline = 'top'; c.font = F(24); c.fillStyle = '#eef4ff'; c.fillText(r[0], px, py + 40, labelWidth);
     c.font = F(20); c.fillStyle = open ? '#7fd6a8' : '#6d7299'; c.fillText(open ? r[1] : r[1] + '  (locked)', px, py + 66, labelWidth);
-    if (here) { c.fillStyle = '#ffcf4a'; c.fillText('You are here: ' + r[0], x + w / 2, y + h - 22, w - 32); }
+    if (i === sel) { c.strokeStyle = '#ffe98a'; c.lineWidth = 3; for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { c.beginPath(); c.moveTo(px + sx * 46, py + sy * 30); c.lineTo(px + sx * 46, py + sy * 46); c.lineTo(px + sx * 30, py + sy * 46); c.stroke(); } }
+    if (sel == null && here) { c.fillStyle = '#ffcf4a'; c.fillText('You are here: ' + r[0], x + w / 2, y + h - 22, w - 32); }
+    if (i === sel) { const spot = LQ.travelSpots()[i]; c.fillStyle = spot.why ? '#ffcf4a' : '#7fd6a8'; c.fillText(spot.why ? (spot.why === 'You are here' ? 'You are here: ' + r[0] : r[0] + ': ' + spot.why) : 'Enter: travel to ' + r[0], x + w / 2, y + h - 22, w - 32); }
   });
 };
 
 // ---------- quest scripts
 const advance = () => {
-  const s = st(); s.quest++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.QUESTS[s.quest].short);
-  const c = LQ.career(), pay = c.kind === 'se' ? c.pay - 35 + Math.floor(LQ.hash(s.day, 9, s.seed) * 90) : c.pay;
-  LQ.gain(0, pay, c.kind === 'se' ? 'Shop profits' : 'Payday'); LQ.tick();
+  const s = st(); s.quest++; LQ.audio.sfx('fanfare'); ui.toast('New quest: ' + LQ.curQuest().short);
+  const se = LQ.career().kind === 'se', shift = s.w4 == null ? 0 : LQ.w4Shift();
+  const why = shift < 0 ? (se ? ', extra set aside for tax' : ', extra tax withheld') : shift > 0 ? (se ? ', less set aside for tax' : ', less tax withheld') : '';
+  LQ.gain(0, LQ.payBase() + shift, (se ? 'Shop profits' : 'Payday') + why); LQ.tick();
 };
 
 async function qMayor() {
   const c = LQ.career(), had = st().items.includes('stamp');
   await say(N.mayor, (had ? 'There you are! That crash had me worried. ' : '') + (c.kind === 'se' ? "Welcome to Paystub Village! I'm Mayor Marigold. You must be the one opening the new candle shop."
     : `Welcome to Paystub Village! I'm Mayor Marigold. You must be the new ${c.name.toLowerCase()} at ${c.work}.`));
-  if (had) await say(N.mayor, 'Is that a Truth Stamp? Clerk Vell carried one just like it, right up to the night he vanished from your cottage. Keep it close. The things that crawl out of the fog cannot stand an honest mark.');
-  await say(N.mayor, "That fog rolls down from Bracket Mountain and fills people's heads with nonsense about taxes. And lately, auditors leap out at folks to test what they know.");
-  await say(N.mayor, 'Learn how taxes really work and neither can touch you. Start with Foreman Brannock at the Work Hall, west of the plaza. And talk to everyone.');
-  await say(N.mayor, 'Take these 50 coins. Merchant Saffron and Broker Bex in the plaza will help you spend them. Saffron sells tonics, which mend hearts.');
-  if (!had) { await say(N.mayor, 'One more thing. Take this Truth Stamp. The creatures that crawl out of the fog cannot stand an honest mark. Press E to swing it.'); LQ.give('stamp'); }
+  await say(N.mayor, (had ? "Is that Clerk Vell's Truth Stamp? He carried it until the night he vanished from your cottage. Keep it close." : 'Take this Truth Stamp. Press E to swing it.')
+    + ' A fog rolls down from Bracket Mountain and fills heads with tax nonsense, and what crawls out of it cannot stand an honest mark.');
+  if (!had) LQ.give('stamp');
+  await say(N.mayor, 'Learn how taxes really work and the fog cannot touch you. Start with Foreman Brannock at the Work Hall, west of the plaza. Here are 50 coins. Saffron and Bex in the plaza will help you spend them.');
   LQ.gain(0, 50, 'Welcome gift'); advance();
 }
 
@@ -356,9 +365,8 @@ async function qBrannock() {
     if (await choose(N.brannock, `Take-home would be ${M(LQ.fin(i).net)} per paycheck. Sign the W-4 this way?`, ['Sign it.', 'Let me rethink that.']) === 0) { st().w4 = i; break; }
   }
   w4Doc.signed = true; LQ.audio.sfx('stamp'); await LQ.wait(0.5);
-  await say(N.brannock, 'Done. And remember, a W-4 is not forever. You can hand in a new one any time your life changes.');
   ui.doc = null; LQ.learn('withholding'); LQ.give('w4');
-  await say(N.brannock, 'As it happens, today is payday. Paymaster Pim has your first stub at the green stall next door.');
+  await say(N.brannock, 'Done. A W-4 is not forever: hand in a new one whenever your life changes. And today is payday. Paymaster Pim has your first stub at the green stall next door.');
   advance();
 }
 async function qBrannockOwner() {
@@ -404,12 +412,10 @@ async function qPim() {
   await ask(N.pim, 'Which number actually lands in your coin purse?', ['Net pay', 'Gross pay', 'Federal income tax'],
     { right: 'Right. Gross is what you earned. Net is what you take home.', wrong: ['Gross is what you earned before anything came out. Look lower.', 'That one is money leaving, not arriving!'] });
   stubDoc.hl = 'ss';
-  await ask(N.pim, `Social Security took ${M(f.ss)}. How is that figured?`, ['6.2% of my gross pay', 'Whatever I wrote on my W-4', 'A flat fee on every paycheck'],
-    { right: 'Yes. Social Security is 6.2% and Medicare is 1.45% of your wages. Your employer pays the same amounts on top.',
-      wrong: ['The W-4 has no say over this one. Check the percentage on the stub.', `It is a percentage, not a fee. ${M(f.gross)} times 6.2% is ${M(f.ss)}.`] });
+  await say(N.pim, `Two lines are fixed shares of your pay: Social Security at 6.2%, which is ${M(f.ss)} here, and Medicare at 1.45%. Your employer pays the same amounts on top.`);
   stubDoc.hl = null;
   await ask(N.pim, 'So which line does your W-4 control?', ['Federal income tax', 'Social Security', 'Medicare'],
-    { right: `Exactly. Your W-4 set that ${M(f.per)}. The other two are fixed percentages. Oh, and the Ledgerlands has no state income tax, but your home state might.`,
+    { right: `Exactly. Your W-4 set that ${M(f.per)}. The other two never change.`,
       wrong: ['That one is a fixed 6.2%. Try again.', 'That one is a fixed 1.45%. Try again.'] });
   ui.doc = null; LQ.learn('paystub'); LQ.learn('fica'); LQ.give('paystub');
   await say(N.pim, 'That is one payday. Now picture twenty-five more...');
@@ -428,9 +434,7 @@ async function qPimOwner() {
     { right: `Both halves. It is charged on 92.35% of your profit, about ${M(f.se)} for the year. For many new owners it is bigger than their income tax. The good news: you may deduct half of it.`,
       wrong: ['If only. You are the employer too, so the second half is yours as well.', 'Nobody is exempt. Owners pay through self-employment tax.'] });
   stubDoc.hl = 'exp';
-  await ask(N.pim, 'What is the honest way to shrink that tax bill?', ['Track every real business expense', 'Leave some cash sales off the books', 'Call personal shopping a business cost'],
-    { right: 'Yes. Every legitimate expense you record lowers your profit, and with it both taxes. The other two are how shopkeepers meet auditors.',
-      wrong: ['All income is taxable, even cash. That road leads to penalties.', 'Personal costs are not deductible. Auditors look for exactly that.'] });
+  await say(N.pim, 'The honest way to shrink that bill is to track every real business expense. Each one lowers your profit, and with it both taxes. Hiding cash sales is how shopkeepers meet auditors.');
   ui.doc = null; LQ.learn('paystub'); LQ.learn('selfEmp'); LQ.give('paystub');
   await say(N.pim, 'That is one quarter. Three more to go...');
   await yearMontage();
@@ -472,17 +476,13 @@ async function qOdetteOwner() {
 async function qSable() {
   await say(N.sable, 'Every filer marches under a banner. We call it your filing status, and it decides your standard deduction and your tax brackets.');
   statusDoc.caseText = ''; ui.doc = statusDoc;
-  await say(N.sable, 'There are five. You do not pick the one you like best. Your status is set by your real situation on the last day of the year. Let us test you.');
+  await say(N.sable, 'There are five. You do not pick the one you like best. Your status is set by your real situation on December 31. Marry on December 30, and you are married for the whole year.');
   const S = ['Single', 'Married Filing Jointly', 'Head of Household'];
   statusDoc.caseText = 'YOU: unmarried on December 31, no children or other dependents.';
   await ask(N.sable, 'Which banner is yours?', [S[0], S[2], S[1]],
     { right: `Single. Your standard deduction is ${M(STD.single)}.`, wrong: ['Head of Household needs a qualifying person you support, such as a child.', 'You would need to be married on December 31.'] });
-  statusDoc.caseText = 'ROWAN AND FEN: married on December 30. They share their finances and want the simplest return.';
-  await ask(N.sable, 'Which banner fits them for the whole year?', [S[1], S[0], S[2]],
-    { right: `Married Filing Jointly. Married on the last day of the year counts as married for the entire year. Their deduction doubles to ${M(STD.mfj)}.`,
-      wrong: ['They were married on December 31, so Single is off the table.', 'Head of Household is for unmarried people supporting a qualifying person.'] });
   statusDoc.caseText = 'WREN: unmarried, pays more than half the cost of the home where her young son lives with her all year.';
-  await ask(N.sable, 'And Wren?', [S[2], S[0], S[1]],
+  await ask(N.sable, 'Now try one for a neighbor. Which banner is Wren\'s?', [S[2], S[0], S[1]],
     { right: `Head of Household. Supporting a child at home earns a bigger deduction of ${M(STD.hoh)} and wider brackets than Single.`,
       wrong: ['She could do better. She supports a qualifying child and pays most of the household costs.', 'Wren is unmarried.'] });
   ui.doc = null; LQ.learn('status'); LQ.give('banner');
@@ -496,16 +496,8 @@ async function qThorn() {
   Object.assign(shieldDoc, { who: 'YOUR RECEIPTS', rows: [['State and local taxes', 1900], ['Mortgage interest (you rent)', 0]], total: 1900, sel: -1 }); ui.doc = shieldDoc;
   await say(N.thorn, `The Standard Shield blocks a flat ${M(STD.single)} for a single filer, no receipts needed. The Itemized Shield is forged from your own deductible expenses added together.`);
   await ask(N.thorn, 'Which shield should you carry this year?', [`Standard: ${M(STD.single)}`, 'Itemized: $1,900'],
-    { onMove: i => { shieldDoc.sel = i; }, right: 'Good eye. Always carry the bigger one.',
+    { onMove: i => { shieldDoc.sel = i; }, right: 'Good eye. Always carry the bigger one. A homeowner with $20,500 of mortgage interest and local taxes would itemize instead. Most people never get there.',
       wrong: ['That would shield only $1,900 and leave far more of your income exposed. Bigger is better here.'] });
-  Object.assign(shieldDoc, { who: "YOUR NEIGHBOR'S RECEIPTS", rows: [['Mortgage interest', 13500], ['State and local taxes', 7000]], total: 20500, sel: -1 });
-  await ask(N.thorn, 'Your neighbor owns a home. Which shield for her?', ['Itemized: $20,500', `Standard: ${M(STD.single)}`],
-    { onMove: i => { shieldDoc.sel = 1 - i; }, right: 'Right. Her receipts beat the standard amount, so itemizing wins. Most people never get there, which is why most carry the Standard Shield.',
-      wrong: ['Her itemized total is larger than the standard amount. Take the bigger shield.'] });
-  shieldDoc.sel = -1;
-  await ask(N.thorn, 'What does a deduction actually do?', ['Shrinks the income that gets taxed', 'Comes straight off my tax bill, dollar for dollar', 'Raises my refund by the same amount'],
-    { right: 'Yes. A deduction lowers taxable income. The thing that cuts your bill dollar for dollar is called a credit.',
-      wrong: ['That describes a credit. A deduction works earlier, on your income.', 'Not by the same amount. It lowers the income being taxed, which lowers the tax by a fraction of it.'] });
   ui.doc = null; LQ.learn('deduction'); LQ.give('shield');
   if (c.id === 'nurse') {
     await say(N.thorn, `One more plate for you, nurse. Through 2028 there is a deduction for overtime pay, and it stacks on top of the Standard Shield. Yours is worth ${M(c.ot)} this year. The limit is ${M(TX.overtimeCap)}.`);
@@ -518,18 +510,20 @@ async function qThorn() {
       { right: 'Exactly. A regular employer deducts its share of payroll tax as a business cost. You get the same treatment for the half you pay as the boss.', wrong: ['No reward here. Think about what an employer does with its share.', 'It is a deduction, not a credit. It lowers income, not the bill itself.'] });
     LQ.learn('qbi');
   } else {
-    await say(N.thorn, "For you the Standard Shield does most of the work, and that is a good thing: it blocks more than half your wages. To do even better, ask Cook Basil about the Saver's Credit. It was made for people in your boots.");
+    await ask(N.thorn, 'What does a deduction actually do?', ['Shrinks the income that gets taxed', 'Comes straight off my tax bill, dollar for dollar', 'Raises my refund by the same amount'],
+      { right: 'Yes. A deduction lowers taxable income. The thing that cuts your bill dollar for dollar is called a credit.',
+        wrong: ['That describes a credit. A deduction works earlier, on your income.', 'Not by the same amount. It lowers the income being taxed, which lowers the tax by a fraction of it.'] });
+    await say(N.thorn, "For you the Standard Shield does most of the work: it blocks more than half your wages. To do even better, ask Cook Basil about the Saver's Credit. It was made for people in your boots.");
   }
-  await say(N.thorn, `With everything strapped on, ${M(LQ.fin().taxable)} of your income is left exposed. That is your taxable income. Sage Altamira will teach you what it costs, across the bridge at the foot of Bracket Mountain.`);
+  await say(N.thorn, `With everything strapped on, ${M(LQ.fin().taxable)} of your income is left exposed. That is your taxable income.` + (c.id === 'food' ? '' : ' A deduction shrinks that number. It never comes straight off the bill.') + ' Sage Altamira will teach you what it costs, across the bridge at the foot of Bracket Mountain.');
   advance();
 }
 
 async function qAltamira() {
   const f = LQ.fin(), t = f.tiers, b = TX.brackets.single;
   if (LQ.V1 && !st().flags.vaultDone) return LQ.V1.altamiraIntro(N.altamira, f);
-  await say(N.altamira, 'You filled the ledges with your own hands. Now see them all at once.');
   Object.assign(mountDoc, { income: f.taxable, show: t.length, anim: 1 }); ui.doc = mountDoc;
-  await say(N.altamira, `Seven ledges, seven rates. Your taxable income of ${M(f.taxable)} did not land on one ledge. It filled them from the bottom, like water.`);
+  await say(N.altamira, `You filled the ledges with your own hands. Now see them all at once. Your taxable income of ${M(f.taxable)} did not land on one ledge. It filled them from the bottom, like water.`);
   await say(N.altamira, `Add the ledges and your federal income tax is ${M(f.tax)}. Your top rate is ${pct(f.top)}, yet the bill is only about ${(f.tax / f.income * 100).toFixed(1)}% of the ${M(f.income)} you earned.`);
   const std = STD.single, w1 = 62000, w2 = 72000, t1 = LQ.taxOn(w1 - std).total, t2 = LQ.taxOn(w2 - std).total, over = w2 - std - b[2][0];
   Object.assign(mountDoc, { income: w2 - std, show: 0 });
@@ -549,33 +543,28 @@ LQ.docs.formDoc = formDoc; LQ.docs.shieldShape = shieldShape; LQ.docs.mountDoc =
 function buildRows(f) {
   const R = [], owner = f.kind === 'se', add = (label, val, o) => R.push(Object.assign({ label, val }, o));
   if (!owner) {
-    add('Wages  (W-2, Box 1)', f.box1, { ask: ['First line, wages. Which number goes here?', [`W-2 Box 1: ${M(f.box1)}`, `W-2 Box 2: ${M(f.withheld)}`, `My total take-home pay: ${M(f.netYear)}`],
-      ['Box 2 is tax already withheld. It comes later.', 'The return starts from what you earned, before anything was taken out.']] });
-    if (f.retire) R[0].note = `Notice Box 1 is ${M(f.retire)} lower than your pay. That is your Retirement Chestplate at work. Pre-tax 401(k) contributions lower Box 1. Social Security and Medicare still apply.`;
+    add('Wages  (W-2, Box 1)', f.box1, { note: `Wages first: Box 1 of your W-2, ${M(f.box1)}.` });
+    if (f.retire) R[0].note += ` Notice Box 1 is ${M(f.retire)} lower than your pay. That is your Retirement Chestplate at work. Pre-tax 401(k) contributions lower Box 1. Social Security and Medicare still apply.`;
     if (f.hsa) add('HSA deduction', f.hsa, { sign: '-', note: `Your HSA Flask comes off next: ${M(f.hsa)}.` });
   } else {
-    add('Business net profit', f.profit, { ask: ['First line, business income. Which number goes here?', [`Net profit: ${M(f.profit)}`, `Total sales: ${M(f.sales)}`, 'The $18,000 on the 1099'],
-      ['You are taxed on profit. Subtract the business expenses first.', 'The 1099 is only one customer. Use your books.']] });
-    if (f.writeoffs) R[0].note = `Your write-offs already trimmed ${M(f.writeoffs)} from that profit before it ever reached this form.`;
+    add('Business net profit', f.profit, { note: `Business income first: your net profit, ${M(f.profit)}. Not total sales, and not only the $18,000 on the 1099.` });
+    if (f.writeoffs) R[0].note += ` Your write-offs already trimmed ${M(f.writeoffs)} from that profit before it ever reached this form.`;
     add('Half of self-employment tax', f.half, { sign: '-', note: `Next you deduct half of your self-employment tax: ${M(f.half)}.` });
     if (f.retire + f.hsa) add('Retirement and HSA savings', f.retire + f.hsa, { sign: '-', note: `Then your savings gear: ${M(f.retire + f.hsa)} off the top.` });
   }
-  add('Standard deduction', f.std, { sign: '-', note: `Your Standard Shield blocks ${M(f.std)}.` });
-  if (f.ot) add('Overtime deduction', f.ot, { sign: '-', note: `And your overtime deduction blocks another ${M(f.ot)}.` });
+  // The two shields fill themselves in, so the player reads them off the form before the next question.
+  add('Standard deduction', f.std, { sign: '-' });
+  if (f.ot) add('Overtime deduction', f.ot, { sign: '-' });
   if (f.charity) add('Charitable gift', f.charity, { sign: '-', note: `Your Charity Lantern: ${M(f.charity)}, deductible even without itemizing.` });
   if (owner) add('Business income deduction', f.qbi, { sign: '-', note: `The business income deduction takes off ${M(f.qbi)}. Here that is 20% of your taxable income before it, because that is smaller than your profit.` });
   add('Taxable income', f.taxable, { ask: ['Taxable income. Start from the top line and subtract every deduction. What is left?', [M(f.taxable), M(f.income), M(f.taxable + f.std)],
     ['The shields have to block something. Subtract the deductions.', 'Not quite. The Standard Shield has to come off too.']] });
-  add('Income tax', f.tax, { ask: [`The tax on ${M(f.taxable)}. Remember the mountain.`, [M(f.tax), M(f.taxable * (f.top === .10 ? .22 : f.top)), M(f.taxable * (f.top === .12 ? .10 : .12))],
-    [f.top === .10 ? 'Your taxable income stays on the 10% ledge.' : `That is ${pct(f.top)} of everything. The lower ledges are taxed at lower rates.`, 'Fill the ledges from the bottom, each at its own rate.']],
-    note: 'Ledge by ledge. (The official tax table rounds a little, so a real return may differ by a few dollars.)' });
+  add('Income tax', f.tax, { note: `The tax on ${M(f.taxable)}, ledge by ledge, just as you told the Baron: ${M(f.tax)}. (The official tax table rounds a little, so a real return may differ by a few dollars.)` });
   if (owner) add('Self-employment tax', f.se, { sign: '+', note: `Now add self-employment tax, your Social Security and Medicare: ${M(f.se)}. Notice it is bigger than your income tax.` });
   if (f.credit) add("Saver's Credit", f.credit, { sign: '-', note: `Your Saver's Credit comes straight off the bill: ${M(f.credit)}. A credit is worth its full amount. (The rate is 10%, 20%, or 50%, depending on your income.)` });
-  add(owner ? 'Estimated payments made' : 'Tax withheld  (W-2, Box 2)', f.withheld, { ask: owner
-    ? ['Tax you already paid during the year. Where is it?', [`My four estimated payments: ${M(f.withheld)}`, `My business expenses: ${M(f.expenses)}`, 'I can leave this line blank and keep the difference'],
-      ['Expenses lowered your profit earlier. This line is for tax payments.', 'Leaving off payments you made would only cheat yourself.']]
-    : ['Tax you already paid during the year. Where do you find it?', [`W-2 Box 2: ${M(f.withheld)}`, `W-2 Box 4: ${M(f.ssYear)}`, 'Nowhere. I have not paid any yet.'],
-      ['Box 4 is Social Security tax. It does not count toward income tax.', 'You have been paying all year, one paycheck at a time. That is what withholding is.']] });
+  add(owner ? 'Estimated payments made' : 'Tax withheld  (W-2, Box 2)', f.withheld, { note: owner
+    ? `Tax you already paid: your four estimated payments, ${M(f.withheld)}.`
+    : `Tax you already paid: Box 2 of your W-2, ${M(f.withheld)}, one paycheck at a time.` });
   R.push(settlementRow(f, 'I'));
   return R;
 }
@@ -588,7 +577,7 @@ async function qJuno() {
     const r = rows[i]; formDoc.cur = i;
     if (r.ask) await ask(N.juno, r.ask[0], r.ask[1], { wrong: r.ask[2] });
     formDoc.vals[i] = r.val; LQ.audio.sfx('coin');
-    if (r.note) await say(N.juno, r.note); else if (!r.ask) await LQ.wait(0.35);
+    if (r.note) await say(N.juno, r.note); else if (!r.ask) await LQ.wait(0.7);
   }
   formDoc.cur = -1;
   await LQ.wait(0.4); LQ.audio.sfx('stamp'); LQ.shake(0.25); await LQ.tween(0.35, k => { formDoc.stamp = k; });
@@ -603,7 +592,7 @@ async function qJuno() {
       : `A refund of ${M(amt)}. Your W-4 guess turned out close to the deductions you really ended up with.`)
     : `${owed ? 'You owe' : 'A refund of'} ${M(amt)}.` + (f.diff > 300 ? ' Your plain W-4 did not know about your extra deductions, so more was withheld than you owed. A new W-4 could put that money in your paychecks instead.' : ' Your plain W-4 landed your withholding almost exactly on your real tax. That is a well-tuned W-4.');
   await say(N.juno, amt === 0 ? 'Your payments match the tax exactly. There is no balance due or refund.' : why);
-  const coins = Math.max(-400, Math.round(f.diff / 5)) - (owner && w === 2 ? 60 : 0);
+  const coins = Math.max(-400, Math.round(f.diff / 15)) - (owner && w === 2 ? 120 : 0);
   LQ.gain(50, coins, owed ? 'Tax settled' : 'Refund');
   await say(N.juno, 'Either way: filed, on time, and you understood every line. One last thing. Even if you could not pay what you owe, you should still file on time. Filing late costs far more than paying late.');
   ui.doc = null; LQ.learn('refund'); LQ.learn('filing'); LQ.learn('latefile'); LQ.give('return');
@@ -690,14 +679,14 @@ const CHESTS = {
 };
 LQ.curQuest = () => { const s = st(); return s.q4 != null && LQ.QUESTS4 ? LQ.QUESTS4[s.q4] : s.q3 != null && LQ.QUESTS3 ? LQ.QUESTS3[s.q3] : s.q2 != null && LQ.QUESTS2 ? LQ.QUESTS2[s.q2] : LQ.QUESTS[s.quest]; };
 LQ.CH1 = {
-  npcs: NPC_LIST, chests: CHESTS, ending,
+  npcs: NPC_LIST, chests: CHESTS, tips: TIPS, ending,
   coins: [[20, 33], [27, 34], [12, 27], [6, 27], [41, 27], [35, 30], [18, 23], [29, 22], [10, 30], [40, 31], [21, 19], [27, 19], [5, 20], [43, 22], [19, 9], [30, 6], [21, 4], [26, 4], [8, 36], [38, 37]],
   signs: [
     { tx: 21, ty: 31, text: 'PAYSTUB VILLAGE. West: the Work Hall. East: Post Office. North: Guild Hall, Armory, and the bridge to Bracket Mountain. South-east: Town Hall. In the plaza: the Saffron Bazaar and the Village Exchange.' },
     { tx: 22, ty: 13, text: 'BRACKET MOUNTAIN. Seven ledges. Mind the fog.' },
     { tx: 22, ty: 38, fn: () => st().quest >= 9 ? 'SOUTH ROAD to Shelter Coast. The road is open. Chapter 2 begins there.' : 'SOUTH ROAD to Shelter Coast. Closed until your return is filed.' },
     { tx: 17, ty: 34, text: 'Your cottage. Small, snug, and the rent is due on the first.' },
-    { tx: 26, ty: 22, fn: () => 'THE VILLAGE GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Prices react tomorrow.)' + (st().flags.bossDown ? '' : ' Standing notice: miners say that if the fog ever lifts, the old silver mine reopens.') },
+    { tx: 26, ty: 22, fn: () => 'THE VILLAGE GAZETTE. Today: ' + (st().news ? st().news.text : 'No news.') + ' (Already in today\'s price.)' + (st().flags.bossDown ? '' : ' Standing notice: miners say that if the fog ever lifts, the old silver mine reopens.') },
   ],
   talk: async id => {
     const q = QUEST_FN[id];

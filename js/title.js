@@ -66,13 +66,15 @@ const T = LQ.title = {
       if (a === 2 && await LQ.choose(null, `Delete the save in slot ${n} for good? This cannot be undone.`, ['Back', 'Yes, delete it']) === 1) { LQ.deleteSlot(n); LQ.audio.sfx('wrong'); }
       return back();
     }
-    const a = await LQ.choose(null, `Slot ${n} is empty.`, ['New Game', 'Load a backup file', 'Back'], k => { LQ.gesture = k === 1 ? () => { this.file = LQ.pickFile(); } : null; });
+    // One menu after the slot. A plain new game is the first line. Later chapters sit behind their own line.
+    const a = await LQ.choose(null, `Slot ${n} is empty.`, ['New game', 'New game, skip the tutorial', 'Start at a later chapter', 'Load a backup file', 'Back'], k => { LQ.gesture = k === 3 ? () => { this.file = LQ.pickFile(); } : null; });
     LQ.gesture = null;
-    if (a === 0) {
-      const c = await LQ.choose(null, 'Where do you want to start?', ['Chapter 1: Paystub Village (start here)', 'Chapter 2: Shelter Coast (skip ahead with a starter kit)', 'Chapter 3: Hustle Canyon (skip ahead with a starter kit)', 'Chapter 4: Summit of Gains (skip ahead with a starter kit)', 'Back']);
-      if (c < 4) return this.launch(n, null, c);
+    if (a === 0 || a === 1) return this.launch(n, null, 0, a === 0);
+    if (a === 2) {
+      const c = await LQ.choose(null, 'Start at which chapter? Your hero gets a starter kit and skips the tutorial.', ['Chapter 2: Shelter Coast', 'Chapter 3: Hustle Canyon', 'Chapter 4: Summit of Gains', 'Back']);
+      if (c < 3) return this.launch(n, null, c + 1, false);
     }
-    if (a === 1) {
+    if (a === 3) {
       const f = this.file; this.file = null;
       if (!f) await LQ.say(null, 'The file window did not open. Please try again.');
       else {
@@ -87,23 +89,26 @@ const T = LQ.title = {
     }
     return back();
   },
-  async launch(n, saved, skip) {
+  // `skip` is how many chapters to skip (0 to 3). `play` is whether a new Chapter 1 game plays the cottage tutorial.
+  async launch(n, saved, skip, play) {
     LQ.slot = n;
     await LQ.fadeTo(1, 0.5);
     LQ.state = saved || LQ.newState();
     LQ.started = true;
     if (!saved) {
-      LQ.setScene({ draw(g) { g.fillStyle = '#07081a'; g.fillRect(0, 0, LQ.BW, LQ.BH); } }); LQ.fadeA = 0; LQ.busy++;
+      const black = { draw(g) { g.fillStyle = '#07081a'; g.fillRect(0, 0, LQ.BW, LQ.BH); } };
+      LQ.setScene(black); LQ.fadeA = 0; LQ.busy++;
       if (skip) await LQ.say(null, ['', 'You are skipping ahead. Your hero has already finished Chapter 1 in Paystub Village: the Mythmonger is beaten, the first return is filed, and there are 500 coins in the purse.',
         'You are skipping ahead. Your hero has already finished Chapters 1 and 2: two returns filed, a cottage by the sea, a marriage to Marlowe, a stepdaughter called Coral, and 900 coins in the purse.',
         'You are skipping ahead. Your hero has already finished Chapters 1 to 3: three returns filed, a family in Shelter Coast, a side gig in Hustle Canyon, and 1,400 coins in the purse.'][skip]);
-      // The playable opening picks the career from a letter in the cottage. Skipping it picks the career here, as before.
-      const play = !skip && await LQ.choose(null, 'How do you want to begin?', ['Play the tutorial', 'Skip the tutorial']) === 0;
-      if (play) Object.assign(LQ.state, { px: 16 * 16 + 8, py: 34 * 16 + 14, dir: 'down' }).flags.intro = 1;
+      // A new Chapter 1 game opens with the story of the Great Ledger.
+      if (!skip) { LQ.state.flags.cut1 = true; await LQ.cutscene.play('opening', black); }
+      // The playable opening picks the career from a letter in the cottage. Skipping it picks the career here.
+      if (play && !skip) Object.assign(LQ.state, { px: 16 * 16 + 8, py: 34 * 16 + 14, dir: 'down' }).flags.intro = 1;
       else {
         LQ.state.flags.intro = 9;
         LQ.state.coins = 20;
-        await LQ.say(null, skip ? 'First, though: what does your hero do for a living?' : 'Good news: that is about to change. First, though: what do you do for a living?');
+        await LQ.say(null, skip ? 'First, though: what does your hero do for a living?' : 'First, though: what do you do for a living?');
         LQ.state.career = await careerSelect(); LQ.initMarket();
       }
       if (skip) LQ.CH2.starter();

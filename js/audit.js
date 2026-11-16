@@ -45,8 +45,19 @@ function selectQuestions(s, round) {
   reviewed.sort((a, b) => s.auditHistory[questionKey(a)].round - s.auditHistory[questionKey(b)].round);
   return unseen.concat(missed, reviewed).slice(0, 3);
 }
+// Audits are a spice, not a tax on walking: one per visit to a region, never in the middle of a receipt or slip hunt,
+// and none once the last return is filed. `auditSeen` is not saved, so a reload allows one more.
+LQ.auditAllowed = w => {
+  const s = st(), R = w.R;
+  if (s.q4 === 9 || w.auditSeen === R.id) return false;
+  if (R.finder && R.finder.ready(s) && R.content().hunt.some(id => !s.rcpt[id])) return false;
+  return true;
+};
+// A failed audit costs 15% of the coins in hand, at least 40 and at most 150, and never more than the hero has.
+LQ.auditFine = coins => Math.min(coins, LQ.clamp(Math.round(coins * .15), 40, 150));
 LQ.audit = async () => {
   const s = st(), w = LQ.world, p = w.p, round = s.audits + 1;
+  w.auditSeen = w.R.id;
   const pool = selectQuestions(s, round);
   if (!pool.length) { s.audits = round; LQ.save(); return; }
   const required = Math.floor(pool.length / 2) + 1;
@@ -68,10 +79,10 @@ LQ.audit = async () => {
   let pass = right >= required;
   if (!pass && right > 0 && right === required - 1 && LQ.has('ledger')) { pass = true; await LQ.say(who, 'Hm. One short... but your Receipt Ledger is in perfect order. Good records count. I will let it pass.'); }
   if (pass) {
-    LQ.audio.sfx('fanfare'); LQ.gain(20, (40 + 10 * right) * (LQ.has('abacus') ? 2 : 1), 'Audit passed');
+    LQ.audio.sfx('fanfare'); LQ.gain(20, (20 + 5 * right) * (LQ.has('abacus') ? 2 : 1), 'Audit passed');
     await LQ.say(who, right === pool.length ? 'Every answer correct. Carry on, citizen.' : 'Good enough. You pass. Carry on, citizen.');
   } else {
-    LQ.gain(-15, -Math.min(s.coins, 60), 'Audit failed');
+    LQ.gain(-15, -LQ.auditFine(s.coins), 'Audit failed');
     await LQ.say(who, 'Not good enough. That is a penalty. Study your Tax Journal. I will be back.');
   }
   if (!s.journal.includes('audit')) { LQ.learn('audit'); await LQ.say(null, 'A note for your journal: real audits look nothing like this. They are rare, they mostly arrive by mail, and good records settle them.'); }

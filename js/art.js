@@ -267,33 +267,65 @@ const bossRaw = (frame, kind) => {
   const c = mk(64, 64), g = c.getContext('2d');
   const blob = (x, y, r, col) => { g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); };
   const f = frame ? 1 : 0;
+  if (kind === 'murk') {
+    // Head Clerk Murk: a tall clerk in a plum coat and top hat, standing in his own fog with a fan of invoices
+    blob(20, 54 - f, 9, '#2a1430'); blob(44, 55 + f, 9, '#2a1430'); blob(32, 57, 11, '#2a1430');
+    R(g, 18, 30, 28, 25, '#4a1f4f'); R(g, 18, 30, 28, 1, '#7a3a80'); R(g, 30, 31, 4, 24, '#231a36');
+    for (let i = 0; i < 3; i++) R(g, 31, 35 + i * 6, 2, 2, '#ff4fb0');
+    R(g, 11, 32 + f, 7, 17, '#4a1f4f'); R(g, 46, 30 - f, 7, 13, '#4a1f4f'); R(g, 12, 48 + f, 5, 4, '#e2b184'); R(g, 47, 27 - f, 5, 4, '#e2b184');
+    blob(32, 22, 9, '#e2b184'); R(g, 24, 28, 16, 3, '#f6efd9');
+    R(g, 19, 12, 26, 3, '#1b1626'); R(g, 24, 0, 16, 13, '#1b1626'); R(g, 24, 9, 16, 2, '#ff4fb0');
+    R(g, 26, 18, 5, 1, '#3d2f24'); R(g, 34, 17, 5, 1, '#3d2f24'); R(g, 27 + f, 20, 3, 2, '#1b1626'); R(g, 35 + f, 20, 3, 2, '#1b1626');
+    R(g, 34, 19, 6, 1, '#ffcf4a'); R(g, 34, 23, 6, 1, '#ffcf4a'); R(g, 33, 20, 1, 3, '#ffcf4a'); R(g, 40, 20, 1, 3, '#ffcf4a');
+    R(g, 28, 26, 8, 1, '#7a3a2a'); R(g, 35, 25, 2, 1, '#7a3a2a');
+    for (let i = 0; i < 3; i++) { const x = 49 + i * 4, y = 16 - f - i * 2; R(g, x, y, 7, 11, '#f6efd9'); R(g, x + 1, y + 2, 4, 1, '#c93a8c'); R(g, x + 1, y + 4, 5, 1, '#7a74b8'); R(g, x + 1, y + 6, 3, 1, '#7a74b8'); }
+    return c;
+  }
+  const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.fill(); };
   if (kind === 'loophole') {
-    // Captain Loophole: a sea-green ghost in a tricorn hat, with a hook made of red tape
-    blob(20, 52 - f, 9, '#14575a'); blob(44, 53 + f, 9, '#14575a'); blob(32, 55, 11, '#14575a');
-    blob(32, 37, 19, '#1f8a86'); blob(19, 40 + f, 11, '#1f8a86'); blob(45, 40 - f, 11, '#1f8a86');
-    blob(27, 31, 11, '#3fbdb2'); blob(38, 30, 9, '#3fbdb2'); blob(24, 27, 4, '#8fe6da');
-    R(g, 12, 14, 40, 5, '#1b1626'); R(g, 18, 6, 28, 9, '#1b1626'); R(g, 8, 17, 6, 3, '#1b1626'); R(g, 50, 17, 6, 3, '#1b1626');
-    R(g, 12, 18, 40, 1, '#e0b23a'); R(g, 29, 8, 6, 5, '#f6efd9'); R(g, 30, 9, 1, 1, '#1b1626'); R(g, 33, 9, 1, 1, '#1b1626'); R(g, 30, 11, 4, 1, '#1b1626');
-    R(g, 19, 27, 10, 5, '#fff3b0'); R(g, 35, 26, 10, 6, '#1b1626'); R(g, 33, 24, 14, 1, '#1b1626');
-    R(g, 23 + f, 28, 3, 4, '#1b1626');
-    R(g, 21, 40, 22, 5, '#1b1626'); for (let i = 0; i < 5; i++) R(g, 22 + i * 4, i % 2 ? 42 : 40, 3, 3, '#f6efd9');
-    R(g, 52, 34 - f, 3, 12, '#c9423a'); R(g, 55, 43 - f, 5, 3, '#c9423a'); R(g, 59, 38 - f, 2, 6, '#c9423a');
+    // Captain Loophole: a tall sea ghost in a captain's coat that trails off into a curling wisp, with a tricorn hat,
+    // an eye patch, a rolled chart, and a raised hook made of red tape
+    poly([[18, 42], [46, 42], [47, 50], [53, 56 + f], [61, 54 - f], [58, 61], [45, 63], [31, 59], [22, 51]], '#14575a');
+    poly([[24, 44], [40, 44], [42, 52], [50, 58], [44, 60], [32, 56], [26, 50]], '#1f8a86');
+    poly([[17, 23], [47, 23], [51, 45], [13, 45]], '#1f8a86');
+    for (let i = 0; i < 7; i++) R(g, 13 + i * 6, 45, 4, 2 + (i % 2 ? 2 + f : 2 - f), '#1f8a86');
+    R(g, 29, 24, 6, 21, '#3fbdb2'); R(g, 17, 23, 30, 1, '#3fbdb2'); R(g, 26, 24, 3, 14, '#14575a'); R(g, 35, 24, 3, 14, '#14575a');
+    for (let i = 0; i < 3; i++) { R(g, 23, 29 + i * 5, 2, 2, '#e0b23a'); R(g, 39, 29 + i * 5, 2, 2, '#e0b23a'); }
+    R(g, 9, 25 + f, 9, 5, '#1f8a86'); R(g, 6, 28 + f, 5, 12, '#1f8a86'); R(g, 6, 38 + f, 5, 2, '#e0b23a');
+    R(g, 1, 40 + f, 13, 5, '#f6efd9'); R(g, 1, 40 + f, 2, 5, '#c9423a'); R(g, 12, 40 + f, 2, 5, '#c9423a'); R(g, 5, 42 + f, 5, 1, '#7a74b8');
+    R(g, 46, 25 - f, 9, 5, '#1f8a86'); R(g, 53, 13 - f, 5, 14, '#1f8a86'); R(g, 53, 11 - f, 5, 3, '#e0b23a');
+    R(g, 54, 4 - f, 3, 7, '#c9423a'); R(g, 56, 2 - f, 5, 3, '#c9423a'); R(g, 60, 4 - f, 3, 6, '#c9423a'); R(g, 58, 9 - f, 3, 2, '#c9423a');
+    blob(32, 16, 9, '#3fbdb2'); blob(28, 13, 3, '#8fe6da');
+    R(g, 17, 7, 30, 4, '#1b1626'); R(g, 21, 0, 22, 8, '#1b1626'); R(g, 13, 9, 6, 3, '#1b1626'); R(g, 45, 9, 6, 3, '#1b1626'); R(g, 17, 10, 30, 1, '#e0b23a');
+    R(g, 29, 2, 6, 4, '#f6efd9'); R(g, 30, 3, 1, 1, '#1b1626'); R(g, 33, 3, 1, 1, '#1b1626'); R(g, 30, 5, 4, 1, '#1b1626');
+    R(g, 24, 12, 16, 1, '#1b1626'); R(g, 34, 13, 5, 4, '#1b1626'); R(g, 25, 14, 5, 3, '#fff3b0'); R(g, 26 + f, 14, 2, 3, '#1b1626');
+    R(g, 26, 20, 12, 3, '#1b1626'); for (let i = 0; i < 4; i++) R(g, 27 + i * 3, i % 2 ? 21 : 20, 2, 2, '#f6efd9');
+    R(g, 27, 25, 2, 3, '#8fe6da'); R(g, 31, 25, 2, 5, '#8fe6da'); R(g, 35, 25, 2, 3, '#8fe6da');
     return c;
   }
   if (kind === 'slick') {
-    // Sidewinder Slick: a dust devil in a wide hat and a red bandana, clutching unreported cash
-    blob(20, 52 - f, 9, '#8a4a1c'); blob(44, 53 + f, 9, '#8a4a1c'); blob(32, 55, 11, '#8a4a1c');
-    blob(32, 37, 19, '#c9781c'); blob(19, 40 + f, 11, '#c9781c'); blob(45, 40 - f, 11, '#c9781c');
-    blob(27, 31, 11, '#e6a04a'); blob(38, 30, 9, '#e6a04a'); blob(24, 27, 4, '#f6d08a');
-    R(g, 8, 16, 48, 4, '#4a2f1c'); R(g, 20, 5, 24, 12, '#4a2f1c'); R(g, 20, 13, 24, 2, '#c9423a');
-    R(g, 19, 25, 10, 5, '#fff3b0'); R(g, 35, 25, 10, 5, '#fff3b0'); R(g, 23 + f, 26, 3, 4, '#1b1626'); R(g, 39 + f, 26, 3, 4, '#1b1626');
-    R(g, 16, 34, 32, 9, '#c9423a'); R(g, 16, 34, 32, 1, '#8a2a26'); R(g, 28, 43, 8, 5, '#c9423a'); R(g, 22, 38, 2, 2, '#f6efd9'); R(g, 38, 38, 2, 2, '#f6efd9');
-    R(g, 52, 36 - f, 9, 11, '#7fd6a8'); R(g, 52, 36 - f, 9, 1, '#1f6f5c'); R(g, 54, 40 - f, 5, 1, '#1f6f5c'); R(g, 54, 43 - f, 5, 1, '#1f6f5c');
+    // Sidewinder Slick: a dust devil. A funnel of sand bands that twists under a wide hat, sly eyes over a red bandana,
+    // and a fist of unreported cash
+    for (const [x, y, r] of [[20, 61, 3], [32, 62, 4], [45, 61, 3]]) blob(x + (f ? 1 : -1), y, r, '#8a4a1c');
+    [[10, 44], [13, 38], [16, 32], [19, 26], [22, 20], [25, 14], [28, 8]].forEach(([x, w], i) => {
+      const o = (i % 2 ? 1 : -1) * (f ? 2 : -1);
+      R(g, x + o, 23 + i * 5, w, 6, i % 2 ? '#c9781c' : '#e6a04a'); R(g, x + o + 3, 24 + i * 5, Math.max(2, w - 12), 1, '#f6d08a'); R(g, x + o, 28 + i * 5, w, 1, '#8a4a1c');
+    });
+    R(g, 30 + (f ? 1 : -1), 57, 4, 4, '#8a4a1c');
+    R(g, 12, 17, 40, 7, '#e6a04a');
+    R(g, 3, 30 + f, 9, 3, '#e6a04a'); R(g, 1, 32 + f, 4, 6, '#e6a04a'); R(g, 3, 37 + f, 4, 2, '#f6d08a');
+    R(g, 51, 34 - f, 6, 3, '#e6a04a');
+    R(g, 54, 26 - f, 9, 12, '#7fd6a8'); R(g, 54, 26 - f, 9, 1, '#1f6f5c'); R(g, 54, 37 - f, 9, 1, '#1f6f5c'); R(g, 56, 29 - f, 5, 1, '#1f6f5c'); R(g, 56, 32 - f, 5, 1, '#1f6f5c'); R(g, 57, 34 - f, 3, 2, '#1f6f5c');
+    R(g, 3, 13, 58, 4, '#4a2f1c'); R(g, 5, 12, 54, 1, '#6a4526'); R(g, 1, 12, 4, 3, '#4a2f1c'); R(g, 59, 12, 4, 3, '#4a2f1c');
+    R(g, 20, 3, 24, 10, '#4a2f1c'); R(g, 22, 1, 20, 3, '#4a2f1c'); R(g, 29, 1, 6, 2, '#33200f'); R(g, 20, 10, 24, 2, '#c9423a'); R(g, 31, 10, 3, 2, '#e0b23a');
+    R(g, 19, 19, 10, 3, '#fff3b0'); R(g, 35, 19, 10, 3, '#fff3b0'); R(g, 19, 18, 10, 1, '#4a2f1c'); R(g, 35, 18, 10, 1, '#4a2f1c'); R(g, 23 + f, 19, 3, 3, '#1b1626'); R(g, 39 + f, 19, 3, 3, '#1b1626');
+    R(g, 13, 24, 38, 7, '#c9423a'); R(g, 13, 24, 38, 1, '#8a2a26'); poly([[17, 31], [47, 31], [32, 41]], '#c9423a');
+    R(g, 21, 27, 2, 2, '#f6efd9'); R(g, 31, 28, 2, 2, '#f6efd9'); R(g, 41, 27, 2, 2, '#f6efd9'); R(g, 31, 34, 2, 2, '#f6efd9');
+    R(g, 50, 26 - f, 5, 3, '#c9423a'); R(g, 53, 28 - f, 2, 4, '#8a2a26');
     return c;
   }
   if (kind === 'glint') {
     // Glint, the Hot-Tip Dragon, facing the hero: red wings that beat, a long neck, a horned head with a snout, and a spade tail
-    const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.fill(); };
     const wing = f ? [[33, 37], [40, 25], [52, 24], [63, 31], [61, 43], [54, 37], [48, 44], [42, 38]] : [[33, 37], [29, 9], [41, 2], [53, 7], [62, 17], [54, 19], [51, 28], [44, 25], [43, 35]];
     poly(wing, '#b0332e');
     g.strokeStyle = '#7a1f1c'; g.lineWidth = 1; g.beginPath();
@@ -323,7 +355,7 @@ const bossRaw = (frame, kind) => {
   R(g, 20, 38, 24, 6, '#231a36'); for (let i = 0; i < 6; i++) R(g, 21 + i * 4, i % 2 ? 41 : 38, 3, 3, '#f6efd9');
   return c;
 };
-const BOSS_GLOW = { baron: '#9b6bff', loophole: '#35f0e6', slick: '#ff8a3a', glint: '#ffcf4a' };
+const BOSS_GLOW = { baron: '#9b6bff', loophole: '#35f0e6', slick: '#ff8a3a', glint: '#ffcf4a', murk: '#ff4fb0' };
 LQ.bossSprite = (frame, kind = 'baron') => cached('boss|' + kind + frame, () => {
   const c = rim(grade(bossRaw(frame, kind), .3), [255, 255, 255], .3);
   c.lights = [{ x: 32, y: 36, r: 44, col: BOSS_GLOW[kind], a: .5 }, { x: 32, y: 30, r: 18, col: BOSS_GLOW[kind], a: .4 }];
